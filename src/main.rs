@@ -38,38 +38,50 @@ fn main() {
             run_next();
         }
         None => {
-            // Default behavior: check PROGRESS.md and help
-            println!("{}", "Welcome to Rust Learning! 🦀".bold().green());
-            println!(
-                "Use {} to run a specific exercise.",
-                "cargo run -- run <name>".yellow()
-            );
-            println!("Use {} to list all.", "cargo run -- list".yellow());
-            println!(
-                "Use {} to run the next incomplete exercise.",
-                "cargo run -- next".yellow()
-            );
-
-            // Try to suggest next
-            run_next();
+            // Default behavior: run current active exercise
+            if let Some(exercise) = get_current_exercise() {
+                run_exercise(&exercise);
+            } else {
+                println!("{}", "Welcome to Rust Learning! 🦀".bold().green());
+                println!();
+                println!("No active exercise found.");
+                println!("Use {} in Antigravity to start!", "/next".yellow());
+            }
         }
     }
 }
 
-fn get_exercises_dir() -> PathBuf {
-    PathBuf::from("src/exercises")
+fn get_current_exercise() -> Option<String> {
+    let content = fs::read_to_string("PROGRESS.md").ok()?;
+
+    // Try to get from Active Session JSON: "exercise": "name"
+    let re = Regex::new(r#""exercise":\s*"([^"]+)""#).unwrap();
+    if let Some(caps) = re.captures(&content) {
+        let exercise = &caps[1];
+        if exercise != "null" {
+            return Some(exercise.to_string());
+        }
+    }
+
+    None
+}
+
+fn get_search_dirs() -> Vec<PathBuf> {
+    vec![
+        PathBuf::from("src/exercises"),
+        PathBuf::from("src/practice"),
+    ]
 }
 
 fn find_exercise(name: &str) -> Option<PathBuf> {
-    for entry in WalkDir::new(get_exercises_dir())
-        .into_iter()
-        .filter_map(|e| e.ok())
-    {
-        let path = entry.path();
-        if path.extension().and_then(|e| e.to_str()) == Some("rs") {
-            if let Some(stem) = path.file_stem().and_then(|s| s.to_str()) {
-                if stem == name {
-                    return Some(path.to_path_buf());
+    for dir in get_search_dirs() {
+        for entry in WalkDir::new(dir).into_iter().filter_map(|e| e.ok()) {
+            let path = entry.path();
+            if path.extension().and_then(|e| e.to_str()) == Some("rs") {
+                if let Some(stem) = path.file_stem().and_then(|s| s.to_str()) {
+                    if stem == name {
+                        return Some(path.to_path_buf());
+                    }
                 }
             }
         }
@@ -154,14 +166,13 @@ fn run_exercise(name: &str) {
 
 fn list_exercises() {
     println!("{}", "Available Exercises:".bold().underline());
-    for entry in WalkDir::new(get_exercises_dir())
-        .into_iter()
-        .filter_map(|e| e.ok())
-    {
-        let path = entry.path();
-        if path.extension().and_then(|e| e.to_str()) == Some("rs") {
-            if let Some(stem) = path.file_stem().and_then(|s| s.to_str()) {
-                println!("- {}", stem);
+    for dir in get_search_dirs() {
+        for entry in WalkDir::new(dir).into_iter().filter_map(|e| e.ok()) {
+            let path = entry.path();
+            if path.extension().and_then(|e| e.to_str()) == Some("rs") {
+                if let Some(stem) = path.file_stem().and_then(|s| s.to_str()) {
+                    println!("- {}", stem);
+                }
             }
         }
     }

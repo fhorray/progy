@@ -18,6 +18,9 @@ The user can use the following slash commands:
 | `/run`              | Run the current exercise                  |
 | `/hint`             | Get a pedagogy-aware hint                 |
 | `/why`              | Deep conceptual explanation               |
+| `/practice <topic>` | Create an extra practice exercise         |
+| `/daily`            | Review challenge from past modules        |
+| `/redo <module>`    | Reset module and archive progress         |
 | `/review`           | Check code for idiomatic Rust             |
 | `/stats`            | Show learning statistics and progress     |
 

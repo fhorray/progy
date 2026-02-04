@@ -24,8 +24,8 @@ This project provides a structured approach to learning Rust with:
 
 ```bash
 # 1. Clone the repository
-git clone <repository-url>
-cd rust-learning
+git clone https://github.com/fhorray/rust-flow
+cd rust-flow
 
 # 2. Create your learning branch
 git checkout -b learning
@@ -53,26 +53,35 @@ git checkout -b learning-v2  # or any name you like
 
 Use these slash commands in the Antigravity chat:
 
-| Command   | Description                                     |
-| --------- | ----------------------------------------------- |
-| `/next`   | Auto-create and start the next exercise         |
-| `/run`    | Run the current exercise                        |
-| `/hint`   | Get a progressive hint (won't spoil the answer) |
-| `/why`    | Deep conceptual explanation with analogies      |
-| `/review` | Check your code for idiomatic Rust patterns     |
-| `/done`   | Stop timer, verify solution, update stats       |
-| `/stats`  | View your learning statistics                   |
+| Command             | Description                                     |
+| ------------------- | ----------------------------------------------- |
+| `/next`             | Auto-create and start the next exercise         |
+| `/run`              | Run the current exercise                        |
+| `/hint`             | Get a progressive hint (won't spoil the answer) |
+| `/why`              | Deep conceptual explanation with analogies      |
+| `/practice <topic>` | Create an extra practice exercise               |
+| `/daily`            | Create a review challenge from past modules     |
+| `/redo <module>`    | Reset module and archive old work               |
+| `/review`           | Check your code for idiomatic Rust patterns     |
+| `/done`             | Stop timer, verify solution, update stats       |
+| `/stats`            | View your learning statistics                   |
 
 ### Terminal Commands
 
 You can also run exercises directly from the terminal:
 
-```powershell
-# Run the current active exercise (reads from PROGRESS.md)
-.\scripts\run.bat
+### Terminal Commands
 
-# Or manually run a specific exercise
-cargo run --bin variables1
+You can also run exercises directly from the terminal. The `main.rs` runner automatically detects the active exercise from `PROGRESS.md`.
+
+```powershell
+# Run the current active exercise
+cargo run
+
+# Or use subcommands
+cargo run -- run variables1  # Run a specific exercise
+cargo run -- list           # List all exercises
+cargo run -- next           # Find and run the next incomplete exercise
 ```
 
 ## 📚 Curriculum
@@ -128,7 +137,7 @@ cargo run --bin variables1
 │     → Timer starts automatically                    │
 ├─────────────────────────────────────────────────────┤
 │  2. Work on the exercise                            │
-│     → Use /run or .\scripts\run.bat to test         │
+│     → Use /run or cargo run to test                 │
 │     → Use /hint if stuck                            │
 │     → Use /why to understand concepts               │
 ├─────────────────────────────────────────────────────┤
@@ -150,9 +159,6 @@ rust-learning/
 ├── AGENT.md              # AI instructor configuration
 ├── PROGRESS.md           # Your progress tracker (auto-updated)
 ├── Cargo.toml            # Rust project configuration
-├── scripts/
-│   ├── run.bat           # Run current exercise (Windows)
-│   └── run-current.ps1   # PowerShell script
 ├── src/
 │   └── exercises/
 │       ├── 01_variables/
