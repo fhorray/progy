@@ -97,30 +97,30 @@ Every exercise file should follow this structure:
 ```rust
 // I AM NOT DONE
 //
-// Difficulty: ⭐⭐
-// Estimated Time: ~10 min
-// Topic: <Module Name> - <Specific Concept>
-//
-// Description:
-// <Detailed description of what the user needs to fix or implement>
-//
-// Expected Output:
-// <What should appear in the terminal when correct>
-//
 /*
+Difficulty: ⭐⭐
+Estimated Time: ~10 min
+Topic: <Module Name> - <Specific Concept>
+
+Description:
+<Detailed description of what the user needs to fix or implement>
+
+Expected Output:
+<What should appear in the terminal when correct>
+
 Check:
 <Specific conditions to verify user solution (e.g. "Must use mut", "No unexpected panics")>
-*/
 
-// Execute: cargo run
-//
-// Hints:
-// 1. <Gradual hint - starts vague>
-// 2. <More specific hint - if still stuck>
-// 3. <Almost the answer - last resort>
-//
-// Learn More:
-// - https://doc.rust-lang.org/book/chXX-XX.html
+Execute: cargo run
+
+Hints:
+1. <Gradual hint - starts vague>
+2. <More specific hint - if still stuck>
+3. <Almost the answer - last resort>
+
+Learn More:
+- https://doc.rust-lang.org/book/chXX-XX.html
+*/
 
 fn main() {
     // Exercise code here
