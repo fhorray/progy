@@ -91,43 +91,39 @@ When the tests pass, type `/next` again in the chat.
 
 > **Stuck?** Type `/hint` for a clue or `/why` for a concept explanation.
 
-## �🎮 Commands
+## 🎮 Commands
 
 ### Antigravity Chat Commands
 
 Use these slash commands in the Antigravity chat:
 
-| Command             | Description                                      |
-| ------------------- | ------------------------------------------------ |
-| `/next`             | Auto-create and start the next exercise          |
-| `/next`             | Test Current -> Done -> Create Next (All-in-one) |
-| `/run`              | Run the current exercise                         |
-| `/hint`             | Get a progressive hint (won't spoil the answer)  |
-| `/why`              | Deep conceptual explanation with analogies       |
-| `/fix-exercise`     | Fix broken tests or exercises                    |
-| `/practice <topic>` | Create an extra practice exercise                |
-| `/daily`            | Create a review challenge from past modules      |
-| `/redo <module>`    | Reset module and archive old work                |
-| `/review`           | Check your code for idiomatic Rust patterns      |
-| `/done`             | Stop timer, verify solution, update stats        |
-| `/stats`            | View your learning statistics                    |
+| Command             | Description                                         |
+| ------------------- | --------------------------------------------------- |
+| `/next`             | Test Current → Done → Create Next (All-in-one flow) |
+| `/run`              | Run the `main` function of current exercise         |
+| `/hint`             | Get a progressive hint (won't spoil the answer)     |
+| `/why`              | Deep conceptual explanation with analogies          |
+| `/fix-exercise`     | Fix broken tests or exercises                       |
+| `/practice <topic>` | Create an extra practice exercise                   |
+| `/daily`            | Create a review challenge from past modules         |
+| `/redo <module>`    | Reset module and archive old work                   |
+| `/review`           | Check your code for idiomatic Rust patterns         |
+| `/done`             | Stop timer, verify solution, update stats           |
+| `/stats`            | View your learning statistics                       |
 
 ### Terminal Commands
 
-You can run exercises directly from the terminal without needing the AI:
+You can run exercises directly from the terminal. Use `-p runner` to ensure you are calling the CLI tool:
 
 ```powershell
-# Run the current active exercise
-cargo run
+# 1. OPTIONAL: Compile and see your println! output (main function)
+cargo run -p runner -- run variables1
 
-# Test an exercise (validates with #[test] functions)
-cargo run -- test variables1
+# 2. MANDATORY: Run tests to validate the exercise logic
+cargo run -p runner -- test variables1
 
-# Run without tests
-cargo run -- run variables1
-
-# List all exercises
-cargo run -- list
+# List all available exercises
+cargo run -p runner -- list
 ```
 
 ### PowerShell Script (Recommended)
@@ -188,34 +184,24 @@ For faster workflow without AI tokens:
 
 ## 🔄 Typical Workflow
 
-```
-┌─────────────────────────────────────────────────────┐
-│  1. Run /next                                       │
-│     → AI creates the exercise (validated first!)    │
-│     → Timer starts automatically                    │
-├─────────────────────────────────────────────────────┤
-│  2. Work on the exercise                            │
-│     → Use .\test.ps1 or cargo run -- test to verify │
-│     → Use /hint if stuck                            │
-│     → Use /why to understand concepts               │
-├─────────────────────────────────────────────────────┤
-```
-
-┌─────────────────────────────────────────────────────┐
-│ 1. Run /next │
-│ → If active exercise: Tests it │
-│ → Pass: Marks done, creates next, starts timer│
-│ → Fail: Tells you to fix errors │
-│ → If no active: Creates next, starts timer │
-├─────────────────────────────────────────────────────┤
-│ 2. Work on the exercise │
-│ → Use .\scripts\test.ps1 or cargo run -p runner -- test │
-│ → Use /hint if stuck │
-│ → Use /why to understand concepts │
-└─────────────────────────────────────────────────────┘
-
-```
-
+```text
+┌─────────────────────────────────────────────────────────────────┐
+│  1. Run /next                                                   │
+│     → If you have an active exercise: it tests your solution.   │
+│       • Fail? tells you to fix errors first.                    │
+│       • Pass? marks as done, updates stats & creates next.      │
+│     → If no active exercise: creates the next one & starts time.│
+├─────────────────────────────────────────────────────────────────┤
+│  2. Solve the Exercise                                          │
+│     → Read instructions in the generated .rs file.              │
+│     → Use /run (or cargo run -p runner -- run <ex>) to debug.   │
+│     → Use /hint if you feel stuck.                              │
+├─────────────────────────────────────────────────────────────────┤
+│  3. Verify your solution                                        │
+│     → Run .\scripts\test.ps1 in your terminal.                  │
+│     → FAIL? Fix code and repeat.                                │
+│     → PASS? Run /next to finalize and move on!                  │
+└─────────────────────────────────────────────────────────────────┘
 ```
 
 ## 📁 Project Structure
