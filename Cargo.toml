@@ -1,10 +1,15 @@
+[workspace]
+members = ["runner"]
+
 [package]
-name = "learning"
+name = "exercises"
 version = "0.1.0"
 edition = "2024"
 
+# Dependencies for exercises (if needed in the future)
 [dependencies]
-clap = { version = "4.4", features = ["derive"] }
-colored = "2.0"
-walkdir = "2.4"
-regex = "1.10"
+
+[lib]
+name = "exercises"
+path = "src/lib.rs"
+doctest = false

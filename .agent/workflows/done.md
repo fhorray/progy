@@ -33,6 +33,11 @@ Example: `/done struggled with shadowing concept`
 3. Calculate duration:
    - Get `started_at` from Active Session
    - Calculate difference to current time
+   - **Validation Check**:
+     - If duration > 120 minutes (2 hours):
+       - Assume the user forgot to stop the timer.
+       - Cap the time at **15 minutes** (or the estimated time from exercise header).
+       - Add a note in the final output: "⏱️ Time adjusted to 15m (active session was open for >2h)."
    - Format as minutes (e.g., "14 min" or "1h 23min")
 
 4. Update `PROGRESS.md`:
@@ -64,7 +69,7 @@ Example: `/done struggled with shadowing concept`
    - Add time to Time Spent
    - Change status to 🟡 if first exercise, ✅ if all done
 
-5. Run `cargo run -- run <exercise>` to verify it compiles
+5. Run `cargo run -p runner -- run <exercise>` to verify it compiles
 
 6. If it compiles successfully:
 

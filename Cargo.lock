@@ -118,6 +118,10 @@ dependencies = [
 ]
 
 [[package]]
+name = "exercises"
+version = "0.1.0"
+
+[[package]]
 name = "heck"
 version = "0.5.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -134,16 +138,6 @@ name = "lazy_static"
 version = "1.5.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "bbd2bcb4c963f2ddae06a2efc7e9f3591312473c50c6685e1f298068316e66fe"
-
-[[package]]
-name = "learning"
-version = "0.1.0"
-dependencies = [
- "clap",
- "colored",
- "regex",
- "walkdir",
-]
 
 [[package]]
 name = "memchr"
@@ -203,6 +197,16 @@ name = "regex-syntax"
 version = "0.8.9"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "a96887878f22d7bad8a3b6dc5b7440e0ada9a245242924394987b21cf2210a4c"
+
+[[package]]
+name = "runner"
+version = "0.1.0"
+dependencies = [
+ "clap",
+ "colored",
+ "regex",
+ "walkdir",
+]
 
 [[package]]
 name = "same-file"

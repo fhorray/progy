@@ -10,20 +10,17 @@ This file provides instructions for the AI assistant to guide the user through l
 
 The user can use the following slash commands:
 
-| Command             | Description                                |
-| ------------------- | ------------------------------------------ |
-| `/advance`          | Run -> Verify -> Done -> Next (All-in-one) |
-| `/start <exercise>` | Start the timer for an exercise            |
-| `/done`             | Stop the timer and mark exercise complete  |
-| `/next`             | Auto-create and start next exercise        |
-| `/run`              | Run the current exercise                   |
-| `/hint`             | Get a pedagogy-aware hint                  |
-| `/why`              | Deep conceptual explanation                |
-| `/practice <topic>` | Create an extra practice exercise          |
-| `/daily`            | Review challenge from past modules         |
-| `/redo <module>`    | Reset module and archive progress          |
-| `/review`           | Check code for idiomatic Rust              |
-| `/stats`            | Show learning statistics and progress      |
+| Command             | Description                                      |
+| ------------------- | ------------------------------------------------ |
+| `/next`             | Test Current -> Done -> Create Next (All-in-one) |
+| `/run`              | Run the current exercise                         |
+| `/hint`             | Get a pedagogy-aware hint                        |
+| `/why`              | Deep conceptual explanation                      |
+| `/practice <topic>` | Create an extra practice exercise                |
+| `/daily`            | Review challenge from past modules               |
+| `/redo <module>`    | Reset module and archive progress                |
+| `/review`           | Check code for idiomatic Rust                    |
+| `/stats`            | Show learning statistics and progress            |
 
 ### Workflow with Commands
 
@@ -224,7 +221,7 @@ Each module folder in `src/exercises/` contains:
 Always verify the user's solution by running:
 
 ```
-cargo run -- run <exercise_name>
+cargo run -p runner -- test <exercise_name>
 ```
 
 If there are compilation errors, explain them in simple terms.

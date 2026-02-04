@@ -1,43 +1,45 @@
 ---
-description: Automatically setup and start the next exercise
+description: Advance to the next step (Test -> Done -> Create Next)
 ---
 
 # /next Command
 
-This workflow automates the transition to the next exercise.
+This is the main command to progress through the curriculum. It handles the entire lifecycle: testing the current exercise, marking it done, and creating the next one.
 
 ## Steps for AI
 
-1. **Analyze Progress**
-   - Read `PROGRESS.md` to find the last completed exercise.
-   - Determine the module and the next exercise number.
-   - If starting a new module, read the module's `README.md` first.
+1. **Check Current State**
+   - Read `PROGRESS.md`.
+   - Is there an active exercise that is NOT marked as completing?
 
-2. **Create Exercise WITH Solution First**
-   - Generate the exercise `.rs` file WITH the complete working solution.
-   - Include all tests as per the template in `AGENT.md`.
-   - **IMPORTANT**: The solution must be fully implemented at this stage.
-
-3. **Validate Tests**
+2. **Branch A: Active Exercise Exists**
    // turbo
-   - Run `cargo run -- test <exercise_name>` to verify tests pass.
-   - **If tests FAIL**: Fix the code/tests and re-run until they pass.
-   - **If tests PASS**: Proceed to step 4.
+   - Run `cargo run -p runner -- test <current_exercise>`
+   - **If Tests Fail**:
+     - Stop and show errors.
+     - "❌ Tests failed. Fix them before moving on."
+   - **If Tests Pass**:
+     - Run `/done` workflow (update stats).
+     - Proceed to **Branch B**.
 
-4. **Break the Exercise**
-   - Remove or comment out the solution, leaving `// TODO` markers.
-   - For "fix compilation" exercises: introduce the intentional bug.
-   - For "implement function" exercises: replace body with `// TODO`.
+3. **Branch B: Create Next Exercise**
+   - Identify the next exercise/module from `PROGRESS.md` and module `README.md`.
+   - **Step 1: Create Complete Solution**
+     - Generate file with FULL solution + Tests.
+   - **Step 2: Sync and Validate**
+     // turbo
+     - Run `cargo run -p runner -- sync`
+     - Run `cargo run -p runner -- test <next_exercise>`
+     - If fails, fix self until passes.
+   - **Step 3: Break the Exercise**
+     - Replace solution with `// TODO` or intentional bugs.
+   - **Step 4: Update Progress**
+     - Update `PROGRESS.md` (set as active).
+   - **Step 5: Handover**
+     - "✅ Previous exercise completed!" (if applicable)
+     - "🚀 Created <next_exercise>. Time to practice <topic>!"
 
-5. **Start Timer**
-   - Update `PROGRESS.md` with the new active exercise.
+## Usage
 
-6. **Handover**
-   - Present the exercise to the user (do NOT open file in IDE).
-   - Brief intro to the concept.
-   - Message: "All set! Time to practice <concept>. Go!"
-
-## Why Validate First?
-
-This ensures the AI doesn't create broken tests. By writing and validating
-the solution first, we guarantee the exercise is solvable.
+- **User**: "I think I'm done" -> `/next`
+- **User**: "Start next one" -> `/next`

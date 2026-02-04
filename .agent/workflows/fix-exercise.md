@@ -27,7 +27,7 @@ Or just `/fix-exercise` to fix the current active exercise.
 3. **Write Correct Solution**
    - Implement the correct solution in the exercise.
      // turbo
-   - Run `cargo run -- test <exercise_name>`.
+   - Run `cargo run -p runner -- test <exercise_name>`.
 
 4. **Fix Until Tests Pass**
    - If tests fail, fix either the solution OR the tests.

@@ -61,26 +61,56 @@ git remote set-url origin https://github.com/YOUR_USERNAME/my-rust-learning.git
 git push -u origin learning
 ```
 
-## 🎮 Commands
+## 🏃 How to Study (Quick Start)
+
+Once you have everything set up, follow this simple loop to learn efficiently:
+
+### Step 1: Start a New Exercise
+
+Type `/next` in the chat.
+
+- The AI will generate a new exercise file for you (e.g., `variables1.rs`).
+- A timer will start automatically.
+
+### Step 2: Solve the Exercise
+
+Open the generated file and read the instructions inside.
+
+- Fix the code or implement the requested function.
+- **Verification**: Run `.\scripts\test.ps1` (or `cargo r -- test <exercise_name>`) in the terminal to verify your solution.
+  - ❌ **Fail**: Read the errors, fix the code, run test again.
+  - ✅ **Pass**: You are ready to move on!
+
+### Step 3: Complete & Advance
+
+When the tests pass, type `/next` again in the chat.
+
+- The AI will verify your tests passed.
+- It scans your completion time and updates your stats.
+- It immediately generates the **next exercise** for you.
+
+> **Stuck?** Type `/hint` for a clue or `/why` for a concept explanation.
+
+## �🎮 Commands
 
 ### Antigravity Chat Commands
 
 Use these slash commands in the Antigravity chat:
 
-| Command             | Description                                     |
-| ------------------- | ----------------------------------------------- |
-| `/next`             | Auto-create and start the next exercise         |
-| `/advance`          | Run → Test → Done → Next (all-in-one)           |
-| `/run`              | Run the current exercise                        |
-| `/hint`             | Get a progressive hint (won't spoil the answer) |
-| `/why`              | Deep conceptual explanation with analogies      |
-| `/fix-exercise`     | Fix broken tests or exercises                   |
-| `/practice <topic>` | Create an extra practice exercise               |
-| `/daily`            | Create a review challenge from past modules     |
-| `/redo <module>`    | Reset module and archive old work               |
-| `/review`           | Check your code for idiomatic Rust patterns     |
-| `/done`             | Stop timer, verify solution, update stats       |
-| `/stats`            | View your learning statistics                   |
+| Command             | Description                                      |
+| ------------------- | ------------------------------------------------ |
+| `/next`             | Auto-create and start the next exercise          |
+| `/next`             | Test Current -> Done -> Create Next (All-in-one) |
+| `/run`              | Run the current exercise                         |
+| `/hint`             | Get a progressive hint (won't spoil the answer)  |
+| `/why`              | Deep conceptual explanation with analogies       |
+| `/fix-exercise`     | Fix broken tests or exercises                    |
+| `/practice <topic>` | Create an extra practice exercise                |
+| `/daily`            | Create a review challenge from past modules      |
+| `/redo <module>`    | Reset module and archive old work                |
+| `/review`           | Check your code for idiomatic Rust patterns      |
+| `/done`             | Stop timer, verify solution, update stats        |
+| `/stats`            | View your learning statistics                    |
 
 ### Terminal Commands
 
@@ -106,10 +136,10 @@ For faster workflow without AI tokens:
 
 ```powershell
 # Test current active exercise
-.\test.ps1
+.\scripts\test.ps1
 
 # Test specific exercise
-.\test.ps1 variables1
+.\scripts\test.ps1 variables1
 ```
 
 ## 📚 Curriculum
@@ -169,11 +199,23 @@ For faster workflow without AI tokens:
 │     → Use /hint if stuck                            │
 │     → Use /why to understand concepts               │
 ├─────────────────────────────────────────────────────┤
-│  3. Run /advance (or /done + /next manually)        │
-│     → Tests run automatically                       │
-│     → If pass: stats updated, next exercise created │
-│     → If fail: stay on current exercise             │
+```
+
+┌─────────────────────────────────────────────────────┐
+│ 1. Run /next │
+│ → If active exercise: Tests it │
+│ → Pass: Marks done, creates next, starts timer│
+│ → Fail: Tells you to fix errors │
+│ → If no active: Creates next, starts timer │
+├─────────────────────────────────────────────────────┤
+│ 2. Work on the exercise │
+│ → Use .\scripts\test.ps1 or cargo run -p runner -- test │
+│ → Use /hint if stuck │
+│ → Use /why to understand concepts │
 └─────────────────────────────────────────────────────┘
+
+```
+
 ```
 
 ## 📁 Project Structure
@@ -182,24 +224,21 @@ For faster workflow without AI tokens:
 rust-learning/
 ├── AGENT.md              # AI instructor configuration
 ├── PROGRESS.md           # Your progress tracker (auto-updated)
-├── Cargo.toml            # Rust project configuration
-├── src/
+├── Cargo.toml            # Workspace configuration
+├── runner/               # CLI Tool (the "runner")
+│   ├── Cargo.toml
+│   └── src/main.rs
+├── src/                  # Exercise Library (where code lives)
+│   ├── lib.rs            # Library entry point (for IDE support)
 │   └── exercises/
 │       ├── 01_variables/
-│       │   ├── README.md # Module instructions for AI
+│       │   ├── mod.rs    # Auto-generated module definition
 │       │   ├── variables1.rs
 │       │   └── ...
-│       ├── 02_functions/
 │       └── ...
 └── .agent/
     └── workflows/
-        ├── next.md       # /next command
-        ├── run.md        # /run command
-        ├── hint.md       # /hint command
-        ├── why.md        # /why command
-        ├── review.md     # /review command
-        ├── done.md       # /done command
-        └── stats.md      # /stats command
+        └── ...
 ```
 
 ## ⭐ Difficulty Levels

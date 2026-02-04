@@ -18,10 +18,14 @@ Generates a new, isolated practice exercise for a specific topic, without affect
    - **Crucial**: The exercise must be _different_ from the curriculum ones. Focus on a specific edge case or common confusion point for that topic.
    - Add comments explaining _why_ this specific practice is useful.
 
-3. **Set Active**
-   - Tell the user the exercise is created.
-   - Invoke `/start <filename>` to track it (or just set it as active context).
+3. **Sync Configuration**
+   // turbo
+   - Run `cargo run -p runner -- sync` to ensure IDE support for the new practice file.
 
-4. **Instructions**
+4. **Set Active**
+   - Tell the user the exercise is created.
+   - Invoke `/start <filename>` to track it.
+
+5. **Instructions**
    - "Created a practice exercise for **<topic>**!"
-   - "Run it with: `cargo run -- run practice_<timestamp>_<topic>`" (or the simplified command if updated).
+   - "Test it with: `cargo run -p runner -- test practice_<timestamp>_<topic>`"
