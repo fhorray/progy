@@ -1,6 +1,6 @@
 # /advance Command
 
-This workflow combines running the current exercise, verifying its correctness against specific guidelines, and if approved, moving to the next exercise.
+This workflow runs the exercise tests, and if all tests pass, marks the exercise as done and moves to the next one.
 
 ## Steps for AI
 
@@ -8,30 +8,23 @@ This workflow combines running the current exercise, verifying its correctness a
    - Check `PROGRESS.md` for the active exercise.
    - If no active exercise, abort and tell the user to `/start` one.
 
-2. **Read "Check" Guidelines**
-   - Read the `.rs` file for the current exercise.
-   - Look for comments starting with `// Check:` or `// Validation:`.
-   - If guidelines exist, note them. If not, rely on standard compilation + output correctness (no "I AM NOT DONE", output matches expectation).
-
-3. **Run and Verification**
+2. **Run Tests**
    // turbo
-   - Run `cargo run -- run <exercise_name>`
+   - Run `cargo run -- test <exercise_name>`
    - **Verification Logic**:
-     - **Compilation**: Must succeed.
-     - **Output**: Must match the `// Expected Output:` in the file.
-     - **Directives**: Must satisfy any `// Check:` conditions found in step 2.
-     - **Anti-Hallucination**: ensure the user _actually_ wrote code. If the file is identical to the template (unmodified), reject it.
+     - **Test Result**: All tests must pass (exit code 0).
+     - **"I AM NOT DONE" check**: The marker should still be present (user removes it manually when done).
 
-4. **Decision**
-   - **If Approved**:
-     - Run `/done` (simulate key steps: update progress, stats).
-     - Run `/next` (simulate key steps: find next, create file, start timer).
-     - output: "✅ Exercise passed checks! Moving to next..."
-   - **If Rejected**:
-     - Explain _specifically_ why.
-     - "❌ output did not match expected" OR "❌ Missing required validation: <condition>"
+3. **Decision**
+   - **If All Tests Pass**:
+     - Run `/done` workflow (update progress, stats).
+     - Run `/next` workflow (find next exercise, create file, start timer).
+     - Output: "✅ All tests passed! Moving to next exercise..."
+   - **If Tests Fail**:
+     - Show the test failure output.
      - Do NOT run `/done`. Do NOT run `/next`.
+     - Suggest: "Need help? Run `/hint` for a hint."
 
-## usage
+## Usage
 
 User types `/advance` to attempt to move forward.

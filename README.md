@@ -70,9 +70,11 @@ Use these slash commands in the Antigravity chat:
 | Command             | Description                                     |
 | ------------------- | ----------------------------------------------- |
 | `/next`             | Auto-create and start the next exercise         |
+| `/advance`          | Run → Test → Done → Next (all-in-one)           |
 | `/run`              | Run the current exercise                        |
 | `/hint`             | Get a progressive hint (won't spoil the answer) |
 | `/why`              | Deep conceptual explanation with analogies      |
+| `/fix-exercise`     | Fix broken tests or exercises                   |
 | `/practice <topic>` | Create an extra practice exercise               |
 | `/daily`            | Create a review challenge from past modules     |
 | `/redo <module>`    | Reset module and archive old work               |
@@ -82,20 +84,32 @@ Use these slash commands in the Antigravity chat:
 
 ### Terminal Commands
 
-You can also run exercises directly from the terminal:
-
-### Terminal Commands
-
-You can also run exercises directly from the terminal. The `main.rs` runner automatically detects the active exercise from `PROGRESS.md`.
+You can run exercises directly from the terminal without needing the AI:
 
 ```powershell
 # Run the current active exercise
 cargo run
 
-# Or use subcommands
-cargo run -- run variables1  # Run a specific exercise
-cargo run -- list           # List all exercises
-cargo run -- next           # Find and run the next incomplete exercise
+# Test an exercise (validates with #[test] functions)
+cargo run -- test variables1
+
+# Run without tests
+cargo run -- run variables1
+
+# List all exercises
+cargo run -- list
+```
+
+### PowerShell Script (Recommended)
+
+For faster workflow without AI tokens:
+
+```powershell
+# Test current active exercise
+.\test.ps1
+
+# Test specific exercise
+.\test.ps1 variables1
 ```
 
 ## 📚 Curriculum
@@ -147,22 +161,18 @@ cargo run -- next           # Find and run the next incomplete exercise
 ```
 ┌─────────────────────────────────────────────────────┐
 │  1. Run /next                                       │
-│     → AI creates the next exercise                  │
+│     → AI creates the exercise (validated first!)    │
 │     → Timer starts automatically                    │
 ├─────────────────────────────────────────────────────┤
 │  2. Work on the exercise                            │
-│     → Use /run or cargo run to test                 │
+│     → Use .\test.ps1 or cargo run -- test to verify │
 │     → Use /hint if stuck                            │
 │     → Use /why to understand concepts               │
 ├─────────────────────────────────────────────────────┤
-│  3. Run /review (optional)                          │
-│     → Get feedback on code quality                  │
-│     → Learn idiomatic Rust patterns                 │
-├─────────────────────────────────────────────────────┤
-│  4. Run /done                                       │
-│     → Timer stops                                   │
-│     → Stats updated                                 │
-│     → Next exercise suggested                       │
+│  3. Run /advance (or /done + /next manually)        │
+│     → Tests run automatically                       │
+│     → If pass: stats updated, next exercise created │
+│     → If fail: stay on current exercise             │
 └─────────────────────────────────────────────────────┘
 ```
 

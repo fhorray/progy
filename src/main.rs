@@ -18,6 +18,8 @@ struct Cli {
 enum Commands {
     /// Run a specific exercise by name
     Run { name: String },
+    /// Test a specific exercise (compiles with --test and runs tests)
+    Test { name: String },
     /// List all available exercises
     List,
     /// Run the next pending exercise based on PROGRESS.md
@@ -30,6 +32,9 @@ fn main() {
     match &cli.command {
         Some(Commands::Run { name }) => {
             run_exercise(name);
+        }
+        Some(Commands::Test { name }) => {
+            test_exercise(name);
         }
         Some(Commands::List) => {
             list_exercises();
@@ -200,5 +205,83 @@ fn run_next() {
             "{} No pending exercises found in PROGRESS.md!",
             "🎉".green()
         );
+    }
+}
+
+fn test_exercise(name: &str) {
+    let path = match find_exercise(name) {
+        Some(p) => p,
+        None => {
+            println!("{} Exercise '{}' not found!", "❌".red(), name);
+            return;
+        }
+    };
+
+    println!("{} Testing {}...", "🧪".cyan(), name);
+
+    // Creates a temporary test binary name
+    let temp_output = if cfg!(target_os = "windows") {
+        "temp_test.exe"
+    } else {
+        "temp_test"
+    };
+
+    // Compile with --test flag
+    let status = Command::new("rustc")
+        .arg("--test")
+        .arg(&path)
+        .arg("-o")
+        .arg(temp_output)
+        .status();
+
+    match status {
+        Ok(s) if s.success() => {
+            println!("{} Test compilation successful!", "✅".green());
+            println!(
+                "{}",
+                "---------------------------------------------------".dimmed()
+            );
+
+            // Run tests
+            let run_status = Command::new(format!("./{}", temp_output)).status();
+
+            match run_status {
+                Ok(exit) => {
+                    println!(
+                        "\n{}",
+                        "---------------------------------------------------".dimmed()
+                    );
+                    if exit.success() {
+                        println!("{} All tests passed!", "🎉".bold().green());
+
+                        // Check if file has "I AM NOT DONE"
+                        let content = fs::read_to_string(&path).unwrap_or_default();
+                        if content.contains("// I AM NOT DONE") {
+                            println!(
+                                "{} Don't forget to remove '// I AM NOT DONE' when you finish!",
+                                "⚠️".yellow()
+                            );
+                        }
+                    } else {
+                        println!("{} Some tests failed. See output above.", "❌".red());
+                    }
+                }
+                Err(e) => println!("{} Failed to run tests: {}", "❌".red(), e),
+            }
+
+            // Cleanup
+            let _ = fs::remove_file(temp_output);
+            if cfg!(target_os = "windows") {
+                let _ = fs::remove_file(format!("{}.pdb", temp_output.replace(".exe", "")));
+            }
+        }
+        Ok(_) => {
+            println!("{} Test compilation failed. See errors above.", "❌".red());
+            println!("{} Fix the code in {}", "👉".yellow(), path.display());
+        }
+        Err(e) => {
+            println!("{} Failed to call rustc: {}", "❌".red(), e);
+            println!("Make sure Rust is installed correctly.");
+        }
     }
 }

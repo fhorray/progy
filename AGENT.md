@@ -92,40 +92,101 @@ Examples: `variables1.rs`, `ownership3.rs`, `traits5.rs`
 
 ### Exercise Template
 
-Every exercise file should follow this structure:
+There are two types of exercises:
+
+#### Type 1: Fix Compilation Error
+
+For exercises where user needs to fix a compilation error (early modules):
 
 ```rust
 // I AM NOT DONE
-//
+
 /*
-Difficulty: ⭐⭐
-Estimated Time: ~10 min
-Topic: <Module Name> - <Specific Concept>
+Difficulty: ⭐
+Topic: Variables - Mutability
 
 Description:
-<Detailed description of what the user needs to fix or implement>
-
-Expected Output:
-<What should appear in the terminal when correct>
-
-Check:
-<Specific conditions to verify user solution (e.g. "Must use mut", "No unexpected panics")>
-
-Execute: cargo run
+Fix the code so that it compiles. The variable `x` needs to be mutable.
 
 Hints:
-1. <Gradual hint - starts vague>
-2. <More specific hint - if still stuck>
-3. <Almost the answer - last resort>
-
-Learn More:
-- https://doc.rust-lang.org/book/chXX-XX.html
+1. Variables are immutable by default in Rust.
+2. Use the `mut` keyword.
 */
 
 fn main() {
-    // Exercise code here
+    let x = 5;  // BUG: missing mut
+    x = 6;
+    println!("x is {}", x);
+}
+
+#[cfg(test)]
+mod tests {
+    #[test]
+    fn test_main_runs() {
+        super::main();
+    }
 }
 ```
+
+#### Type 2: Implement Function (Rustlings-style)
+
+For exercises where user implements a function and tests validate behavior:
+
+```rust
+// I AM NOT DONE
+
+/*
+Difficulty: ⭐⭐
+Topic: Functions - Return Values
+
+Description:
+Complete the `bigger` function to return the larger of two numbers.
+If both are equal, return either one.
+
+Do not use:
+- Additional variables
+- Other function calls
+
+Hints:
+1. Use an if/else expression.
+2. In Rust, the last expression is returned (no semicolon).
+*/
+
+fn bigger(a: i32, b: i32) -> i32 {
+    // TODO: Implement this function
+}
+
+fn main() {
+    // You can experiment here
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn ten_is_bigger_than_eight() {
+        assert_eq!(10, bigger(10, 8));
+    }
+
+    #[test]
+    fn fortytwo_is_bigger_than_thirtytwo() {
+        assert_eq!(42, bigger(32, 42));
+    }
+
+    #[test]
+    fn equal_numbers() {
+        assert_eq!(42, bigger(42, 42));
+    }
+}
+```
+
+### Test Guidelines
+
+1. **Multiple test cases**: Always write 2-4 tests covering different scenarios.
+2. **Descriptive names**: Test names should describe what they verify.
+3. **Edge cases**: Include at least one edge case (zero, negative, empty, etc.).
+4. **No hints in tests**: Tests should NOT reveal the solution.
 
 ### Difficulty Levels
 
