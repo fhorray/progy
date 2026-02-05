@@ -1,7 +1,26 @@
 {
   "user": "Student",
   "current_module": "01_variables",
-  "current_exercise": "variables1",
-  "exercises": {},
+  "current_exercise": "practice_g__ttuupplleess_20260205_160146",
+  "exercises": {
+    "variables1": {
+      "status": "Completed",
+      "attempts": 1,
+      "started_at": "2026-02-05T10:04:17.414946600-03:00",
+      "completed_at": "2026-02-05T10:04:17.717618500-03:00"
+    },
+    "variables3": {
+      "status": "Completed",
+      "attempts": 1,
+      "started_at": "2026-02-05T16:00:34.979763800-03:00",
+      "completed_at": "2026-02-05T16:00:35.302806800-03:00"
+    },
+    "practice_g__ttuupplleess_20260205_160146": {
+      "status": "Completed",
+      "attempts": 1,
+      "started_at": "2026-02-05T16:02:30.496709500-03:00",
+      "completed_at": "2026-02-05T16:02:30.767326800-03:00"
+    }
+  },
   "last_session": null
 }

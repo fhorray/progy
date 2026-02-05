@@ -19,13 +19,17 @@ Hints:
 
 fn main() {
     // TODO: Create a Box containing 5
-    // let b = ...;
+    let b = 0; // Fix this
 
-    // println!("b = {}", b);
+    println!("b = {}", b);
 
-    // Check if it works like a number
-    // assert_eq!(*b, 5);
+    // Check if it works like a number (dereference with *)
+    assert_eq!(*b, 5);
+    assert_eq!(*b, 5);
 }
+
+// ???: When would you use `Box<T>` instead of storing variable directly on the stack?
+// (Think about large data structures or recursive types like Linked Lists)
 
 #[cfg(test)]
 mod tests {

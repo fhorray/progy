@@ -17,9 +17,10 @@ struct Point<T> {
 }
 
 fn main() {
-    // let p = Point { x: 5, y: 10.4 };
+    // This requires Point to support different types for x and y
+    let p = Point { x: 5, y: 10.4 };
 
-    // println!("{:?}", p);
+    println!("{:?}", p);
 }
 
 #[cfg(test)]

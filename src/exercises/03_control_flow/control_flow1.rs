@@ -6,22 +6,23 @@ Topic: Control Flow
 
 Description:
 Welcome to the module on Control Flow!
-This exercise is a placeholder to get you started.
-Fix the code so it compiles.
+In Rust, conditions in `if` statements must be boolean expressions.
+
+The code below has a broken condition. Fix it so that `result` becomes `true`.
 
 Hints:
 1. Read the error message carefully.
+2. Think about when `x < 100` would be true.
 */
 
 fn main() {
-    println!("Welcome to Control Flow!");
     let x = 1;
-    // Fix this condition to be true
-    if x > 100 {
-        println!("This won't print");
-    } else {
-        println!("Success!");
-    }
+
+    // TODO: Fix this condition so result becomes true
+    let result = if x > 100 { true } else { false };
+
+    assert!(result, "The condition should evaluate to true!");
+    println!("Success!");
 }
 
 #[cfg(test)]

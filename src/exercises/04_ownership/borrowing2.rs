@@ -15,12 +15,14 @@ fn main() {
     let s = String::from("hello");
 
     // TODO: Create reference r1
-
+    let r1 = ""; // placeholder - should be &s
 
     // TODO: Create reference r2
+    let r2 = ""; // placeholder - should be &s
 
-
-    // println!("r1: {}, r2: {}", r1, r2);
+    println!("r1: {}, r2: {}", r1, r2);
+    assert_eq!(r1, "hello");
+    assert_eq!(r2, "hello");
 }
 
 #[cfg(test)]

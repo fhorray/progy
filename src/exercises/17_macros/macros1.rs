@@ -19,13 +19,19 @@ Hints:
    }
 */
 
-// TODO: Define my_macro
-// macro_rules! ...
+// TODO: Define my_macro that prints "Hello, Macro!" when called
+// macro_rules! my_macro {
+//     () => { ... };
+// }
 
 fn main() {
-    // Uncomment this line to test your macro
-    // my_macro!();
+    // This line requires the macro to be defined
+    my_macro!();
+    my_macro!();
 }
+
+// ???: Why might you use a macro instead of a function?
+// (Hint: Can a function take a variable number of arguments with different types?)
 
 #[cfg(test)]
 mod tests {

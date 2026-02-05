@@ -37,6 +37,9 @@ fn main() {
     println!("We have defined the variants successfully!");
 }
 
+// ???: How do Enums differ from Structs?
+// (Hint: Can a variable be `Message::Quit` AND `Message::Move` at the same time?)
+
 #[cfg(test)]
 mod tests {
     use super::*;

@@ -37,6 +37,9 @@ fn main() {
     println!("Green: {}, {}, {}", green.red, green.green, green.blue);
 }
 
+// ???: Why would you use a struct instead of just three separate variables (red, green, blue)?
+// (Think about logical grouping and passing data to functions)
+
 #[cfg(test)]
 mod tests {
     use super::*;

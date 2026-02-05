@@ -23,10 +23,13 @@ Hints:
 */
 
 fn main() {
-    // TODO: Declare the variable `x` properly
+    // TODO: Declare the variable `x` properly using `let`
     x = 5;
     println!("x is {}", x);
 }
+
+// ???: Why do you think Rust requires you to declare variables before using them?
+// (Think about type safety and compiler optimization)
 
 #[cfg(test)]
 mod tests {

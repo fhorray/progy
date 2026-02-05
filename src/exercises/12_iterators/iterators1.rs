@@ -22,15 +22,19 @@ Your task is to:
 fn main() {
     let v = vec![1, 2, 3];
 
-    // TODO: Create a mutable iterator
-    // let mut iter = ...;
+    // TODO: Create a mutable iterator from v
+    let mut iter = ""; // Fix this - should be v.iter()
 
-    // TODO: Get the first item
-    // let item = ...;
+    // TODO: Get the first item using .next()
+    let item = ""; // Fix this - should call iter.next()
 
-    // println!("First item: {:?}", item);
-    // assert_eq!(item, Some(&1));
+    println!("First item: {:?}", item);
+    assert_eq!(item, Some(&1));
+    assert_eq!(item, Some(&1));
 }
+
+// ???: Why does the iterator variable need to be mutable (`mut`)?
+// (Hint: What happens to the internal state of the iterator when you call `next()`?)
 
 #[cfg(test)]
 mod tests {

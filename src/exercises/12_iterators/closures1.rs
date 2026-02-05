@@ -12,10 +12,8 @@ Your task is to define a simple closure that takes no arguments and returns "hel
 */
 
 fn main() {
-    // TODO: Define the closure
-    let my_closure = || "hello"; // Fix this if you want, but for now I'll leave it working?
-    // Wait, I should break it.
-    // let my_closure = ...;
+    // TODO: Define a closure that returns "hello"
+    let my_closure = || "fix me"; // This should return "hello"
 
     println!("Closure says: {}", my_closure());
     assert_eq!(my_closure(), "hello");

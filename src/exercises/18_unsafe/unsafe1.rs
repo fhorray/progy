@@ -24,7 +24,11 @@ fn main() {
 
     // TODO: Dereference r1 inside unsafe block and print the value
     // println!("r1 is: {}", ...);
+    // println!("r1 is: {}", ...);
 }
+
+// ???: Why does Rust force us to use `unsafe` blocks for certain operations?
+// (Think about what guarantees the compiler makes in safe Rust vs unsafe Rust)
 
 #[cfg(test)]
 mod tests {

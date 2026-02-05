@@ -27,6 +27,9 @@ fn bigger(a: i32, b: i32) -> i32 {
     0
 }
 
+// ???: Why is `if` considered an expression in Rust, not just a statement?
+// (Hint: Can you assign the result of an `if` block to a variable?)
+
 #[cfg(test)]
 mod tests {
     use super::*;

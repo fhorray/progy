@@ -23,7 +23,11 @@ fn main() {
     v.push(String::from("hello"));
 
     println!("v: {:?}", v);
+    println!("v: {:?}", v);
 }
+
+// ???: How do generics help avoid code duplication?
+// (Think about writing a separate function for Vec<i32>, Vec<String>, etc.)
 
 #[cfg(test)]
 mod tests {

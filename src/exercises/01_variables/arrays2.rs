@@ -16,7 +16,7 @@ Hints:
 
 fn main() {
     // TODO: Create array `a` with 100 zeros
-    let a = [1; 100]; // Placeholder
+    let a; // Placeholder
 
     if a.len() == 100 && a[0] == 0 {
         println!("Success!");

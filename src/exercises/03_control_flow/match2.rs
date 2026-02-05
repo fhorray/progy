@@ -14,17 +14,24 @@ Your task is to modify the match expression so that:
 */
 
 fn main() {
-    let number = 3;
+    // Test all cases
+    assert_eq!(classify(2), "Prime");
+    assert_eq!(classify(3), "Prime");
+    assert_eq!(classify(5), "Prime");
+    assert_eq!(classify(7), "Prime");
+    assert_eq!(classify(1), "Non-prime");
+    assert_eq!(classify(4), "Non-prime");
+    assert_eq!(classify(6), "Non-prime");
+    assert_eq!(classify(10), "Unknown");
+    println!("Success!");
+}
 
+// TODO: Implement using multiple patterns with |
+fn classify(number: i32) -> &'static str {
     match number {
-        // TODO: Combine these patterns
-        2 => println!("Prime"),
-        3 => println!("Prime"),
-        5 => println!("Prime"),
-        7 => println!("Prime"),
-        // TODO: Handle non-primes 1, 4, 6, 8, 9
-
-        _ => println!("Unknown"),
+        // TODO: Use | to combine patterns for primes: 2, 3, 5, 7
+        // TODO: Use | to combine patterns for non-primes: 1, 4, 6, 8, 9
+        _ => "Unknown",
     }
 }
 

@@ -21,7 +21,11 @@ Hints:
 */
 
 fn main() {
-    // TODO: Call the function `call_me`
+    // TODO: Define the `call_me` function below so this compiles
+    call_me();
 }
 
-// TODO: Define the function `call_me`
+// TODO: Define the function `call_me` that prints something
+
+// ???: Why does Rust use snake_case for function names?
+// (Think about consistency and readability across the ecosystem)

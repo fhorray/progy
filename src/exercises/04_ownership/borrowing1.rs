@@ -29,6 +29,9 @@ fn main() {
     assert_eq!(r, "hello");
 }
 
+// ???: What's the difference between ownership and borrowing?
+// (Think about who is responsible for freeing the memory)
+
 #[cfg(test)]
 mod tests {
     #[test]

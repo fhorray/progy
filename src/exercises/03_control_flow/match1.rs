@@ -24,16 +24,33 @@ Hints:
 */
 
 fn main() {
-    let number = 2;
+    assert_eq!(number_to_word(1), "One");
+    assert_eq!(number_to_word(2), "Two");
+    assert_eq!(number_to_word(3), "Three");
+    assert_eq!(number_to_word(99), "Other");
+    println!("All tests passed!");
+}
 
-    // TODO: Write the match expression
-    // match number { ... }
+// TODO: Complete this function using `match`
+// It should return:
+// - "One" if number is 1
+// - "Two" if number is 2
+// - "Three" if number is 3
+// - "Other" for any other number
+fn number_to_word(number: i32) -> &'static str {
+    // TODO: Implement using match
+    ""
 }
 
 #[cfg(test)]
 mod tests {
+    use super::*;
+
     #[test]
-    fn test_main_runs() {
-        super::main();
+    fn test_number_to_word() {
+        assert_eq!(number_to_word(1), "One");
+        assert_eq!(number_to_word(2), "Two");
+        assert_eq!(number_to_word(3), "Three");
+        assert_eq!(number_to_word(100), "Other");
     }
 }

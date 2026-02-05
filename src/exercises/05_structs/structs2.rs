@@ -24,13 +24,21 @@ struct Color {
 }
 
 fn main() {
-    // TODO: Create an instance named `red`
-    // let red = ...;
+    // TODO: Create an instance named `red` with red=255, green=0, blue=0
+    // let red = Color { ... };
 
-    // Uncomment and fix if needed:
-    // println!("Red component is {}", red.red);
+    // Assertions will fail until you create the struct
+    // (Currently this won't compile because `red` doesn't exist)
+    let red = Color {
+        red: 0,
+        green: 0,
+        blue: 0,
+    }; // Placeholder - make it (255, 0, 0)
 
-    // assert_eq!(red.red, 255);
+    println!("Red component is {}", red.red);
+    assert_eq!(red.red, 255, "The red component should be 255");
+    assert_eq!(red.green, 0, "The green component should be 0");
+    assert_eq!(red.blue, 0, "The blue component should be 0");
 }
 
 #[cfg(test)]

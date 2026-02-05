@@ -25,13 +25,9 @@ fn main() {
     let index = 10;
 
     // TODO: Use `.get()` instead of direct indexing to handle the error gracefully
-    match a.get(index) {
-        Some(val) => println!("Value: {}", val),
-        None => println!("Out of bounds"),
-    }
-
-    // Original unsafe code (commented out to allow compilation so you can fix the TODO above):
-    // println!("Value: {}", a[index]);
+    // Hint: `array.get(index)` returns `Some(&value)` or `None`
+    // Handle each case with `match` or `if let`
+    println!("Value: {}", a[index]);
 }
 
 #[cfg(test)]

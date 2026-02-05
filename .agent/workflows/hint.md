@@ -19,7 +19,7 @@ This workflow provides hints without giving away the answer immediately.
 
 3. **Determine Hint Level**
    - **Level 1 (First ask)**: Point to the general concept or specific line causing trouble. Do not show code fix.
-   - **Level 2 (Second ask)**: Explain _why_ the error is happening using `AGENT.md` analogies. Suggest the specific function or method needed.
+   - **Level 2 (Second ask)**: Explain _why_ the error is happening using `AGENTS.md` analogies. Suggest the specific function or method needed.
    - **Level 3 (Stuck)**: Provide a snippet of the solution, but ask the user to type it themselves.
 
 4. **Response Format**

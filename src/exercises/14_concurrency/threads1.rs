@@ -16,16 +16,27 @@ Hints:
 1. `thread::spawn(|| { ... })`
 */
 
+use std::sync::atomic::{AtomicBool, Ordering};
 use std::thread;
 use std::time::Duration;
 
-fn main() {
-    // TODO: Spawn a thread that prints "Hello from thread!"
+static THREAD_RAN: AtomicBool = AtomicBool::new(false);
 
-    // We sleep here to give the spawned thread a chance to run before the main thread ends.
-    // (In later exercises, we'll learn a better way to do this using `join` handles).
+fn main() {
+    // TODO: Spawn a thread that:
+    // 1. Prints "Hello from thread!"
+    // 2. Sets THREAD_RAN to true using: THREAD_RAN.store(true, Ordering::SeqCst)
+
+    // We sleep here to give the spawned thread a chance to run
     thread::sleep(Duration::from_millis(100));
+
+    // Verify the thread ran
+    assert!(THREAD_RAN.load(Ordering::SeqCst), "Thread did not run!");
+    assert!(THREAD_RAN.load(Ordering::SeqCst), "Thread did not run!");
 }
+
+// ???: How do we share data between threads safely?
+// (Notice we are using `AtomicBool` here - why not a regular `bool`?)
 
 #[cfg(test)]
 mod tests {

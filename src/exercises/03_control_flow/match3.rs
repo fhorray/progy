@@ -15,12 +15,23 @@ Your task is to categorize ages:
 */
 
 fn main() {
-    let age = 15;
+    assert_eq!(categorize_age(5), "Child");
+    assert_eq!(categorize_age(12), "Child");
+    assert_eq!(categorize_age(15), "Teenager");
+    assert_eq!(categorize_age(30), "Adult");
+    assert_eq!(categorize_age(70), "Senior");
+    println!("Success!");
+}
 
+// TODO: Implement using range patterns (..=)
+fn categorize_age(age: u32) -> &'static str {
     match age {
-        // TODO: Use ranges to handle cases
-        // 0..=12 => ...
-        _ => println!("Unknown age"),
+        // TODO: Use ranges:
+        // 0..=12 => "Child"
+        // 13..=19 => "Teenager"
+        // 20..=64 => "Adult"
+        // _ => "Senior"
+        _ => "Unknown",
     }
 }
 

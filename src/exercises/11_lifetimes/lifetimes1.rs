@@ -28,12 +28,11 @@ fn main() {
 
 // TODO: Annotate with lifetimes to fix the missing lifetime specifier error
 fn longest(x: &str, y: &str) -> &str {
-    if x.len() > y.len() {
-        x
-    } else {
-        y
-    }
+    if x.len() > y.len() { x } else { y }
 }
+
+// ???: Why can't Rust infer the lifetime automatically in this case?
+// (Hint: The return value could come from either `x` or `y`)
 
 #[cfg(test)]
 mod tests {

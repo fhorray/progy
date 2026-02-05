@@ -17,13 +17,12 @@ Your task is to assign the result of the match to `message`.
 fn main() {
     let boolean = true;
 
-    // TODO: Assign the result to `message`
-    match boolean {
-        true => "It's true!",
-        false => "It's false!",
-    };
+    // TODO: Assign the result of this match to `message`
+    // Currently the result is thrown away because there's no assignment
+    let message = ""; // TODO: Replace this with a match expression
 
-    // println!("{}", message); // This will fail because message is not defined
+    println!("{}", message);
+    assert_eq!(message, "It's true!");
 }
 
 #[cfg(test)]

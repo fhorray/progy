@@ -23,16 +23,16 @@ Hints:
 */
 
 fn main() {
-    // TODO: Define `some_number`
-    // let some_number: Option<u16> = ...;
+    // TODO: Define `some_number` as Some(5)
+    let some_number: Option<u16> = None; // placeholder - should be Some(5)
 
-    // TODO: Define `absent_number`
-    // let absent_number: Option<u16> = ...;
+    // TODO: Define `absent_number` as None
+    let absent_number: Option<u16> = Some(0); // placeholder - should be None
 
-    // Uncomment these to verify
-    // println!("Number: {:?}, Absent: {:?}", some_number, absent_number);
-    // assert_eq!(some_number.is_some(), true);
-    // assert_eq!(absent_number.is_none(), true);
+    println!("Number: {:?}, Absent: {:?}", some_number, absent_number);
+    assert!(some_number.is_some(), "some_number should be Some!");
+    assert_eq!(some_number, Some(5), "some_number should be Some(5)!");
+    assert!(absent_number.is_none(), "absent_number should be None!");
 }
 
 #[cfg(test)]

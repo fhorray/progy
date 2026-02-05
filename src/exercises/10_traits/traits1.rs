@@ -34,7 +34,11 @@ impl Animal for Dog {
 fn main() {
     let d = Dog;
     println!("Dog says: {}", d.sound());
+    println!("Dog says: {}", d.sound());
 }
+
+// ???: How are Traits similar (or different) to interfaces in Java/C#?
+// (Hint: Can you implement a trait for a type you didn't define, like `i32`?)
 
 #[cfg(test)]
 mod tests {

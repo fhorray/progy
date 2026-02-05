@@ -18,15 +18,20 @@ Hints:
 2. Functions are private by default. Use `pub fn` to make them accessible outside the module.
 */
 
-// TODO: Define module `sausage_factory` and function `make_sausage`
+// TODO: Define module `sausage_factory` with a public function `make_sausage`
+// that prints "Sausage!"
 // mod sausage_factory {
 //     pub fn make_sausage() { ... }
 // }
 
 fn main() {
-    // Uncomment this line to check your work
-    // sausage_factory::make_sausage();
+    // This line requires the module to be defined
+    sausage_factory::make_sausage();
+    sausage_factory::make_sausage();
 }
+
+// ???: Why are functions private by default in Rust?
+// (Think about "encapsulation" and hiding implementation details)
 
 #[cfg(test)]
 mod tests {

@@ -60,6 +60,9 @@ fn main() {
     // We can't easily test CLI args here, but the tests below check logic.
 }
 
+// ???: Why is it better to return `Result` from `Config::new` rather than calling `panic!`?
+// (Think about how a user would feel if the program crashed with a panic message vs a nice error)
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -67,7 +70,10 @@ mod tests {
 
     #[test]
     fn test_config_new() {
-        let config = Config { pattern: "test".to_string(), filename: "test.txt".to_string() };
+        let config = Config {
+            pattern: "test".to_string(),
+            filename: "test.txt".to_string(),
+        };
         assert_eq!(config.pattern, "test");
     }
 
@@ -82,11 +88,17 @@ mod tests {
         // A real test would require refactoring `run` to take `impl Write`.
 
         // Let's at least check that it returns an error for a missing file, which implies `File::open` was called.
-        let config = Config { pattern: "test".to_string(), filename: "non_existent_file_12345.txt".to_string() };
+        let config = Config {
+            pattern: "test".to_string(),
+            filename: "non_existent_file_12345.txt".to_string(),
+        };
         let result = run(config);
 
         // If the user implemented `File::open`, this should be an Error.
         // If they left it empty (just `Ok(())`), it will be Ok, which is WRONG.
-        assert!(result.is_err(), "run() should attempt to open the file and return an error if it doesn't exist");
+        assert!(
+            result.is_err(),
+            "run() should attempt to open the file and return an error if it doesn't exist"
+        );
     }
 }

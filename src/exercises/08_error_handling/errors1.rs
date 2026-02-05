@@ -30,7 +30,11 @@ fn main() {
 
     // This should panic:
     // let _ = generate_nametag_text(String::new());
+    // let _ = generate_nametag_text(String::new());
 }
+
+// ???: When should you use `panic!` versus returning a `Result`?
+// (Hint: Is an empty name a "bug" in the code or just bad user input?)
 
 #[cfg(test)]
 mod tests {
@@ -38,7 +42,10 @@ mod tests {
 
     #[test]
     fn test_valid_name() {
-        assert_eq!(generate_nametag_text("Alice".to_string()), "Hi! My name is Alice");
+        assert_eq!(
+            generate_nametag_text("Alice".to_string()),
+            "Hi! My name is Alice"
+        );
     }
 
     #[test]

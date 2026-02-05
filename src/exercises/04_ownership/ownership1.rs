@@ -25,6 +25,9 @@ fn main() {
     println!("{}, world!", s1);
 }
 
+// ???: Why did `s1` become invalid after assigning it to `s2`?
+// (Think about what would happen if both variables could access the same heap memory)
+
 #[cfg(test)]
 mod tests {
     #[test]

@@ -19,7 +19,7 @@ Hints:
 
 fn main() {
     // TODO: Define the array `a` with numbers 1 to 5
-    let a = [0; 5]; // Placeholder with wrong values
+    let a: [i32; 5]; // Placeholder with wrong values
 
     println!("The second element is {}", a[1]);
 

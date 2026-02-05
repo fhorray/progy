@@ -24,7 +24,11 @@ fn main() {
     let future = hello();
     // In a real program, we would use an executor like:
     // block_on(future);
+    // block_on(future);
 }
+
+// ???: How is `async` different from using OS threads?
+// (Hint: How many OS threads would you need to handle 10,000 concurrent tasks?)
 
 #[cfg(test)]
 mod tests {

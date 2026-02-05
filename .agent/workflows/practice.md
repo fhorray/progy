@@ -14,7 +14,7 @@ Generates a new, isolated practice exercise for a specific topic, without affect
 
 2. **Generate Content**
    - Create a unique filename: `src/practice/practice_<timestamp>_<topic>.rs`
-   - Use the standard exercise template from `AGENT.md`.
+   - Use the standard exercise template from `AGENTS.md`.
    - **Crucial**: The exercise must be _different_ from the curriculum ones. Focus on a specific edge case or common confusion point for that topic.
    - Add comments explaining _why_ this specific practice is useful.
 
