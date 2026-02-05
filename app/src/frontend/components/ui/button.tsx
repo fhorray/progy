@@ -1,10 +1,5 @@
 import * as React from 'react';
-import { clsx, type ClassValue } from 'clsx';
-import { twMerge } from 'tailwind-merge';
-
-export function cn(...inputs: ClassValue[]) {
-  return twMerge(clsx(inputs));
-}
+import { cn } from '../../lib/utils';
 
 const Button = React.forwardRef<
   HTMLButtonElement,
@@ -20,7 +15,7 @@ const Button = React.forwardRef<
   }
 >(({ className, variant = 'default', size = 'default', ...props }, ref) => {
   const variants = {
-    default: 'bg-rust text-white hover:bg-rust-dark shadow-sm',
+    default: 'cursor-pointer bg-rust text-white hover:bg-rust-dark shadow-sm',
     destructive: 'bg-red-900 text-red-100 hover:bg-red-800 shadow-sm',
     outline:
       'border border-zinc-700 bg-transparent shadow-sm hover:bg-zinc-800 hover:text-zinc-100',

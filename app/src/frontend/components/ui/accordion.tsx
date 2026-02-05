@@ -1,11 +1,7 @@
-import * as React from 'react';
 import { ChevronDown } from 'lucide-react';
-import { clsx, type ClassValue } from 'clsx';
-import { twMerge } from 'tailwind-merge';
+import * as React from 'react';
 
-export function cn(...inputs: ClassValue[]) {
-  return twMerge(clsx(inputs));
-}
+import { cn } from '../../lib/utils';
 
 const AccordionContext = React.createContext<{
   value?: string;
@@ -49,15 +45,21 @@ const AccordionItemContext = React.createContext<{ value?: string }>({});
 const AccordionItem = React.forwardRef<
   HTMLDivElement,
   React.HTMLAttributes<HTMLDivElement> & { value: string }
->(({ className, value, ...props }, ref) => (
-  <AccordionItemContext.Provider value={{ value }}>
-    <div
-      ref={ref}
-      className={cn('border-b border-zinc-800', className)}
-      {...props}
-    />
-  </AccordionItemContext.Provider>
-));
+>(({ className, value: itemValue, ...props }, ref) => {
+  const { value: rootValue } = React.useContext(AccordionContext);
+  const isOpen = rootValue === itemValue;
+
+  return (
+    <AccordionItemContext.Provider value={{ value: itemValue }}>
+      <div
+        ref={ref}
+        className={cn('border-b border-zinc-800', className)}
+        data-state={isOpen ? 'open' : 'closed'}
+        {...props}
+      />
+    </AccordionItemContext.Provider>
+  );
+});
 AccordionItem.displayName = 'AccordionItem';
 
 const AccordionTrigger = React.forwardRef<
@@ -76,7 +78,7 @@ const AccordionTrigger = React.forwardRef<
         type="button"
         onClick={() => itemValue && onValueChange?.(itemValue)}
         className={cn(
-          'flex flex-1 items-center justify-between py-4 font-medium transition-all hover:text-rust text-zinc-400 [&[data-state=open]>svg]:rotate-180',
+          'cursor-pointer flex flex-1 items-center justify-between py-4 font-medium transition-all hover:text-rust text-zinc-400 [&[data-state=open]>svg]:rotate-180',
           className,
         )}
         data-state={isOpen ? 'open' : 'closed'}
@@ -104,14 +106,15 @@ const AccordionContent = React.forwardRef<
       className={cn(
         'overflow-hidden text-sm transition-all',
         isOpen ? 'block animate-accordion-down' : 'hidden animate-accordion-up',
+        className,
       )}
       data-state={isOpen ? 'open' : 'closed'}
       {...props}
     >
-      <div className={cn('pb-4 pt-0', className)}>{children}</div>
+      <div className="pb-4 pt-0 h-full">{children}</div>
     </div>
   );
 });
 AccordionContent.displayName = 'AccordionContent';
 
-export { Accordion, AccordionItem, AccordionTrigger, AccordionContent };
+export { Accordion, AccordionContent, AccordionItem, AccordionTrigger };

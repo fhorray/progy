@@ -42,63 +42,87 @@ async function scanAndGenerateManifest() {
       const stats = await Bun.file(modPath).stat();
 
       if (stats.isDirectory()) {
-        const files = (await readdir(modPath)).filter(f => f.endsWith(".rs") && f !== "mod.rs");
+        const entries = await readdir(modPath, { withFileTypes: true });
 
-        // Parse README for pedagogical order
-        const pedagogicalOrder: string[] = [];
+        // Try to read info.toml for explicit order
+        let explicitOrder: string[] | null = null;
         try {
-          const readmePath = join(modPath, "README.md");
-          const content = await readFile(readmePath, "utf-8");
-          const lines = content.split('\n');
-          let inSection = false;
+          const infoPath = join(modPath, "info.toml");
+          // Simple TOML parsing for "name" fields
+          const content = await readFile(infoPath, "utf-8");
+          const matches = content.match(/name\s*=\s*"(.*?)"/g);
+          if (matches) {
+            explicitOrder = matches.map(m => m.match(/"(.*?)"/)?.[1] || "").filter(Boolean);
+          }
+        } catch (e) { /* ignore */ }
 
-          for (const line of lines) {
-            const trimmed = line.trim();
-            const lower = trimmed.toLowerCase();
-            if (lower.includes("exercise guidelines") ||
-              lower.includes("minimum exercises required") ||
-              lower.includes("exercises required")) {
-              inSection = true;
-              continue;
-            }
-            if (inSection) {
-              const match = trimmed.match(/(\w+\.rs)/);
-              if (match) {
-                const filename = match[1]?.replace(".rs", "").trim() as string;
-                if (!pedagogicalOrder.includes(filename)) pedagogicalOrder.push(filename);
+        // Parse README for pedagogical order if available (fallback)
+        const pedagogicalOrder: string[] = explicitOrder || [];
+        if (!explicitOrder) {
+          try {
+            const readmePath = join(modPath, "README.md");
+            const content = await readFile(readmePath, "utf-8");
+            const lines = content.split('\n');
+            for (const line of lines) {
+              const trimmed = line.trim();
+              if (trimmed.startsWith("-") && trimmed.includes("[")) {
+                const match = trimmed.match(/\[(.*?)\]/);
+                if (match) pedagogicalOrder.push(match[1] as string);
               }
             }
-          }
-        } catch (e) {
-          // No README or parse error, skip pedagogical order
+          } catch (e) { /* ignore */ }
         }
 
-        // Sort files based on pedagogical order, fallback to alphabetical
-        files.sort((a, b) => {
-          const nameA = a.replace(".rs", "");
-          const nameB = b.replace(".rs", "");
+        manifest[mod] = [];
+
+        for (const entry of entries) {
+          if (entry.name === 'mod.rs' || entry.name === 'README.md') continue;
+
+          if (entry.isDirectory()) {
+            const exercisePath = join(modPath, entry.name, 'exercise.rs');
+            const readmePath = join(modPath, entry.name, 'README.md');
+            // Check if exercise.rs exists
+            try {
+              await readFile(exercisePath); // Quick check
+              manifest[mod].push({
+                id: `${mod}/${entry.name}`,
+                module: mod,
+                cleanModule: mod.replace(/^\d+_/, ""),
+                name: entry.name,
+                exerciseName: entry.name,
+                path: exercisePath,
+                markdownPath: readmePath
+              });
+            } catch (e) {
+              // Not an exercise directory or empty
+            }
+          } else if (entry.isFile() && entry.name.endsWith('.rs')) {
+            // Flat file support
+            const name = entry.name.replace(".rs", "");
+            manifest[mod].push({
+              id: `${mod}/${entry.name}`,
+              module: mod,
+              cleanModule: mod.replace(/^\d+_/, ""),
+              name: entry.name,
+              exerciseName: name,
+              path: join(modPath, entry.name),
+              markdownPath: null
+            });
+          }
+        }
+
+        // Sort exercises uses pedagogical order
+        manifest[mod].sort((a, b) => {
+          const nameA = a.exerciseName;
+          const nameB = b.exerciseName;
           const indexA = pedagogicalOrder.indexOf(nameA);
           const indexB = pedagogicalOrder.indexOf(nameB);
 
           if (indexA !== -1 && indexB !== -1) return indexA - indexB;
           if (indexA !== -1) return -1;
           if (indexB !== -1) return 1;
-          return a.localeCompare(b);
+          return nameA.localeCompare(nameB);
         });
-
-        manifest[mod] = [];
-        for (const file of files) {
-          const exerciseName = file.replace(".rs", "");
-          const cleanModName = mod.replace(/^\d+_/, "");
-          manifest[mod].push({
-            id: `${mod}/${file}`,
-            module: mod,
-            cleanModule: cleanModName,
-            name: file,
-            exerciseName: exerciseName,
-            path: join(modPath, file),
-          });
-        }
       }
     }
 
@@ -227,14 +251,26 @@ const server = serve({
       async GET(req) {
         const url = new URL(req.url);
         const filePath = url.searchParams.get('path');
+        const markdownPath = url.searchParams.get('markdownPath');
+
         if (!filePath) {
           return new Response('Missing path parameter', { status: 400 });
         }
         try {
-          const content = await readFile(filePath, 'utf-8');
-          return new Response(content, { headers: { 'Content-Type': 'text/plain' } });
+          const code = await readFile(filePath, 'utf-8');
+          let markdown: string | null = null;
+
+          if (markdownPath && markdownPath !== 'null' && markdownPath !== 'undefined') {
+            try {
+              markdown = await readFile(markdownPath, 'utf-8');
+            } catch (e) {
+              console.warn(`[WARN] Failed to read markdown at ${markdownPath}`);
+            }
+          }
+
+          return Response.json({ code, markdown });
         } catch (e) {
-          return new Response('// File not found', { status: 404 });
+          return new Response(JSON.stringify({ error: 'File not found' }), { status: 404 });
         }
       }
     },
@@ -247,7 +283,7 @@ const server = serve({
           console.log(`[INFO] Evaluating: ${exerciseName}`);
 
           return new Promise((resolve) => {
-            const child = spawn("cargo", ["run", "-p", "runner", "--", "test", exerciseName], {
+            const child = spawn("cargo", ["run", "-q", "-p", "runner", "--", "test", exerciseName], {
               cwd: join(import.meta.dir, "../../../"),
               env: { ...process.env, RUST_BACKTRACE: "1" },
               stdio: ["ignore", "pipe", "pipe"]
@@ -302,6 +338,105 @@ const server = serve({
           return Response.json({ hint: data.choices[0].message.content });
         } catch (err) {
           return Response.json({ error: "AI failed" }, { status: 500 });
+        }
+      }
+    },
+
+    "/api/ai/generate": {
+      async POST(req) {
+        const { prompt, difficulty } = await req.json() as { prompt: string, difficulty: string };
+        const apiKey = await getApiKey();
+        if (!apiKey) return Response.json({ error: "Missing API Key" }, { status: 500 });
+
+        const systemPrompt = `Você é um instrutor de Rust expert. Gere um exercício baseado no pedido do usuário.
+
+REGRAS ABSOLUTAS:
+1. Gere código COM ERROS propositais para o usuário corrigir
+2. NUNCA entregue código funcionando
+3. Marque onde está o erro com // TODO: fix this
+4. A dificuldade é: ${difficulty}
+5. Responda APENAS em JSON válido, sem markdown
+
+Formato EXATO de resposta (JSON):
+{
+  "title": "Nome curto do exercício",
+  "description": "Descrição do que o usuário deve fazer para corrigir",
+  "code": "// Código Rust COM ERROS para corrigir\\nfn main() {...}",
+  "hint": "Dica sutil SEM entregar a resposta"
+}`;
+
+        try {
+          const response = await fetch("https://api.openai.com/v1/chat/completions", {
+            method: "POST",
+            headers: { "Content-Type": "application/json", "Authorization": `Bearer ${apiKey}` },
+            body: JSON.stringify({
+              model: "gpt-4o-mini",
+              messages: [
+                { role: "system", content: systemPrompt },
+                { role: "user", content: `Crie um exercício sobre: ${prompt}` }
+              ],
+              temperature: 0.8
+            })
+          });
+          const data = await response.json() as any;
+          const content = data.choices[0].message.content;
+
+          // Parse JSON from response
+          let parsed;
+          try {
+            parsed = JSON.parse(content);
+          } catch (parseErr) {
+            // Try to extract JSON from markdown code blocks
+            const jsonMatch = content.match(/```json?\s*([\s\S]*?)```/);
+            if (jsonMatch) {
+              parsed = JSON.parse(jsonMatch[1]);
+            } else {
+              return Response.json({ error: "Failed to parse AI response" }, { status: 500 });
+            }
+          }
+
+          // Save to practice folder
+          const practiceDir = join(EXERCISES_DIR, "practice");
+          try {
+            await mkdir(practiceDir, { recursive: true });
+          } catch (e) {
+            // Directory may already exist
+          }
+
+          // Generate unique filename
+          const timestamp = Date.now();
+          const safeName = parsed.title
+            .toLowerCase()
+            .replace(/[^a-z0-9]+/g, '_')
+            .replace(/^_|_$/g, '')
+            .substring(0, 30);
+          const filename = `${safeName}_${timestamp}.rs`;
+          const filePath = join(practiceDir, filename);
+
+          // Write file with header
+          const fileContent = `// 🤖 Desafio Gerado por IA
+// Título: ${parsed.title}
+// Descrição: ${parsed.description}
+// Dica: ${parsed.hint}
+// 
+// Corrija os erros marcados com TODO!
+
+${parsed.code}
+`;
+          await writeFile(filePath, fileContent, 'utf-8');
+          console.log(`[INFO] Saved generated exercise to: ${filePath}`);
+
+          // Invalidate manifest cache
+          exerciseManifest = null;
+
+          return Response.json({
+            ...parsed,
+            filePath,
+            filename,
+            message: `Exercício salvo em src/exercises/practice/${filename}`
+          });
+        } catch (err) {
+          return Response.json({ error: "AI generation failed" }, { status: 500 });
         }
       }
     }
