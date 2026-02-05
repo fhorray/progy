@@ -135,9 +135,7 @@ fn list_exercises() {
             let path = entry.path();
             if path.extension().and_then(|e| e.to_str()) == Some("rs") {
                 if let Some(stem) = path.file_stem().and_then(|s| s.to_str()) {
-                    if stem != "mod" {
-                        println!("- {}", stem);
-                    }
+                    println!("- {}", stem);
                 }
             }
         }
