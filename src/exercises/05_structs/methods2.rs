@@ -2,16 +2,32 @@
 
 /*
 Difficulty: ⭐⭐
-Topic: Structs
+Topic: Methods - Mutable Methods
 
 Description:
-⭐⭐ - Method with &mut self
+If a method needs to modify the struct instance, it must take `&mut self`.
+
+Your task is to implement the `grow` method which doubles the width and height of the rectangle.
 */
 
+#[derive(Debug, PartialEq)]
+struct Rectangle {
+    width: u32,
+    height: u32,
+}
+
+impl Rectangle {
+    // TODO: Implement `grow` method
+    // fn grow(...) { ... }
+}
+
 fn main() {
-    // TODO: Fix this code
-    let x = "change me";
-    println!("Exercise: {}", x);
+    let mut rect = Rectangle { width: 10, height: 10 };
+
+    // rect.grow();
+
+    println!("Rect: {:?}", rect);
+    // assert_eq!(rect.width, 20);
 }
 
 #[cfg(test)]

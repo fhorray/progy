@@ -1,18 +1,25 @@
 // I AM NOT DONE
 
 /*
-Difficulty: ⭐⭐⭐⭐
-Topic: Async
+Difficulty: ⭐⭐⭐
+Topic: Async - Traits
 
 Description:
-⭐⭐⭐⭐ - Async channels
+Async traits are not natively supported (yet) without boxing or crates like `async-trait`.
+However, you can manually define a method that returns a `BoxFuture`.
+
+Your task is to fix the trait definition.
 */
 
-fn main() {
-    // TODO: Fix this code
-    let x = "change me";
-    println!("Exercise: {}", x);
+use std::future::Future;
+use std::pin::Pin;
+
+trait AsyncTrait {
+    // TODO: Return Pin<Box<dyn Future<Output = ()>>>
+    fn run(&self) -> Pin<Box<dyn Future<Output = ()>>>;
 }
+
+fn main() {}
 
 #[cfg(test)]
 mod tests {

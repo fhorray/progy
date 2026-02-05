@@ -2,22 +2,32 @@
 
 /*
 Difficulty: ⭐⭐
-Topic: Testing
+Topic: Testing - Public Functions
 
 Description:
-⭐⭐ - Test expected panic
+You can test private functions in the same module, but usually integration tests only test public functions.
+Here we are testing a function `is_even`.
+
+Your task is to verify `is_even` works correctly.
 */
 
-fn main() {
-    // TODO: Fix this code
-    let x = "change me";
-    println!("Exercise: {}", x);
+pub fn is_even(n: i32) -> bool {
+    n % 2 == 0
 }
 
 #[cfg(test)]
 mod tests {
+    use super::*;
+
     #[test]
-    fn test_main_runs() {
-        super::main();
+    fn is_true_when_even() {
+        // TODO: Assert that is_even(4) is true
+
+    }
+
+    #[test]
+    fn is_false_when_odd() {
+        // TODO: Assert that is_even(3) is false
+
     }
 }

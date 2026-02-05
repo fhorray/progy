@@ -1,17 +1,27 @@
 // I AM NOT DONE
 
 /*
-Difficulty: ⭐⭐⭐
-Topic: Modules
+Difficulty: ⭐⭐
+Topic: Modules - Nested Modules
 
 Description:
-⭐⭐⭐ - Use keyword
+Modules can be nested.
+To access items in nested modules, use `::`.
+
+Your task is to call `make_sausage` from `sausage_factory::recipes`.
 */
 
+mod sausage_factory {
+    pub mod recipes {
+        pub fn make_sausage() {
+            println!("sausage!");
+        }
+    }
+}
+
 fn main() {
-    // TODO: Fix this code
-    let x = "change me";
-    println!("Exercise: {}", x);
+    // TODO: Call make_sausage
+    // sausage_factory::...
 }
 
 #[cfg(test)]

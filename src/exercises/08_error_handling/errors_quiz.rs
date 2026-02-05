@@ -1,17 +1,37 @@
 // I AM NOT DONE
 
 /*
-Difficulty: ⭐⭐⭐⭐⭐
-Topic: Error_Handling
+Difficulty: ⭐⭐⭐⭐
+Topic: Error Handling Quiz
 
 Description:
-⭐⭐⭐⭐⭐ - Build robust file reading function with complete error handling
+Write a function `safe_divide` that returns a custom error `MathError` (enum).
+Variants: `DivisionByZero`, `NonPositiveInput`.
 */
 
+#[derive(Debug, PartialEq)]
+enum MathError {
+    DivisionByZero,
+    NonPositiveInput,
+}
+
+// TODO: Implement safe_divide
+fn safe_divide(dividend: i32, divisor: i32) -> Result<i32, MathError> {
+    if divisor == 0 {
+        // Return error
+        Ok(0) // Fix
+    } else if dividend < 0 || divisor < 0 {
+        // Return error
+        Ok(0) // Fix
+    } else {
+        Ok(dividend / divisor)
+    }
+}
+
 fn main() {
-    // TODO: Fix this code
-    let x = "change me";
-    println!("Exercise: {}", x);
+    assert_eq!(safe_divide(10, 2), Ok(5));
+    assert_eq!(safe_divide(10, 0), Err(MathError::DivisionByZero));
+    assert_eq!(safe_divide(-10, 2), Err(MathError::NonPositiveInput));
 }
 
 #[cfg(test)]

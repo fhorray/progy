@@ -2,26 +2,23 @@
 
 /*
 Difficulty: ⭐
-Topic: Generics
+Topic: Generics - Definition
 
 Description:
-Welcome to the module on Generics!
-This exercise is a placeholder to get you started.
-Fix the code so it compiles.
+Generics allow you to write code that works with multiple types.
+`Vec<T>` is a generic type where `T` is the type of elements.
 
-Hints:
-1. Read the error message carefully.
+Your task is to create a vector of strings.
 */
 
 fn main() {
-    println!("Welcome to Generics!");
-    let x = 1;
-    // Fix this condition to be true
-    if x > 100 {
-        println!("This won't print");
-    } else {
-        println!("Success!");
-    }
+    // TODO: Create a vector of strings
+    let v: Vec<String> = Vec::new(); // Fix this
+
+    // v.push("hello"); // Type mismatch if v is Vec<i32> for example
+    // v.push(String::from("hello"));
+
+    println!("{:?}", v);
 }
 
 #[cfg(test)]

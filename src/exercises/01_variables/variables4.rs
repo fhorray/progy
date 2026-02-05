@@ -5,17 +5,20 @@ Difficulty: ⭐
 Topic: Constants
 
 Description:
-Constants represent values that cannot change.
-However, they MUST have an explicit type annotation.
+Constants in Rust are values that are bound to a name and are not allowed to change.
+Unlike variables, constants MUST always have an explicit type annotation.
 
-Fix the error in the constant declaration.
+The code below tries to define a constant `NUMBER` but is missing its type.
+
+Your task is to add the correct type annotation to the constant declaration.
 
 Hints:
 1. Constants use the `const` keyword.
 2. Syntax: `const NAME: TYPE = VALUE;`
 */
 
-const NUMBER: i32 = 3;
+// TODO: Fix the constant declaration by adding a type
+const NUMBER = 3;
 
 fn main() {
     println!("Number is {}", NUMBER);

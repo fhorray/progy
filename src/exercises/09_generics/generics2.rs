@@ -2,16 +2,25 @@
 
 /*
 Difficulty: ⭐⭐
-Topic: Generics
+Topic: Generics - Functions
 
 Description:
-⭐⭐ - Generic function with multiple types
+You can define generic functions using `<T>`.
+
+Your task is to implement the `wrapper` function that takes any type `T` and returns it wrapped in a `Vec<T>`.
 */
 
 fn main() {
-    // TODO: Fix this code
-    let x = "change me";
-    println!("Exercise: {}", x);
+    let v = wrapper(10);
+    assert_eq!(v, vec![10]);
+
+    let v2 = wrapper("hello");
+    assert_eq!(v2, vec!["hello"]);
+}
+
+// TODO: Implement wrapper
+fn wrapper<T>(item: T) -> Vec<T> {
+    Vec::new() // Fix this
 }
 
 #[cfg(test)]

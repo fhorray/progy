@@ -1,17 +1,30 @@
 // I AM NOT DONE
 
 /*
-Difficulty: ⭐⭐⭐⭐
-Topic: Modules
+Difficulty: ⭐⭐⭐
+Topic: Modules - Super
 
 Description:
-⭐⭐⭐⭐ - Directory modules
+The `super` keyword refers to the parent module.
+It is like `..` in a file system.
+
+Your task is to call `make_sauce` (defined in the parent) from `cook_pizza` (defined in a child module).
 */
 
+fn make_sauce() {
+    println!("Sauce is ready!");
+}
+
+mod kitchen {
+    pub fn cook_pizza() {
+        println!("Cooking pizza...");
+        // TODO: Call make_sauce using super
+        // super::...
+    }
+}
+
 fn main() {
-    // TODO: Fix this code
-    let x = "change me";
-    println!("Exercise: {}", x);
+    kitchen::cook_pizza();
 }
 
 #[cfg(test)]

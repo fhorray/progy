@@ -2,26 +2,26 @@
 
 /*
 Difficulty: ⭐
-Topic: Smart Pointers
+Topic: Smart Pointers - Drop Trait
 
 Description:
-Welcome to the module on Smart Pointers!
-This exercise is a placeholder to get you started.
-Fix the code so it compiles.
+You can implement `Drop` to run code when a smart pointer goes out of scope.
+This is used by Box, Rc, Arc, MutexGuard, etc.
 
-Hints:
-1. Read the error message carefully.
+Your task is to implement `CustomSmartPointer` that prints "Dropping!" when dropped.
 */
 
+struct CustomSmartPointer {
+    data: String,
+}
+
+// TODO: Implement Drop
+// impl Drop for CustomSmartPointer { ... }
+
 fn main() {
-    println!("Welcome to Smart Pointers!");
-    let x = 1;
-    // Fix this condition to be true
-    if x > 100 {
-        println!("This won't print");
-    } else {
-        println!("Success!");
-    }
+    let c = CustomSmartPointer { data: String::from("stuff") };
+    println!("Created");
+    // c drops here
 }
 
 #[cfg(test)]

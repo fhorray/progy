@@ -2,16 +2,38 @@
 
 /*
 Difficulty: ⭐⭐⭐⭐
-Topic: Concurrency
+Topic: Shared State
 
 Description:
-⭐⭐⭐⭐ - Counter with multiple threads
+Use `Arc` and `Mutex` to share a counter between 10 threads.
+Each thread should increment the counter.
+
+Your task is to implement the thread body.
 */
 
+use std::sync::{Arc, Mutex};
+use std::thread;
+
 fn main() {
-    // TODO: Fix this code
-    let x = "change me";
-    println!("Exercise: {}", x);
+    let counter = Arc::new(Mutex::new(0));
+    let mut handles = vec![];
+
+    for _ in 0..10 {
+        let counter = Arc::clone(&counter);
+        let handle = thread::spawn(move || {
+            // TODO: Increment counter
+            // let mut num = ...;
+            // *num += 1;
+        });
+        handles.push(handle);
+    }
+
+    for handle in handles {
+        handle.join().unwrap();
+    }
+
+    // println!("Result: {}", *counter.lock().unwrap());
+    // assert_eq!(*counter.lock().unwrap(), 10);
 }
 
 #[cfg(test)]

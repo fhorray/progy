@@ -1,17 +1,23 @@
 // I AM NOT DONE
 
 /*
-Difficulty: ⭐⭐⭐⭐
-Topic: Collections
+Difficulty: ⭐⭐
+Topic: Vectors - Dropping
 
 Description:
-⭐⭐⭐⭐ - Filter and collect
+When a vector is dropped, its contents are also dropped.
+
+Your task is to observe that `v` is invalid after it goes out of scope.
+Fix the code by moving the println inside the scope.
 */
 
 fn main() {
-    // TODO: Fix this code
-    let x = "change me";
-    println!("Exercise: {}", x);
+    {
+        let v = vec![1, 2, 3];
+    } // v dropped here
+
+    // TODO: Fix this error
+    println!("v: {:?}", v);
 }
 
 #[cfg(test)]

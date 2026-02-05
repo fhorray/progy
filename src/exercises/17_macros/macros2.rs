@@ -2,16 +2,25 @@
 
 /*
 Difficulty: ⭐⭐
-Topic: Macros
+Topic: Macros - Arguments
 
 Description:
-⭐⭐ - Simple macro_rules!
+Macros match patterns.
+You can capture arguments using `$name:type`.
+
+Your task is to define a macro `my_print` that takes an expression `$e` and prints it.
 */
 
+// TODO: Define my_print
+// macro_rules! my_print {
+//     ($e:expr) => {
+//         println!("You passed: {}", $e);
+//     };
+// }
+
 fn main() {
-    // TODO: Fix this code
-    let x = "change me";
-    println!("Exercise: {}", x);
+    // my_print!(10);
+    // my_print!("hello");
 }
 
 #[cfg(test)]

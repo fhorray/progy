@@ -2,26 +2,25 @@
 
 /*
 Difficulty: ⭐
-Topic: Unsafe Rust
+Topic: Unsafe Rust - Dereferencing Raw Pointers
 
 Description:
-Welcome to the module on Unsafe Rust!
-This exercise is a placeholder to get you started.
-Fix the code so it compiles.
+Unsafe Rust allows you to dereference raw pointers (`*const T` and `*mut T`).
+This is unsafe because the pointer might be null, dangling, or unaligned.
 
-Hints:
-1. Read the error message carefully.
+Your task is to dereference the raw pointer `r1` inside an `unsafe` block.
 */
 
 fn main() {
-    println!("Welcome to Unsafe Rust!");
-    let x = 1;
-    // Fix this condition to be true
-    if x > 100 {
-        println!("This won't print");
-    } else {
-        println!("Success!");
-    }
+    let mut num = 5;
+
+    let r1 = &num as *const i32;
+    let r2 = &mut num as *mut i32;
+
+    // TODO: Dereference r1 inside unsafe block
+    // unsafe {
+    //     println!("r1 is: {}", *r1);
+    // }
 }
 
 #[cfg(test)]

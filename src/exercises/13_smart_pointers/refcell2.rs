@@ -2,16 +2,30 @@
 
 /*
 Difficulty: ⭐⭐⭐
-Topic: Smart_Pointers
+Topic: Smart Pointers - RefCell Panic
 
 Description:
-⭐⭐⭐ - Rc<RefCell<T>> pattern
+`RefCell` tracks borrows at runtime.
+If you violate the rules (two mutable borrows, or mutable + immutable), it panics.
+
+Your task is to create a panic by borrowing mutably twice.
+Then fix it by dropping the first borrow before the second.
+Wait, let's just make the task to *fix* a panicking code.
 */
 
+use std::cell::RefCell;
+
 fn main() {
-    // TODO: Fix this code
-    let x = "change me";
-    println!("Exercise: {}", x);
+    let c = RefCell::new(5);
+
+    let mut borrowed_1 = c.borrow_mut();
+    // let mut borrowed_2 = c.borrow_mut(); // This panics!
+
+    // TODO: Fix the panic. You can wrap the first borrow in a block scope.
+
+    *borrowed_1 += 1;
+
+    // println!("borrowed_2: {}", borrowed_2);
 }
 
 #[cfg(test)]

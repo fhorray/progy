@@ -1,17 +1,29 @@
 // I AM NOT DONE
 
 /*
-Difficulty: ⭐⭐⭐
-Topic: Control_Flow
+Difficulty: ⭐⭐
+Topic: Match - Expression
 
 Description:
-⭐⭐⭐ - Match as expression (return value)
+Like `if`, `match` is an expression and returns a value.
+All arms must return the same type.
+
+The code below tries to assign the result of a match to `message`.
+However, it's missing the assignment part.
+
+Your task is to assign the result of the match to `message`.
 */
 
 fn main() {
-    // TODO: Fix this code
-    let x = "change me";
-    println!("Exercise: {}", x);
+    let boolean = true;
+
+    // TODO: Assign the result to `message`
+    match boolean {
+        true => "It's true!",
+        false => "It's false!",
+    };
+
+    // println!("{}", message); // This will fail because message is not defined
 }
 
 #[cfg(test)]

@@ -2,16 +2,29 @@
 
 /*
 Difficulty: ⭐⭐⭐
-Topic: Structs
+Topic: Methods - Associated Functions
 
 Description:
-⭐⭐⭐ - Associated function (constructor pattern)
+Associated functions are defined in an `impl` block but don't take `self`.
+They are often used as constructors (like `new`).
+
+Your task is to implement `new` which creates a `Rectangle`.
 */
 
+#[derive(Debug)]
+struct Rectangle {
+    width: u32,
+    height: u32,
+}
+
+impl Rectangle {
+    // TODO: Implement `new`
+    // fn new(width: u32, height: u32) -> Rectangle { ... }
+}
+
 fn main() {
-    // TODO: Fix this code
-    let x = "change me";
-    println!("Exercise: {}", x);
+    // let rect = Rectangle::new(30, 50);
+    // println!("Rect: {:?}", rect);
 }
 
 #[cfg(test)]

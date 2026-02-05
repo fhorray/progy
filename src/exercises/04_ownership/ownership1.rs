@@ -2,26 +2,23 @@
 
 /*
 Difficulty: ⭐
-Topic: Ownership
+Topic: Ownership - Move Semantics
 
 Description:
-Welcome to the module on Ownership!
-This exercise is a placeholder to get you started.
-Fix the code so it compiles.
+In Rust, every value has a single owner. When you assign a value to another variable, ownership is moved.
+The original variable becomes invalid.
 
-Hints:
-1. Read the error message carefully.
+Your task is to fix the code so it compiles.
+The code tries to use `s1` after it has been moved to `s2`.
+You can fix this by using `s2` instead of `s1` in the println.
 */
 
 fn main() {
-    println!("Welcome to Ownership!");
-    let x = 1;
-    // Fix this condition to be true
-    if x > 100 {
-        println!("This won't print");
-    } else {
-        println!("Success!");
-    }
+    let s1 = String::from("hello");
+    let s2 = s1;
+
+    // TODO: Fix this usage
+    println!("{}, world!", s1);
 }
 
 #[cfg(test)]

@@ -5,29 +5,17 @@ Difficulty: ⭐
 Topic: Functions
 
 Description:
-Welcome to the module on Functions!
-This exercise is a placeholder to get you started.
-Fix the code so it compiles.
+Functions are the building blocks of Rust code.
+The `main` function is the entry point of every program.
+
+Your task is to define a new function named `call_me` and call it from `main`.
 
 Hints:
-1. Read the error message carefully.
+1. `fn call_me() { ... }`
 */
 
 fn main() {
-    println!("Welcome to Functions!");
-    let x = 1;
-    // Fix this condition to be true
-    if x > 100 {
-        println!("This won't print");
-    } else {
-        println!("Success!");
-    }
+    // TODO: Call the function `call_me`
 }
 
-#[cfg(test)]
-mod tests {
-    #[test]
-    fn test_main_runs() {
-        super::main();
-    }
-}
+// TODO: Define the function `call_me`

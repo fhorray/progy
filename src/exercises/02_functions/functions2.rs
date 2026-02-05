@@ -2,16 +2,22 @@
 
 /*
 Difficulty: ⭐
-Topic: Functions
+Topic: Functions - Parameters
 
 Description:
-⭐ - Function with parameters (fix missing types)
+Rust functions require type annotations for all parameters.
+The code below defines a function `call_me` that takes an argument, but the type is missing.
+
+Your task is to add the type annotation for `num` (use `i32`).
 */
 
 fn main() {
-    // TODO: Fix this code
-    let x = "change me";
-    println!("Exercise: {}", x);
+    call_me(10);
+}
+
+// TODO: Add the type for `num`
+fn call_me(num) {
+    println!("Number is {}", num);
 }
 
 #[cfg(test)]

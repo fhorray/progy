@@ -1,17 +1,31 @@
 // I AM NOT DONE
 
 /*
-Difficulty: ⭐⭐⭐⭐
-Topic: Unsafe
+Difficulty: ⭐⭐⭐
+Topic: Unsafe Rust - Static Mutable Variables
 
 Description:
-⭐⭐⭐⭐ - Safe abstraction
+Global variables (static) can be mutable, but accessing them is unsafe because of potential data races.
+
+Your task is to read and write to `COUNTER`.
 */
 
+static mut COUNTER: u32 = 0;
+
+fn add_to_count(inc: u32) {
+    // TODO: Modify COUNTER inside unsafe
+    // unsafe {
+    //     COUNTER += inc;
+    // }
+}
+
 fn main() {
-    // TODO: Fix this code
-    let x = "change me";
-    println!("Exercise: {}", x);
+    add_to_count(3);
+
+    // TODO: Read COUNTER inside unsafe
+    // unsafe {
+    //     println!("COUNTER: {}", COUNTER);
+    // }
 }
 
 #[cfg(test)]

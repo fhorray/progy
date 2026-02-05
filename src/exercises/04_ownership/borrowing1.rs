@@ -2,16 +2,23 @@
 
 /*
 Difficulty: ⭐
-Topic: Ownership
+Topic: Borrowing - Immutable References
 
 Description:
-⭐ - Basic immutable reference
+Borrowing allows you to access data without taking ownership.
+You create a reference using the `&` symbol.
+
+Your task is to create a reference `r` to `s` and print it.
 */
 
 fn main() {
-    // TODO: Fix this code
-    let x = "change me";
-    println!("Exercise: {}", x);
+    let s = String::from("hello");
+
+    // TODO: Create a reference `r` to `s`
+    // let r = ...;
+
+    // println!("r is {}", r);
+    // println!("s is still {}", s);
 }
 
 #[cfg(test)]

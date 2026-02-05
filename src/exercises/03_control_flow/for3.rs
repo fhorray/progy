@@ -2,16 +2,26 @@
 
 /*
 Difficulty: ⭐⭐
-Topic: Control_Flow
+Topic: Control Flow - Iterating Arrays
 
 Description:
-⭐⭐ - For loop with iter() on array
+When iterating over an array, you often want to borrow its elements rather than move them (though arrays of primitives are Copy).
+Use `&array` or `array.iter()` to iterate over references.
+
+Your task is to iterate over the array `names` and check if "Ferris" is in the list.
 */
 
 fn main() {
-    // TODO: Fix this code
-    let x = "change me";
-    println!("Exercise: {}", x);
+    let names = ["Alice", "Bob", "Ferris", "Dave"];
+    let mut found_ferris = false;
+
+    // TODO: Iterate over names
+    // for name in ... {
+    //    if *name == "Ferris" { found_ferris = true; }
+    // }
+
+    println!("Found Ferris? {}", found_ferris);
+    assert!(found_ferris);
 }
 
 #[cfg(test)]

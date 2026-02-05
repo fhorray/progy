@@ -1,23 +1,21 @@
 // I AM NOT DONE
 
 /*
-Difficulty: ⭐⭐
-Topic: Testing
+Difficulty: ⭐
+Topic: Testing - Assert Equality
 
 Description:
-⭐⭐ - Test with assert_eq!
-*/
+`assert_eq!` compares two values for equality.
+It prints both values if the assertion fails, which makes debugging easier.
 
-fn main() {
-    // TODO: Fix this code
-    let x = "change me";
-    println!("Exercise: {}", x);
-}
+Your task is to fix the test.
+*/
 
 #[cfg(test)]
 mod tests {
     #[test]
-    fn test_main_runs() {
-        super::main();
+    fn you_can_assert_eq() {
+        // TODO: Fix the assertion
+        assert_eq!(2 + 2, 5);
     }
 }

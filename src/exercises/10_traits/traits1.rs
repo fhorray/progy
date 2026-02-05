@@ -2,26 +2,19 @@
 
 /*
 Difficulty: ⭐
-Topic: Traits
+Topic: Traits - Definition
 
 Description:
-Welcome to the module on Traits!
-This exercise is a placeholder to get you started.
-Fix the code so it compiles.
+Traits define shared behavior. They are similar to interfaces in other languages.
 
-Hints:
-1. Read the error message carefully.
+Your task is to define a trait `Animal` with a method `sound` that returns a `String`.
 */
 
+// TODO: Define the trait Animal
+// trait Animal { ... }
+
 fn main() {
-    println!("Welcome to Traits!");
-    let x = 1;
-    // Fix this condition to be true
-    if x > 100 {
-        println!("This won't print");
-    } else {
-        println!("Success!");
-    }
+    // Just to check compilation (cannot instantiate trait directly)
 }
 
 #[cfg(test)]

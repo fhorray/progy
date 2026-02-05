@@ -2,16 +2,29 @@
 
 /*
 Difficulty: ⭐⭐
-Topic: Enums
+Topic: Option - Matching
 
 Description:
-⭐⭐ - Matching on Option
+You can use `match` to handle the `Some` and `None` cases.
+
+Your task is to implement `print_option` which prints "The value is: X" or "There is no value".
 */
 
 fn main() {
-    // TODO: Fix this code
-    let x = "change me";
-    println!("Exercise: {}", x);
+    let five = Some(5);
+    let none: Option<i32> = None;
+
+    print_option(five);
+    print_option(none);
+}
+
+fn print_option(x: Option<i32>) {
+    // TODO: Match on x
+    match x {
+        // Some(n) => println!("The value is: {}", n),
+        // None => println!("There is no value"),
+        _ => {}
+    }
 }
 
 #[cfg(test)]

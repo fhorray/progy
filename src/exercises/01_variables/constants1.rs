@@ -2,16 +2,20 @@
 
 /*
 Difficulty: ⭐
-Topic: Variables
+Topic: Constants
 
 Description:
-⭐ - Fix constant declaration (missing type)
+Constants can be declared in the global scope (outside functions).
+They are computed at compile time.
+
+Your task is to declare a global constant `MAX_POINTS` equal to `100_000` and use it in main.
 */
 
+// TODO: Define the constant MAX_POINTS
+// const MAX_POINTS: u32 = ...;
+
 fn main() {
-    // TODO: Fix this code
-    let x = "change me";
-    println!("Exercise: {}", x);
+    println!("Max points: {}", MAX_POINTS);
 }
 
 #[cfg(test)]

@@ -2,16 +2,27 @@
 
 /*
 Difficulty: ⭐⭐⭐
-Topic: Variables
+Topic: Tuples
 
 Description:
-⭐⭐⭐ - Nested tuples, return tuples from functions
+Tuples can contain other tuples.
+The code below defines a nested tuple.
+
+Your task is to access the integer `5` inside the nested tuple structure and print it.
+
+Hints:
+1. You might need multiple dot accesses like `t.1.0`.
 */
 
 fn main() {
-    // TODO: Fix this code
-    let x = "change me";
-    println!("Exercise: {}", x);
+    let t = ((1, 2), (3, 4), 5);
+
+    // TODO: Access the integer `5`
+    let val = 0;
+
+    println!("Value is {}", val);
+
+    assert_eq!(val, 5);
 }
 
 #[cfg(test)]

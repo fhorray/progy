@@ -2,16 +2,21 @@
 
 /*
 Difficulty: ⭐
-Topic: Smart_Pointers
+Topic: Smart Pointers - Box
 
 Description:
-⭐ - Basic Box usage
+`Box<T>` allocates data on the heap.
+It is a smart pointer that owns the data.
+When the Box goes out of scope, the data is dropped.
+
+Your task is to create a Box containing the value 5.
 */
 
 fn main() {
-    // TODO: Fix this code
-    let x = "change me";
-    println!("Exercise: {}", x);
+    // TODO: Create a Box
+    // let b = ...;
+
+    println!("b = {}", b); // This should fail
 }
 
 #[cfg(test)]

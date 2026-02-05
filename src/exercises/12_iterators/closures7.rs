@@ -1,17 +1,26 @@
 // I AM NOT DONE
 
 /*
-Difficulty: ⭐⭐⭐⭐
-Topic: Iterators
+Difficulty: ⭐⭐⭐
+Topic: Closures - FnOnce
 
 Description:
-⭐⭐⭐⭐ - Returning closure
+If a closure moves a value out of its scope (consumes it), it implements `FnOnce`.
+It can only be called once.
+
+Your task is to understand why calling `consume` twice fails, and fix the code by removing the second call (or cloning if possible, but let's assume we can't).
 */
 
 fn main() {
-    // TODO: Fix this code
-    let x = "change me";
-    println!("Exercise: {}", x);
+    let s = String::from("hello");
+
+    let consume = || {
+        println!("Consumed: {}", s);
+        std::mem::drop(s); // Moves s out
+    };
+
+    consume();
+    // consume(); // Error: use of moved value
 }
 
 #[cfg(test)]

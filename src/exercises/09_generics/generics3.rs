@@ -2,16 +2,26 @@
 
 /*
 Difficulty: ⭐⭐
-Topic: Generics
+Topic: Generics - Structs
 
 Description:
-⭐⭐ - Generic struct
+Structs can be generic over one or more types.
+
+Your task is to define a struct `Point` that can hold coordinates of any type (integer, float, etc.).
 */
 
+// TODO: Define struct Point<T>
+struct Point {
+    x: i32,
+    y: i32,
+}
+
 fn main() {
-    // TODO: Fix this code
-    let x = "change me";
-    println!("Exercise: {}", x);
+    // let integer = Point { x: 5, y: 10 };
+    // let float = Point { x: 1.0, y: 4.0 };
+
+    // println!("{:?}", integer);
+    // println!("{:?}", float);
 }
 
 #[cfg(test)]

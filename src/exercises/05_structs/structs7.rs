@@ -2,16 +2,23 @@
 
 /*
 Difficulty: ⭐⭐⭐
-Topic: Structs
+Topic: Structs - Unit-Like Structs
 
 Description:
-⭐⭐⭐ - Unit-like structs
+You can define structs without any fields! These are called unit-like structs.
+They are useful when you need a type to implement a trait on, but don't need to store data.
+
+Your task is to define a unit struct `Unit` and instantiate it.
 */
 
+// TODO: Define unit struct Unit
+
+
 fn main() {
-    // TODO: Fix this code
-    let x = "change me";
-    println!("Exercise: {}", x);
+    // TODO: Instantiate it
+    // let u = Unit;
+
+    println!("Success!");
 }
 
 #[cfg(test)]

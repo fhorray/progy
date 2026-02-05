@@ -2,16 +2,25 @@
 
 /*
 Difficulty: ⭐⭐
-Topic: Traits
+Topic: Traits - From and Into
 
 Description:
-⭐⭐ - Clone and Copy
+`From` and `Into` allow lossless type conversions.
+
+Your task is to implement `From<&str>` for `Person`.
 */
 
+#[derive(Debug)]
+struct Person {
+    name: String,
+}
+
+// TODO: Implement From<&str> for Person
+// impl From<&str> for Person { ... }
+
 fn main() {
-    // TODO: Fix this code
-    let x = "change me";
-    println!("Exercise: {}", x);
+    // let p: Person = "Alice".into();
+    // println!("{:?}", p);
 }
 
 #[cfg(test)]

@@ -2,16 +2,25 @@
 
 /*
 Difficulty: ⭐⭐⭐⭐
-Topic: Generics
+Topic: Const Generics
 
 Description:
-⭐⭐⭐⭐ - Implement generic data structure (basic)
+Const generics allow you to be generic over values (like array length).
+
+Your task is to define a function that takes an array of any size `N` and returns it.
 */
 
 fn main() {
-    // TODO: Fix this code
-    let x = "change me";
-    println!("Exercise: {}", x);
+    let arr1 = [1, 2, 3];
+    let arr2 = [1, 2, 3, 4, 5];
+
+    print_array(arr1);
+    print_array(arr2);
+}
+
+// TODO: Fix signature to use const generics
+fn print_array(arr: [i32; 3]) { // This only works for size 3
+    println!("{:?}", arr);
 }
 
 #[cfg(test)]

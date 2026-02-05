@@ -1,17 +1,28 @@
 // I AM NOT DONE
 
 /*
-Difficulty: ⭐⭐⭐⭐
-Topic: Modules
+Difficulty: ⭐⭐⭐
+Topic: Modules - Re-exporting
 
 Description:
-⭐⭐⭐⭐ - Visibility modifiers
+You can use `pub use` to re-export items from one module to another.
+This allows you to flatten the public API.
+
+Your task is to re-export `Cook` from `kitchen` so it can be accessed as `restaurant::Cook`.
 */
 
+mod restaurant {
+    mod kitchen {
+        pub struct Cook;
+    }
+
+    // TODO: Re-export Cook
+    // pub use ...
+}
+
 fn main() {
-    // TODO: Fix this code
-    let x = "change me";
-    println!("Exercise: {}", x);
+    // let cook = restaurant::Cook;
+    // println!("We have a cook!");
 }
 
 #[cfg(test)]

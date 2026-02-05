@@ -2,16 +2,25 @@
 
 /*
 Difficulty: ⭐⭐
-Topic: Concurrency
+Topic: Threads - Move Closures
 
 Description:
-⭐⭐ - Move data into thread
+To use variables from the main thread inside a spawned thread, you need to `move` ownership.
+
+Your task is to fix the code by adding the `move` keyword to the closure.
 */
 
+use std::thread;
+
 fn main() {
-    // TODO: Fix this code
-    let x = "change me";
-    println!("Exercise: {}", x);
+    let v = vec![1, 2, 3];
+
+    // TODO: Add `move`
+    let handle = thread::spawn(|| {
+        println!("Here's a vector: {:?}", v); // Error: v borrowed
+    });
+
+    handle.join().unwrap();
 }
 
 #[cfg(test)]

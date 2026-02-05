@@ -1,17 +1,30 @@
 // I AM NOT DONE
 
 /*
-Difficulty: ⭐⭐⭐⭐
-Topic: Traits
+Difficulty: ⭐⭐
+Topic: Traits - Drop
 
 Description:
-⭐⭐⭐⭐ - From and Into
+`Drop` is run when a value goes out of scope.
+
+Your task is to implement `Drop` for `Firework`.
+It should print "Boom!" when dropped.
 */
 
+struct Firework {
+    strength: i32,
+}
+
+// TODO: Implement Drop
+// impl Drop for Firework { ... }
+
 fn main() {
-    // TODO: Fix this code
-    let x = "change me";
-    println!("Exercise: {}", x);
+    {
+        let _f = Firework { strength: 10 };
+        println!("Lighting firework...");
+    }
+    // Should print Boom! here
+    println!("Done.");
 }
 
 #[cfg(test)]

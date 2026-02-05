@@ -2,16 +2,28 @@
 
 /*
 Difficulty: ⭐⭐
-Topic: Ownership
+Topic: Ownership - Functions
 
 Description:
-⭐⭐ - Ownership and functions (passing)
+Passing a variable to a function moves ownership (unless it's Copy).
+
+The function `print_string` takes ownership of the string.
+The code tries to use the string after calling the function.
+
+Your task is to fix the code by cloning the string when calling `print_string`.
 */
 
 fn main() {
-    // TODO: Fix this code
-    let x = "change me";
-    println!("Exercise: {}", x);
+    let s = String::from("hello");
+
+    // TODO: Clone `s` here
+    print_string(s);
+
+    println!("s is still {}", s);
+}
+
+fn print_string(s: String) {
+    println!("{}", s);
 }
 
 #[cfg(test)]

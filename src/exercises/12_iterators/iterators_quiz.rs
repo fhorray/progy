@@ -2,16 +2,24 @@
 
 /*
 Difficulty: ⭐⭐⭐⭐⭐
-Topic: Iterators
+Topic: Iterators Quiz
 
 Description:
-⭐⭐⭐⭐⭐ - Process data pipeline
+Implement `factorial` using iterators.
+Do not use a `for` loop or recursion.
 */
 
+fn factorial(n: u64) -> u64 {
+    // TODO: Use range and product/fold
+    if n == 0 { return 1; }
+    0
+}
+
 fn main() {
-    // TODO: Fix this code
-    let x = "change me";
-    println!("Exercise: {}", x);
+    assert_eq!(factorial(0), 1);
+    assert_eq!(factorial(1), 1);
+    assert_eq!(factorial(5), 120);
+    println!("Success!");
 }
 
 #[cfg(test)]

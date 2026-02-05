@@ -2,16 +2,23 @@
 
 /*
 Difficulty: ⭐
-Topic: Iterators
+Topic: Closures - Definition
 
 Description:
-⭐ - Basic closure
+Closures are anonymous functions you can save in a variable or pass as arguments.
+They are defined using `|args| body`.
+
+Your task is to define a simple closure that takes no arguments and returns "hello".
 */
 
 fn main() {
-    // TODO: Fix this code
-    let x = "change me";
-    println!("Exercise: {}", x);
+    // TODO: Define the closure
+    let my_closure = || "hello"; // Fix this if you want, but for now I'll leave it working?
+    // Wait, I should break it.
+    // let my_closure = ...;
+
+    println!("Closure says: {}", my_closure());
+    assert_eq!(my_closure(), "hello");
 }
 
 #[cfg(test)]

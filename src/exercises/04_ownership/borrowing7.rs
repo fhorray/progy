@@ -2,16 +2,26 @@
 
 /*
 Difficulty: ⭐⭐⭐
-Topic: Ownership
+Topic: Borrowing - Dangling References
 
 Description:
-⭐⭐⭐ - Returning references (intro to lifetimes)
+You cannot return a reference to a value created inside the function.
+When the function returns, the value is dropped, leaving the reference pointing to invalid memory.
+
+The code below tries to return a reference to a local string.
+
+Your task is to fix it by returning the String directly (transferring ownership).
 */
 
 fn main() {
-    // TODO: Fix this code
-    let x = "change me";
-    println!("Exercise: {}", x);
+    let reference_to_nothing = dangling();
+    println!("r: {}", reference_to_nothing);
+}
+
+// TODO: Fix signature and body
+fn dangling() -> &String {
+    let s = String::from("hello");
+    &s // Error: `s` is dropped here while still borrowed
 }
 
 #[cfg(test)]

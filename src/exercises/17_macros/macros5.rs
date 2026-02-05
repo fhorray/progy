@@ -1,17 +1,29 @@
 // I AM NOT DONE
 
 /*
-Difficulty: ⭐⭐⭐⭐
-Topic: Macros
+Difficulty: ⭐⭐⭐
+Topic: Macros - Overloading
 
 Description:
-⭐⭐⭐⭐ - Build a vec! like macro
+Macros can have multiple branches (patterns).
+
+Your task is to implement `my_macro` to handle:
+1. `()` -> prints "Empty"
+2. `($e:expr)` -> prints "One: $e"
 */
 
+macro_rules! my_macro {
+    // TODO: Add empty branch
+    () => {
+        println!("Empty");
+    };
+    // TODO: Add expression branch
+    // ...
+}
+
 fn main() {
-    // TODO: Fix this code
-    let x = "change me";
-    println!("Exercise: {}", x);
+    my_macro!();
+    // my_macro!(10);
 }
 
 #[cfg(test)]

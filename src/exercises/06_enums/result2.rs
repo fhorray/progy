@@ -2,16 +2,29 @@
 
 /*
 Difficulty: ⭐⭐
-Topic: Enums
+Topic: Result - Matching
 
 Description:
-⭐⭐ - Matching on Result
+Like Option, you can match on Result to handle success and failure.
+
+Your task is to implement `handle_result` which prints "Success: X" or "Failure: E".
 */
 
 fn main() {
-    // TODO: Fix this code
-    let x = "change me";
-    println!("Exercise: {}", x);
+    let success = Ok(10);
+    let failure = Err("Something went wrong");
+
+    handle_result(success);
+    handle_result(failure);
+}
+
+fn handle_result(res: Result<i32, &str>) {
+    // TODO: Match on res
+    match res {
+        // Ok(n) => ...
+        // Err(e) => ...
+        _ => {}
+    }
 }
 
 #[cfg(test)]

@@ -1,17 +1,29 @@
 // I AM NOT DONE
 
 /*
-Difficulty: ⭐⭐⭐⭐⭐
-Topic: Collections
+Difficulty: ⭐⭐⭐⭐
+Topic: Collections Quiz
 
 Description:
-⭐⭐⭐⭐⭐ - Build a simple phone book or inventory system
+Task: Given a list of names, return a HashMap where key is the name and value is the count.
 */
 
+use std::collections::HashMap;
+
+fn count_names(names: Vec<&str>) -> HashMap<&str, i32> {
+    // TODO: Implement this function
+    HashMap::new()
+}
+
 fn main() {
-    // TODO: Fix this code
-    let x = "change me";
-    println!("Exercise: {}", x);
+    let names = vec!["Alice", "Bob", "Alice", "Charlie", "Bob", "Alice"];
+    let counts = count_names(names);
+
+    assert_eq!(counts["Alice"], 3);
+    assert_eq!(counts["Bob"], 2);
+    assert_eq!(counts["Charlie"], 1);
+
+    println!("Success!");
 }
 
 #[cfg(test)]

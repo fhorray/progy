@@ -2,16 +2,25 @@
 
 /*
 Difficulty: ⭐
-Topic: Ownership
+Topic: Borrowing - Multiple References
 
 Description:
-⭐ - Multiple immutable references
+You can have as many immutable references to a value as you like.
+This is safe because none of them can modify the data.
+
+Your task is to create two references, `r1` and `r2`, to `s`.
 */
 
 fn main() {
-    // TODO: Fix this code
-    let x = "change me";
-    println!("Exercise: {}", x);
+    let s = String::from("hello");
+
+    // TODO: Create reference r1
+
+
+    // TODO: Create reference r2
+
+
+    // println!("r1: {}, r2: {}", r1, r2);
 }
 
 #[cfg(test)]

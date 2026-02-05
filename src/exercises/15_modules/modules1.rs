@@ -2,26 +2,20 @@
 
 /*
 Difficulty: ⭐
-Topic: Modules
+Topic: Modules - Definition
 
 Description:
-Welcome to the module on Modules!
-This exercise is a placeholder to get you started.
-Fix the code so it compiles.
+Modules organize code into groups.
+You can define a module using `mod name { ... }`.
 
-Hints:
-1. Read the error message carefully.
+Your task is to define a module named `sausage_factory` and a public function `make_sausage` inside it.
 */
 
+// TODO: Define module and function
+// mod sausage_factory { ... }
+
 fn main() {
-    println!("Welcome to Modules!");
-    let x = 1;
-    // Fix this condition to be true
-    if x > 100 {
-        println!("This won't print");
-    } else {
-        println!("Success!");
-    }
+    // sausage_factory::make_sausage();
 }
 
 #[cfg(test)]

@@ -2,16 +2,26 @@
 
 /*
 Difficulty: ⭐⭐⭐
-Topic: Iterators
+Topic: Iterators - Zip
 
 Description:
-⭐⭐⭐ - collect()
+`zip` zips two iterators together into pairs.
+
+Your task is to zip `names` and `ages` into a HashMap.
 */
 
+use std::collections::HashMap;
+
 fn main() {
-    // TODO: Fix this code
-    let x = "change me";
-    println!("Exercise: {}", x);
+    let names = vec!["Alice", "Bob", "Charlie"];
+    let ages = vec![30, 25, 35];
+
+    // TODO: Zip and collect into HashMap
+    let people: HashMap<_, _> = HashMap::new();
+    // names.into_iter().zip(ages.into_iter()).collect();
+
+    println!("People: {:?}", people);
+    // assert_eq!(people["Alice"], 30);
 }
 
 #[cfg(test)]

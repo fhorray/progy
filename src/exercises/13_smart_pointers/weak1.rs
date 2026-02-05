@@ -2,16 +2,32 @@
 
 /*
 Difficulty: ⭐⭐⭐⭐
-Topic: Smart_Pointers
+Topic: Smart Pointers - Weak
 
 Description:
-⭐⭐⭐⭐ - Preventing cycles
+`Weak` references are non-owning references.
+They don't prevent the value from being dropped.
+They are useful for breaking reference cycles (e.g., parent <-> child).
+
+Your task is to downgrade a strong `Rc` to a `Weak` reference, then try to upgrade it back.
 */
 
+use std::rc::Rc;
+
 fn main() {
-    // TODO: Fix this code
-    let x = "change me";
-    println!("Exercise: {}", x);
+    let strong = Rc::new(5);
+
+    // TODO: Create a weak reference
+    // let weak = Rc::downgrade(&strong);
+
+    // Drop the strong reference
+    drop(strong);
+
+    // TODO: Try to upgrade
+    // match weak.upgrade() {
+    //     Some(v) => println!("Value exists: {}", v),
+    //     None => println!("Value was dropped"),
+    // }
 }
 
 #[cfg(test)]

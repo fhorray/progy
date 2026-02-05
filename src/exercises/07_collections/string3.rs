@@ -2,16 +2,27 @@
 
 /*
 Difficulty: ⭐⭐
-Topic: Collections
+Topic: Strings - Concatenation
 
 Description:
-⭐⭐ - Concatenation
+You can concatenate strings using the `+` operator.
+Note that `s1 + &s2` takes ownership of `s1`.
+
+Your task is to combine `s1` and `s2` into `s3`.
 */
 
 fn main() {
-    // TODO: Fix this code
-    let x = "change me";
-    println!("Exercise: {}", x);
+    let s1 = String::from("Hello, ");
+    let s2 = String::from("world!");
+
+    // TODO: Concatenate s1 and s2
+    // let s3 = ...;
+
+    // println!("{}", s3);
+    // assert_eq!(s3, "Hello, world!");
+
+    // Check ownership of s1 (should be invalid)
+    // println!("{}", s1); // This should fail if done correctly with +
 }
 
 #[cfg(test)]

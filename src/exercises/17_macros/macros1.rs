@@ -2,26 +2,24 @@
 
 /*
 Difficulty: ⭐
-Topic: Macros
+Topic: Macros - Definition
 
 Description:
-Welcome to the module on Macros!
-This exercise is a placeholder to get you started.
-Fix the code so it compiles.
+Macros allow you to write code that writes other code.
+Declarative macros are defined using `macro_rules!`.
 
-Hints:
-1. Read the error message carefully.
+Your task is to define a simple macro `my_macro` that prints "Hello, Macro!".
 */
 
+// TODO: Define my_macro
+// macro_rules! my_macro {
+//     () => {
+//         println!("Hello, Macro!");
+//     };
+// }
+
 fn main() {
-    println!("Welcome to Macros!");
-    let x = 1;
-    // Fix this condition to be true
-    if x > 100 {
-        println!("This won't print");
-    } else {
-        println!("Success!");
-    }
+    // my_macro!();
 }
 
 #[cfg(test)]

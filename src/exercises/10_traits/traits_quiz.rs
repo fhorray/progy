@@ -2,16 +2,33 @@
 
 /*
 Difficulty: ⭐⭐⭐⭐⭐
-Topic: Traits
+Topic: Traits Quiz
 
 Description:
-⭐⭐⭐⭐⭐ - Build a plugin system using traits
+Implement a trait `Summarizable` with a method `summary(&self) -> String`.
+Implement it for `Vec<T>` where `T: Summarizable`.
+The summary of a vector should be "List of [summary of first element, ...]".
+Wait, that's recursive.
+Let's make it simpler: `Vec<String>`.
+Task: Implement `Summarizable` for `String` and `Vec<String>`.
 */
 
+trait Summarizable {
+    fn summary(&self) -> String;
+}
+
+// TODO: Implement for String
+// impl Summarizable for String { ... }
+
+// TODO: Implement for Vec<String>
+// impl Summarizable for Vec<String> { ... }
+
 fn main() {
-    // TODO: Fix this code
-    let x = "change me";
-    println!("Exercise: {}", x);
+    let s = String::from("hello");
+    // println!("{}", s.summary());
+
+    let v = vec![String::from("a"), String::from("b")];
+    // println!("{}", v.summary());
 }
 
 #[cfg(test)]
