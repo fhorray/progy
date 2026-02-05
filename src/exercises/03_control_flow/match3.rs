@@ -2,16 +2,26 @@
 
 /*
 Difficulty: ⭐⭐
-Topic: Control_Flow
+Topic: Match - Ranges
 
 Description:
-⭐⭐ - Match with ranges
+You can match ranges of values using `..=`.
+
+Your task is to categorize ages:
+- 0 to 12: "Child"
+- 13 to 19: "Teenager"
+- 20 to 64: "Adult"
+- 65 and up: "Senior" (Use the catch-all `_` for 65+)
 */
 
 fn main() {
-    // TODO: Fix this code
-    let x = "change me";
-    println!("Exercise: {}", x);
+    let age = 15;
+
+    match age {
+        // TODO: Use ranges to handle cases
+        // 0..=12 => ...
+        _ => println!("Unknown age"),
+    }
 }
 
 #[cfg(test)]

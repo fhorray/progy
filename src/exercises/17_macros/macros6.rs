@@ -2,16 +2,24 @@
 
 /*
 Difficulty: ⭐⭐⭐⭐
-Topic: Macros
+Topic: Macros - DSL
 
 Description:
-⭐⭐⭐⭐ - Understanding hygiene
+Macros allow creating Domain Specific Languages (DSLs).
+
+Your task is to create a macro `calculate` that supports syntax like:
+`eval 1 + 2`
 */
 
+macro_rules! calculate {
+    (eval $e:expr) => {
+        println!("Result: {}", $e);
+    };
+}
+
 fn main() {
-    // TODO: Fix this code
-    let x = "change me";
-    println!("Exercise: {}", x);
+    calculate!(eval 1 + 2);
+    calculate!(eval 5 * 10);
 }
 
 #[cfg(test)]

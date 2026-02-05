@@ -2,16 +2,22 @@
 
 /*
 Difficulty: ⭐⭐
-Topic: Functions
+Topic: Functions - Multiple Parameters
 
 Description:
-⭐⭐ - Multiple parameters
+Functions can take multiple parameters, separated by commas.
+Each parameter must have a type annotation.
+
+Your task is to fix the `call_me` function to accept an integer `num` and a boolean `check`.
 */
 
 fn main() {
-    // TODO: Fix this code
-    let x = "change me";
-    println!("Exercise: {}", x);
+    call_me(10, true);
+}
+
+// TODO: Fix the parameters list
+fn call_me(num: i32) {
+    println!("Number: {}, Check: {}", num, check);
 }
 
 #[cfg(test)]

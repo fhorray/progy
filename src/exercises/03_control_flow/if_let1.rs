@@ -2,16 +2,20 @@
 
 /*
 Difficulty: ⭐⭐
-Topic: Control_Flow
+Topic: Control Flow - If Let
 
 Description:
-⭐⭐ - Basic if let
+`if let` is a shorter way to handle values that match one pattern while ignoring the rest.
+It is useful when you only care about one case of an enum (like `Option::Some`).
+
+Your task is to use `if let` to print "The number is: {}" if `arg` is `Some`.
 */
 
 fn main() {
-    // TODO: Fix this code
-    let x = "change me";
-    println!("Exercise: {}", x);
+    let arg = Some(7);
+
+    // TODO: Use if let to destructure `arg`
+    // if let Some(number) = arg { ... }
 }
 
 #[cfg(test)]

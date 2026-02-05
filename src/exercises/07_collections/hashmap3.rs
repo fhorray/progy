@@ -2,16 +2,24 @@
 
 /*
 Difficulty: ⭐⭐
-Topic: Collections
+Topic: HashMap - Iterating
 
 Description:
-⭐⭐ - Iterate over entries
+You can iterate over keys and values in a HashMap.
+Note that the order is arbitrary!
+
+Your task is to iterate over `scores` and print "{team}: {score}".
 */
 
+use std::collections::HashMap;
+
 fn main() {
-    // TODO: Fix this code
-    let x = "change me";
-    println!("Exercise: {}", x);
+    let mut scores = HashMap::new();
+    scores.insert(String::from("Blue"), 10);
+    scores.insert(String::from("Yellow"), 50);
+
+    // TODO: Iterate and print
+    // for (key, value) in ... { ... }
 }
 
 #[cfg(test)]

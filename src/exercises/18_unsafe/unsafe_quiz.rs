@@ -1,17 +1,25 @@
 // I AM NOT DONE
 
 /*
-Difficulty: ⭐⭐⭐⭐⭐
-Topic: Unsafe
+Difficulty: ⭐⭐⭐⭐
+Topic: Unsafe Quiz
 
 Description:
-⭐⭐⭐⭐⭐ - Implement a simple unsafe data structure
+Implement a function `get_value_at_index` that takes a raw pointer to an array and an index, and returns the value.
+Assume valid pointer and index.
 */
 
+fn get_value_at_index(ptr: *const i32, index: usize) -> i32 {
+    // TODO: Implement using unsafe pointer arithmetic and dereferencing
+    // unsafe { ... }
+    0
+}
+
 fn main() {
-    // TODO: Fix this code
-    let x = "change me";
-    println!("Exercise: {}", x);
+    let arr = [10, 20, 30];
+    let ptr = arr.as_ptr();
+
+    assert_eq!(get_value_at_index(ptr, 1), 20);
 }
 
 #[cfg(test)]

@@ -2,16 +2,26 @@
 
 /*
 Difficulty: ⭐
-Topic: Control_Flow
+Topic: Control Flow - For Loop Range
 
 Description:
-⭐ - For loop with range
+The `for` loop is the most common loop in Rust.
+It iterates over an iterator or a range.
+Ranges are written as `start..end` (exclusive) or `start..=end` (inclusive).
+
+Your task is to use a for loop to calculate the sum of numbers from 1 to 10 inclusive.
 */
 
 fn main() {
-    // TODO: Fix this code
-    let x = "change me";
-    println!("Exercise: {}", x);
+    let mut sum = 0;
+
+    // TODO: Use a for loop to iterate from 1 to 10 (inclusive)
+    // for i in ... {
+    //     sum += i;
+    // }
+
+    println!("Sum is {}", sum);
+    assert_eq!(sum, 55);
 }
 
 #[cfg(test)]

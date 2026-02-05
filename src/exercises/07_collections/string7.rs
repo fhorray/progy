@@ -2,16 +2,24 @@
 
 /*
 Difficulty: ⭐⭐⭐⭐
-Topic: Collections
+Topic: Strings - Slicing
 
 Description:
-⭐⭐⭐⭐ - Building strings dynamically
+You can slice a string with `&s[start..end]`.
+However, if you slice in the middle of a UTF-8 character, Rust will panic.
+
+Your task is to safely slice the first character of "Здравствуйте".
+Note that 'З' is 2 bytes long.
 */
 
 fn main() {
-    // TODO: Fix this code
-    let x = "change me";
-    println!("Exercise: {}", x);
+    let s = "Здравствуйте";
+
+    // TODO: Slice the first character properly
+    let first_char_slice = &s[0..1]; // This will panic!
+
+    println!("First char slice: {}", first_char_slice);
+    assert_eq!(first_char_slice, "З");
 }
 
 #[cfg(test)]

@@ -2,16 +2,28 @@
 
 /*
 Difficulty: ⭐⭐
-Topic: Ownership
+Topic: Borrowing - Mutable References
 
 Description:
-⭐⭐ - Mutable reference
+To modify a borrowed value, you need a mutable reference (`&mut`).
+The variable must also be mutable.
+
+Your task is to:
+1. Create a mutable reference `r` to `s`.
+2. Use `r` to push " world" to the string.
 */
 
 fn main() {
-    // TODO: Fix this code
-    let x = "change me";
-    println!("Exercise: {}", x);
+    let mut s = String::from("hello");
+
+    // TODO: Create mutable reference `r`
+    // let r = ...;
+
+    // TODO: Use `r` to push " world"
+    // r.push_str(" world");
+
+    println!("s is {}", s);
+    assert_eq!(s, "hello world");
 }
 
 #[cfg(test)]

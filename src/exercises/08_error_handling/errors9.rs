@@ -1,17 +1,25 @@
 // I AM NOT DONE
 
 /*
-Difficulty: ⭐⭐⭐⭐
-Topic: Error_Handling
+Difficulty: ⭐⭐
+Topic: Error Handling - Result to Option
 
 Description:
-⭐⭐⭐⭐ - Box<dyn Error> pattern
+Sometimes you don't care about the error and just want an Option (discarding the error info).
+You can use `.ok()`.
+
+Your task is to convert the Result from `parse` into an Option.
 */
 
 fn main() {
-    // TODO: Fix this code
-    let x = "change me";
-    println!("Exercise: {}", x);
+    let s = "42";
+    let res = s.parse::<i32>(); // Result<i32, ...>
+
+    // TODO: Convert to Option<i32>
+    let opt: Option<i32> = None; // res.ok();
+
+    println!("Option: {:?}", opt);
+    assert_eq!(opt, Some(42));
 }
 
 #[cfg(test)]

@@ -2,26 +2,26 @@
 
 /*
 Difficulty: ⭐
-Topic: Iterators
+Topic: Iterators - Basics
 
 Description:
-Welcome to the module on Iterators!
-This exercise is a placeholder to get you started.
-Fix the code so it compiles.
+Iterators allow you to perform a task on a sequence of items.
+You create an iterator by calling `.iter()` on a collection.
 
-Hints:
-1. Read the error message carefully.
+Your task is to create an iterator for `v` and print the first element.
 */
 
 fn main() {
-    println!("Welcome to Iterators!");
-    let x = 1;
-    // Fix this condition to be true
-    if x > 100 {
-        println!("This won't print");
-    } else {
-        println!("Success!");
-    }
+    let v = vec![1, 2, 3];
+
+    // TODO: Create iterator
+    let mut iter = v.iter();
+
+    // TODO: Print the first item
+    println!("First: {:?}", iter.next());
+
+    // Check next item
+    assert_eq!(iter.next(), Some(&2));
 }
 
 #[cfg(test)]

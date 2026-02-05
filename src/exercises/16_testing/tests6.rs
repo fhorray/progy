@@ -2,22 +2,25 @@
 
 /*
 Difficulty: ⭐⭐⭐
-Topic: Testing
+Topic: Testing - Result
 
 Description:
-⭐⭐⭐ - Testing private functions
-*/
+Tests can return `Result<(), E>`.
+This allows using the `?` operator in tests.
+If the test returns `Err`, it fails.
 
-fn main() {
-    // TODO: Fix this code
-    let x = "change me";
-    println!("Exercise: {}", x);
-}
+Your task is to fix the test signature to return `Result`.
+*/
 
 #[cfg(test)]
 mod tests {
     #[test]
-    fn test_main_runs() {
-        super::main();
+    // TODO: Fix signature
+    fn test_result() {
+        if 2 + 2 == 4 {
+            Ok(()) // Error: returns Result but signature expects ()
+        } else {
+            Err(String::from("Math is broken"))
+        }
     }
 }

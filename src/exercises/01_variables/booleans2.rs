@@ -2,16 +2,32 @@
 
 /*
 Difficulty: ⭐⭐
-Topic: Variables
+Topic: Boolean Logic
 
 Description:
-⭐⭐ - Boolean logic (AND, OR, NOT)
+You can combine booleans using logic operators:
+- `&&` (AND): true only if BOTH are true.
+- `||` (OR): true if AT LEAST ONE is true.
+- `!` (NOT): inverts the boolean.
+
+Your task is to make the expression `is_rust_fun` evaluate to `true` by changing the values of `t` and `f`.
 */
 
 fn main() {
-    // TODO: Fix this code
-    let x = "change me";
-    println!("Exercise: {}", x);
+    let t = false;
+    let f = true; // wait, this name is confusing if it's meant to be false?
+    // Let's use simpler names
+
+    // TODO: Change these values so the final expression is true
+    let a = false;
+    let b = false;
+
+    // Expression: (a OR b) AND (NOT b)
+    // We want this to be true.
+    let is_rust_fun = (a || b) && !b;
+
+    println!("Is Rust fun? {}", is_rust_fun);
+    assert!(is_rust_fun);
 }
 
 #[cfg(test)]

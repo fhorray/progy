@@ -2,16 +2,26 @@
 
 /*
 Difficulty: ⭐⭐
-Topic: Iterators
+Topic: Iterators - Map
 
 Description:
-⭐⭐ - iter() vs into_iter()
+`map` transforms each item in the iterator.
+It is lazy, so it doesn't do anything until you consume it (e.g., with `collect`).
+
+Your task is to:
+1. Create an iterator from `v`.
+2. Use `map` to add 1 to each element.
+3. Collect the result into a `Vec<i32>`.
 */
 
 fn main() {
-    // TODO: Fix this code
-    let x = "change me";
-    println!("Exercise: {}", x);
+    let v = vec![1, 2, 3];
+
+    // TODO: Map and collect
+    let v2: Vec<i32> = Vec::new(); // Fix this
+
+    println!("v2: {:?}", v2);
+    assert_eq!(v2, vec![2, 3, 4]);
 }
 
 #[cfg(test)]

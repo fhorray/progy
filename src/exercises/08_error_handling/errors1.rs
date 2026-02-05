@@ -2,32 +2,34 @@
 
 /*
 Difficulty: ⭐
-Topic: Error Handling
+Topic: Error Handling - Panic
 
 Description:
-Welcome to the module on Error Handling!
-This exercise is a placeholder to get you started.
-Fix the code so it compiles.
+The simplest way to handle an error is to `panic!`. This stops the program immediately.
 
-Hints:
-1. Read the error message carefully.
+Your task is to make the `generate_nametag_text` function panic if the name is empty.
+The message should be "Empty names aren't allowed".
 */
 
-fn main() {
-    println!("Welcome to Error Handling!");
-    let x = 1;
-    // Fix this condition to be true
-    if x > 100 {
-        println!("This won't print");
+fn generate_nametag_text(name: String) -> String {
+    if name.is_empty() {
+        // TODO: Panic here
+        String::new()
     } else {
-        println!("Success!");
+        format!("Hi! My name is {}", name)
     }
+}
+
+fn main() {
+    let empty = String::new();
+    // generate_nametag_text(empty); // Should panic
 }
 
 #[cfg(test)]
 mod tests {
     #[test]
+    #[should_panic]
     fn test_main_runs() {
-        super::main();
+        super::generate_nametag_text(String::new());
     }
 }

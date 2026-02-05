@@ -2,16 +2,27 @@
 
 /*
 Difficulty: ⭐⭐⭐
-Topic: Ownership
+Topic: Ownership - Copy Trait
 
 Description:
-⭐⭐⭐ - Why Copy trait matters
+Custom types (structs) are NOT `Copy` by default. Moving them invalidates the original.
+However, if all fields are `Copy`, you can derive `Copy` (and `Clone`) to make the struct behave like an integer.
+
+Your task is to add `#[derive(Copy, Clone)]` to `Point` so the code compiles.
 */
 
+// TODO: Add the derive attribute
+#[derive(Debug)]
+struct Point {
+    x: i32,
+    y: i32,
+}
+
 fn main() {
-    // TODO: Fix this code
-    let x = "change me";
-    println!("Exercise: {}", x);
+    let p1 = Point { x: 10, y: 20 };
+    let p2 = p1; // This moves p1 unless Point is Copy
+
+    println!("p1: {:?}, p2: {:?}", p1, p2);
 }
 
 #[cfg(test)]

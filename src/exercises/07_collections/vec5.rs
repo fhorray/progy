@@ -1,17 +1,25 @@
 // I AM NOT DONE
 
 /*
-Difficulty: ⭐⭐
-Topic: Collections
+Difficulty: ⭐⭐⭐
+Topic: Vectors - Mutable Iteration
 
 Description:
-⭐⭐ - Access with get() vs []
+To modify elements in place, use a mutable iterator.
+
+Your task is to iterate over `v` mutably and add 1 to each element.
 */
 
 fn main() {
-    // TODO: Fix this code
-    let x = "change me";
-    println!("Exercise: {}", x);
+    let mut v = vec![1, 2, 3];
+
+    // TODO: Iterate mutably
+    // for x in ... {
+    //     *x += 1;
+    // }
+
+    println!("v: {:?}", v);
+    assert_eq!(v, [2, 3, 4]);
 }
 
 #[cfg(test)]

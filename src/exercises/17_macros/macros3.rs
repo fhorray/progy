@@ -1,17 +1,32 @@
 // I AM NOT DONE
 
 /*
-Difficulty: ⭐⭐⭐
-Topic: Macros
+Difficulty: ⭐⭐
+Topic: Macros - Repetition
 
 Description:
-⭐⭐⭐ - Macro with repetition
+You can handle repeated arguments using `$(...)*` or `$(...)+`.
+
+Your task is to define `my_vec` which works like `vec![]`.
+It should take comma-separated expressions and push them into a vector.
 */
 
+macro_rules! my_vec {
+    ( $( $x:expr ),* ) => {
+        {
+            let mut temp_vec = Vec::new();
+            // TODO: Push $x
+            // $(
+            //     temp_vec.push($x);
+            // )*
+            temp_vec
+        }
+    };
+}
+
 fn main() {
-    // TODO: Fix this code
-    let x = "change me";
-    println!("Exercise: {}", x);
+    let v = my_vec![1, 2, 3];
+    println!("{:?}", v);
 }
 
 #[cfg(test)]

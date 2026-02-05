@@ -2,16 +2,27 @@
 
 /*
 Difficulty: ⭐⭐⭐
-Topic: Iterators
+Topic: Iterators - Enumerate
 
 Description:
-⭐⭐⭐ - fold()
+`enumerate` yields `(index, item)`.
+
+Your task is to filter the vector to keep only items at even indices.
 */
 
 fn main() {
-    // TODO: Fix this code
-    let x = "change me";
-    println!("Exercise: {}", x);
+    let v = vec!['a', 'b', 'c', 'd', 'e'];
+
+    // TODO: Keep elements at indices 0, 2, 4...
+    let result: Vec<char> = v
+        .iter()
+        .enumerate()
+        .filter(|(i, _)| false) // Fix condition
+        .map(|(_, &c)| c)
+        .collect();
+
+    println!("Result: {:?}", result);
+    assert_eq!(result, vec!['a', 'c', 'e']);
 }
 
 #[cfg(test)]

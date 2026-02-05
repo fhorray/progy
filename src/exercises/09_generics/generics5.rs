@@ -2,16 +2,27 @@
 
 /*
 Difficulty: ⭐⭐⭐
-Topic: Generics
+Topic: Generics - Methods
 
 Description:
-⭐⭐⭐ - Generic enum
+You can implement methods on generic structs.
+
+Your task is to implement `x` method which returns a reference to `x`.
 */
 
+struct Point<T> {
+    x: T,
+    y: T,
+}
+
+impl<T> Point<T> {
+    // TODO: Implement x method
+    // fn x(&self) -> &T { ... }
+}
+
 fn main() {
-    // TODO: Fix this code
-    let x = "change me";
-    println!("Exercise: {}", x);
+    let p = Point { x: 5, y: 10 };
+    // println!("p.x = {}", p.x());
 }
 
 #[cfg(test)]

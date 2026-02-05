@@ -2,26 +2,24 @@
 
 /*
 Difficulty: ⭐
-Topic: Async/Await
+Topic: Async - Future
 
 Description:
-Welcome to the module on Async/Await!
-This exercise is a placeholder to get you started.
-Fix the code so it compiles.
+Async functions return a `Future`.
+To run a future, you need an executor (like `tokio`) or use `.await` inside another async function.
 
-Hints:
-1. Read the error message carefully.
+Your task is to define an async function `hello` that returns "world".
 */
 
+use std::future::Future;
+
+// TODO: Define async function
+// async fn hello() -> &'static str { ... }
+
 fn main() {
-    println!("Welcome to Async/Await!");
-    let x = 1;
-    // Fix this condition to be true
-    if x > 100 {
-        println!("This won't print");
-    } else {
-        println!("Success!");
-    }
+    // let future = hello();
+    // In a real async runtime, we would await this.
+    // Here we just check the type.
 }
 
 #[cfg(test)]

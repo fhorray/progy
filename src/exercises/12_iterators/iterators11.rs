@@ -2,16 +2,29 @@
 
 /*
 Difficulty: ⭐⭐⭐⭐
-Topic: Iterators
+Topic: Iterators - Any and All
 
 Description:
-⭐⭐⭐⭐ - Iterator with closures
+`any` returns true if any element satisfies the predicate.
+`all` returns true if all elements satisfy the predicate.
+
+Your task is to check if:
+1. `any` number is greater than 10.
+2. `all` numbers are positive.
 */
 
 fn main() {
-    // TODO: Fix this code
-    let x = "change me";
-    println!("Exercise: {}", x);
+    let v = vec![1, 5, 12, 3];
+
+    // TODO: Check any > 10
+    let has_large = false;
+
+    // TODO: Check all > 0
+    let all_positive = false;
+
+    println!("Has large: {}, All positive: {}", has_large, all_positive);
+    assert!(has_large);
+    assert!(all_positive);
 }
 
 #[cfg(test)]

@@ -2,26 +2,28 @@
 
 /*
 Difficulty: ⭐
-Topic: Structs
+Topic: Structs - Definition
 
 Description:
-Welcome to the module on Structs!
-This exercise is a placeholder to get you started.
-Fix the code so it compiles.
+Structs are custom data types that let you name and package together multiple related values.
 
-Hints:
-1. Read the error message carefully.
+Your task is to define a struct named `Color` with three fields: `red`, `green`, and `blue`, all of type `i32`.
 */
 
+// TODO: Define the struct Color
+struct Color {
+    red: i32,
+    // Add other fields
+}
+
 fn main() {
-    println!("Welcome to Structs!");
-    let x = 1;
-    // Fix this condition to be true
-    if x > 100 {
-        println!("This won't print");
-    } else {
-        println!("Success!");
-    }
+    let green = Color {
+        red: 0,
+        green: 255,
+        blue: 0,
+    };
+
+    println!("Green: {}, {}, {}", green.red, green.green, green.blue);
 }
 
 #[cfg(test)]

@@ -1,17 +1,38 @@
 // I AM NOT DONE
 
 /*
-Difficulty: ⭐⭐⭐
-Topic: Traits
+Difficulty: ⭐⭐
+Topic: Trait Objects - Definition
 
 Description:
-⭐⭐⭐ - Basic trait object
+Trait objects allow you to store different types that implement the same trait in the same collection.
+They use dynamic dispatch.
+
+Your task is to create a vector of `Box<dyn Animal>`.
 */
 
+trait Animal {
+    fn sound(&self) -> String;
+}
+
+struct Dog;
+impl Animal for Dog {
+    fn sound(&self) -> String { "Woof".into() }
+}
+
+struct Cat;
+impl Animal for Cat {
+    fn sound(&self) -> String { "Meow".into() }
+}
+
 fn main() {
-    // TODO: Fix this code
-    let x = "change me";
-    println!("Exercise: {}", x);
+    let dog = Box::new(Dog);
+    let cat = Box::new(Cat);
+
+    // TODO: Create the vector
+    // let animals: Vec<Box<dyn Animal>> = ...;
+
+    // println!("We have {} animals", animals.len());
 }
 
 #[cfg(test)]

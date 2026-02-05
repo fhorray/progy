@@ -1,17 +1,37 @@
 // I AM NOT DONE
 
 /*
-Difficulty: ⭐⭐⭐
-Topic: Traits
+Difficulty: ⭐⭐
+Topic: Trait Objects - Dispatch
 
 Description:
-⭐⭐⭐ - Vector of trait objects
+When you call a method on a trait object, Rust decides at runtime which implementation to call.
+
+Your task is to iterate over the animals and call `sound`.
 */
 
+trait Animal {
+    fn sound(&self) -> String;
+}
+
+struct Dog;
+impl Animal for Dog {
+    fn sound(&self) -> String { "Woof".into() }
+}
+
+struct Cat;
+impl Animal for Cat {
+    fn sound(&self) -> String { "Meow".into() }
+}
+
 fn main() {
-    // TODO: Fix this code
-    let x = "change me";
-    println!("Exercise: {}", x);
+    let animals: Vec<Box<dyn Animal>> = vec![
+        Box::new(Dog),
+        Box::new(Cat),
+    ];
+
+    // TODO: Iterate and print sound
+    // for animal in ... { ... }
 }
 
 #[cfg(test)]

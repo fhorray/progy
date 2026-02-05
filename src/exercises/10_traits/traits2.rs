@@ -1,17 +1,28 @@
 // I AM NOT DONE
 
 /*
-Difficulty: ⭐⭐
-Topic: Traits
+Difficulty: ⭐
+Topic: Traits - Implementation
 
 Description:
-⭐⭐ - Implement trait for a struct
+Once a trait is defined, you can implement it for specific types.
+
+Your task is to implement the `Animal` trait for the `Dog` struct.
+`sound` should return "Woof".
 */
 
+trait Animal {
+    fn sound(&self) -> String;
+}
+
+struct Dog;
+
+// TODO: Implement Animal for Dog
+// impl Animal for Dog { ... }
+
 fn main() {
-    // TODO: Fix this code
-    let x = "change me";
-    println!("Exercise: {}", x);
+    let dog = Dog;
+    // println!("{}", dog.sound());
 }
 
 #[cfg(test)]

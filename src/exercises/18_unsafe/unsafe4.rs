@@ -1,17 +1,25 @@
 // I AM NOT DONE
 
 /*
-Difficulty: ⭐⭐⭐⭐
-Topic: Unsafe
+Difficulty: ⭐⭐⭐
+Topic: Unsafe Rust - FFI (Foreign Function Interface)
 
 Description:
-⭐⭐⭐⭐ - Mutable static
+You can call C functions from Rust using `extern "C"`.
+This is always unsafe.
+
+Your task is to call the C function `abs` (absolute value).
 */
 
+extern "C" {
+    fn abs(input: i32) -> i32;
+}
+
 fn main() {
-    // TODO: Fix this code
-    let x = "change me";
-    println!("Exercise: {}", x);
+    // TODO: Call abs(-3) inside unsafe block
+    // unsafe {
+    //     println!("Absolute value of -3 according to C: {}", abs(-3));
+    // }
 }
 
 #[cfg(test)]

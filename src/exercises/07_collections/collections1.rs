@@ -1,27 +1,28 @@
 // I AM NOT DONE
 
 /*
-Difficulty: ⭐
-Topic: Collections
+Difficulty: ⭐⭐
+Topic: HashSet
 
 Description:
-Welcome to the module on Collections!
-This exercise is a placeholder to get you started.
-Fix the code so it compiles.
+`HashSet` stores unique values. It's like a HashMap with only keys.
 
-Hints:
-1. Read the error message carefully.
+Your task is to:
+1. Create a `HashSet` called `books`.
+2. Insert "Harry Potter" twice.
+3. Assert that `len()` is 1.
 */
 
+use std::collections::HashSet;
+
 fn main() {
-    println!("Welcome to Collections!");
-    let x = 1;
-    // Fix this condition to be true
-    if x > 100 {
-        println!("This won't print");
-    } else {
-        println!("Success!");
-    }
+    // TODO: Create books
+    // let mut books = ...;
+
+    // TODO: Insert "Harry Potter" twice
+
+    // println!("Books: {:?}", books);
+    // assert_eq!(books.len(), 1);
 }
 
 #[cfg(test)]

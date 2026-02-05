@@ -2,16 +2,25 @@
 
 /*
 Difficulty: ⭐⭐
-Topic: Functions
+Topic: Functions - Implicit Return
 
 Description:
-⭐⭐ - Implicit return (remove semicolon)
+In Rust, the last expression in a function block is the return value.
+If you put a semicolon `;` at the end, it becomes a statement and returns `()` (unit type).
+
+The function `square` is supposed to return the square of a number, but it currently returns `()`.
+
+Your task is to remove the semicolon at the end of the function body.
 */
 
 fn main() {
-    // TODO: Fix this code
-    let x = "change me";
-    println!("Exercise: {}", x);
+    let answer = square(3);
+    println!("The square of 3 is {}", answer);
+}
+
+// TODO: Fix the return value
+fn square(num: i32) -> i32 {
+    num * num; // Remove this semicolon!
 }
 
 #[cfg(test)]

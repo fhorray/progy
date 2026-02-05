@@ -2,16 +2,23 @@
 
 /*
 Difficulty: ⭐⭐⭐
-Topic: Generics
+Topic: Generics - Where Clause
 
 Description:
-⭐⭐⭐ - Multiple trait bounds
+Use `where` clause for cleaner bounds.
+
+Your task is to rewrite the function signature to use a `where` clause for the `Display` bound.
 */
 
+use std::fmt::Display;
+
+// TODO: Use where clause to fix the error
+fn print_me<T>(item: T) {
+    println!("{}", item);
+}
+
 fn main() {
-    // TODO: Fix this code
-    let x = "change me";
-    println!("Exercise: {}", x);
+    print_me("Hello");
 }
 
 #[cfg(test)]

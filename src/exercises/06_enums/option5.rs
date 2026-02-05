@@ -2,16 +2,23 @@
 
 /*
 Difficulty: ⭐⭐⭐
-Topic: Enums
+Topic: Option - Map
 
 Description:
-⭐⭐⭐ - map() and and_then()
+`map()` allows you to transform the value inside an `Option` if it exists, without unwrapping it.
+If the Option is `None`, `map` returns `None`.
+
+Your task is to use `.map()` to square the value inside `maybe_number`.
 */
 
 fn main() {
-    // TODO: Fix this code
-    let x = "change me";
-    println!("Exercise: {}", x);
+    let maybe_number = Some(5);
+
+    // TODO: Use map to square the number
+    let squared = maybe_number; // .map(|n| ...);
+
+    println!("Squared: {:?}", squared);
+    assert_eq!(squared, Some(25));
 }
 
 #[cfg(test)]

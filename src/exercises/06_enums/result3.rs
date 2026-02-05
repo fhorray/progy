@@ -2,16 +2,23 @@
 
 /*
 Difficulty: ⭐⭐
-Topic: Enums
+Topic: Result - Unwrap
 
 Description:
-⭐⭐ - The ? operator
+You can unwrap a Result just like an Option.
+If it's `Err`, it will panic with the error message.
+
+Your task is to use `expect` to get the value, providing a message "Failed to parse".
 */
 
 fn main() {
-    // TODO: Fix this code
-    let x = "change me";
-    println!("Exercise: {}", x);
+    let result: Result<i32, &str> = Ok(42);
+
+    // TODO: Use expect
+    let value = 0; // result.expect(...);
+
+    println!("Value is {}", value);
+    assert_eq!(value, 42);
 }
 
 #[cfg(test)]

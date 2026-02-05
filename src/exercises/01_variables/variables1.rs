@@ -5,14 +5,17 @@ Difficulty: ⭐
 Topic: Variables - Declaration
 
 Description:
-This program is trying to print the value of `x`, but `x` is not defined.
-Fix the code by binding the value `5` to `x`.
+Rust is a statically typed language, which means every variable must be declared before it can be used.
+The code below attempts to assign the value `5` to `x`, but `x` has not been introduced to the compiler.
+
+Your task is to properly declare `x` so that the program can store the value `5` and print it.
 
 Hints:
-1. Use the `let` keyword to define a variable.
+1. Use the `let` keyword to bind a value to a variable name.
 */
 
 fn main() {
+    // TODO: Declare the variable `x` properly
     x = 5;
     println!("x is {}", x);
 }

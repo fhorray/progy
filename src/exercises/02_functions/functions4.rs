@@ -2,16 +2,24 @@
 
 /*
 Difficulty: ⭐
-Topic: Functions
+Topic: Functions - Return Type
 
 Description:
-⭐ - Return type (fix missing return type)
+Functions can return values. The return type is specified after `->`.
+
+The function `is_even` is supposed to return a boolean, but the return type is missing.
+
+Your task is to add `-> bool` to the function signature.
 */
 
 fn main() {
-    // TODO: Fix this code
-    let x = "change me";
-    println!("Exercise: {}", x);
+    let original_price = 51;
+    println!("Is {} even? {}", original_price, is_even(original_price));
+}
+
+// TODO: Add the return type
+fn is_even(num: i32) {
+    num % 2 == 0
 }
 
 #[cfg(test)]

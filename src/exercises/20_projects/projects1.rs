@@ -1,27 +1,77 @@
 // I AM NOT DONE
 
 /*
-Difficulty: ⭐
+Difficulty: ⭐⭐⭐⭐⭐
 Topic: Final Project
 
 Description:
-Welcome to the module on Final Project!
-This exercise is a placeholder to get you started.
-Fix the code so it compiles.
+This is the final boss!
+You need to implement a simple command-line tool `grep-lite`.
+It should:
+1. Accept a pattern and a filename as arguments.
+2. Read the file.
+3. Print lines that contain the pattern.
 
-Hints:
-1. Read the error message carefully.
+Use `std::env::args`, `std::fs::File`, `std::io::BufReader`.
+Handle errors gracefully.
 */
 
-fn main() {
-    println!("Welcome to Final Project!");
-    let x = 1;
-    // Fix this condition to be true
-    if x > 100 {
-        println!("This won't print");
-    } else {
-        println!("Success!");
+use std::env;
+use std::fs::File;
+use std::io::{self, BufRead, BufReader};
+
+struct Config {
+    pattern: String,
+    filename: String,
+}
+
+impl Config {
+    fn new(mut args: env::Args) -> Result<Config, &'static str> {
+        // Skip program name
+        args.next();
+
+        let pattern = match args.next() {
+            Some(arg) => arg,
+            None => return Err("Didn't get a pattern string"),
+        };
+
+        let filename = match args.next() {
+            Some(arg) => arg,
+            None => return Err("Didn't get a file name"),
+        };
+
+        Ok(Config { pattern, filename })
     }
+}
+
+fn run(config: Config) -> Result<(), io::Error> {
+    let file = File::open(config.filename)?;
+    let reader = BufReader::new(file);
+
+    for line in reader.lines() {
+        let line = line?;
+        if line.contains(&config.pattern) {
+            println!("{}", line);
+        }
+    }
+
+    Ok(())
+}
+
+fn main() {
+    // This is just a skeleton.
+    // In a real run, we would parse args.
+    // For testing, we mock it.
+
+    // let config = Config::new(env::args()).unwrap_or_else(|err| {
+    //     eprintln!("Problem parsing arguments: {}", err);
+    //     std::process::exit(1);
+    // });
+
+    // if let Err(e) = run(config) {
+    //     eprintln!("Application error: {}", e);
+    //     std::process::exit(1);
+    // }
 }
 
 #[cfg(test)]

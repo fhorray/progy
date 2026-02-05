@@ -2,16 +2,22 @@
 
 /*
 Difficulty: ⭐
-Topic: Collections
+Topic: Vectors - Pushing
 
 Description:
-⭐ - Push and pop elements
+You can add elements to a vector using `push`. The vector must be mutable.
+
+Your task is to push 10, 20, 30 into `v`.
 */
 
 fn main() {
-    // TODO: Fix this code
-    let x = "change me";
-    println!("Exercise: {}", x);
+    let mut v = Vec::new();
+
+    // TODO: Push 10, 20, 30
+
+
+    println!("Vector: {:?}", v);
+    assert_eq!(v, [10, 20, 30]);
 }
 
 #[cfg(test)]

@@ -2,16 +2,32 @@
 
 /*
 Difficulty: ⭐⭐⭐
-Topic: Control_Flow
+Topic: Match - Destructuring
 
 Description:
-⭐⭐⭐ - Match with destructuring
+You can destructure tuples, structs, and enums inside a match pattern.
+
+Your task is to match on a tuple `point` (x, y):
+- (0, 0) => print "Origin"
+- (0, y) => print "Y-axis at {}"
+- (x, 0) => print "X-axis at {}"
+- (x, y) => print "Coordinates: {}, {}"
 */
 
 fn main() {
-    // TODO: Fix this code
-    let x = "change me";
-    println!("Exercise: {}", x);
+    let point = (0, 5);
+
+    match point {
+        // TODO: Add the patterns
+        (0, 0) => println!("Origin"),
+
+        // Handle (0, y)
+
+        // Handle (x, 0)
+
+        // Handle (x, y)
+        _ => println!("Somewhere else"),
+    }
 }
 
 #[cfg(test)]

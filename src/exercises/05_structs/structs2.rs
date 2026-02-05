@@ -2,16 +2,29 @@
 
 /*
 Difficulty: ⭐
-Topic: Structs
+Topic: Structs - Instantiation
 
 Description:
-⭐ - Access struct fields
+To use a struct, you create an instance of it by specifying values for each field.
+You access fields using dot notation.
+
+Your task is to:
+1. Create an instance of `Color` named `red` with values (255, 0, 0).
+2. Print the red value.
 */
 
+struct Color {
+    red: i32,
+    green: i32,
+    blue: i32,
+}
+
 fn main() {
-    // TODO: Fix this code
-    let x = "change me";
-    println!("Exercise: {}", x);
+    // TODO: Create an instance
+    // let red = ...;
+
+    // println!("Red component is {}", red.red);
+    // assert_eq!(red.red, 255);
 }
 
 #[cfg(test)]

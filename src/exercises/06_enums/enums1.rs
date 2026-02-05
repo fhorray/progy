@@ -2,26 +2,31 @@
 
 /*
 Difficulty: ⭐
-Topic: Enums
+Topic: Enums - Definition
 
 Description:
-Welcome to the module on Enums!
-This exercise is a placeholder to get you started.
-Fix the code so it compiles.
+Enums allow you to define a type by enumerating its possible variants.
 
-Hints:
-1. Read the error message carefully.
+Your task is to define an enum named `Message` with four variants:
+- `Quit`
+- `Echo`
+- `Move`
+- `ChangeColor`
 */
 
+// TODO: Define the enum `Message`
+enum Message {
+    // Add variants here
+}
+
 fn main() {
-    println!("Welcome to Enums!");
-    let x = 1;
-    // Fix this condition to be true
-    if x > 100 {
-        println!("This won't print");
-    } else {
-        println!("Success!");
-    }
+    let msg1 = Message::Quit;
+    let msg2 = Message::Echo;
+    let msg3 = Message::Move;
+    let msg4 = Message::ChangeColor;
+
+    // Note: To print them, we usually need #[derive(Debug)]
+    // println!("We have messages");
 }
 
 #[cfg(test)]

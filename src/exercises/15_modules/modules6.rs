@@ -2,16 +2,28 @@
 
 /*
 Difficulty: ⭐⭐⭐
-Topic: Modules
+Topic: Modules - Enum Visibility
 
 Description:
-⭐⭐⭐ - File modules
+Unlike structs, if an enum is `pub`, all its variants are also `pub`.
+
+Your task is to verify this by using `Mushroom` variant from `PizzaTopping`.
 */
 
+mod pizza_factory {
+    #[derive(Debug)]
+    pub enum PizzaTopping {
+        Cheese,
+        Mushroom,
+        Pepperoni,
+    }
+}
+
 fn main() {
-    // TODO: Fix this code
-    let x = "change me";
-    println!("Exercise: {}", x);
+    // TODO: Use the Mushroom variant
+    // let topping = ...;
+
+    // println!("Topping: {:?}", topping);
 }
 
 #[cfg(test)]

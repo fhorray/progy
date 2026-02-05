@@ -2,16 +2,25 @@
 
 /*
 Difficulty: ⭐
-Topic: Collections
+Topic: Vectors - Creation
 
 Description:
-⭐ - Create a vector
+Vectors are re-sizable arrays.
+You can create them with `Vec::new()` or the `vec![]` macro.
+
+Your task is to:
+1. Create a vector `v1` using `Vec::new()`.
+2. Create a vector `v2` containing [1, 2, 3] using `vec![]`.
 */
 
 fn main() {
-    // TODO: Fix this code
-    let x = "change me";
-    println!("Exercise: {}", x);
+    // TODO: Create v1
+    // let v1: Vec<i32> = ...;
+
+    // TODO: Create v2
+    // let v2 = ...;
+
+    // println!("v1: {:?}, v2: {:?}", v1, v2);
 }
 
 #[cfg(test)]

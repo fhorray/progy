@@ -2,16 +2,27 @@
 
 /*
 Difficulty: ⭐⭐⭐
-Topic: Collections
+Topic: Vectors - Storing Different Types
 
 Description:
-⭐⭐⭐ - Vector of different types (using enum)
+Vectors can only store one type.
+To store multiple types, you can use an Enum wrapper.
+
+Your task is to:
+1. Define an enum `SpreadsheetCell` with variants `Int(i32)` and `Float(f64)`.
+2. Create a vector `row` containing one Int(3) and one Float(10.12).
 */
 
+// TODO: Define SpreadsheetCell
+
 fn main() {
-    // TODO: Fix this code
-    let x = "change me";
-    println!("Exercise: {}", x);
+    // TODO: Create the vector
+    // let row = vec![
+    //     SpreadsheetCell::Int(3),
+    //     SpreadsheetCell::Float(10.12),
+    // ];
+
+    // println!("Row: {:?}", row);
 }
 
 #[cfg(test)]

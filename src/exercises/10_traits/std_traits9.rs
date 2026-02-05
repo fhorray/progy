@@ -1,17 +1,33 @@
 // I AM NOT DONE
 
 /*
-Difficulty: ⭐⭐⭐⭐
-Topic: Traits
+Difficulty: ⭐⭐⭐
+Topic: Traits - Deref
 
 Description:
-⭐⭐⭐⭐ - AsRef
+`Deref` allows treating a type like a reference to another type.
+
+Your task is to implement `Deref` for `MyBox` so we can access inner methods of `T`.
 */
 
+use std::ops::Deref;
+
+struct MyBox<T> {
+    value: T,
+}
+
+impl<T> MyBox<T> {
+    fn new(value: T) -> MyBox<T> {
+        MyBox { value }
+    }
+}
+
+// TODO: Implement Deref
+// impl<T> Deref for MyBox<T> { ... }
+
 fn main() {
-    // TODO: Fix this code
-    let x = "change me";
-    println!("Exercise: {}", x);
+    let x = MyBox::new(String::from("Rust"));
+    // println!("Length: {}", x.len()); // This works because of Deref coercion
 }
 
 #[cfg(test)]

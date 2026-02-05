@@ -2,16 +2,22 @@
 
 /*
 Difficulty: ⭐⭐
-Topic: Collections
+Topic: Vectors - Iterating
 
 Description:
-⭐⭐ - Mutable iteration
+You can iterate over a vector using a for loop.
+If you want to read values, iterate over `&v`.
+
+Your task is to iterate over `v` and print each element.
 */
 
 fn main() {
-    // TODO: Fix this code
-    let x = "change me";
-    println!("Exercise: {}", x);
+    let v = vec![100, 32, 57];
+
+    // TODO: Iterate over `v`
+    // for i in ... {
+    //    println!("{}", i);
+    // }
 }
 
 #[cfg(test)]

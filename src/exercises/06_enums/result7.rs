@@ -1,17 +1,21 @@
 // I AM NOT DONE
 
 /*
-Difficulty: ⭐⭐⭐⭐
-Topic: Enums
+Difficulty: ⭐⭐⭐
+Topic: Result - Type Alias
 
 Description:
-⭐⭐⭐⭐ - Result and Option together
+If you use the same Result type (same Error) repeatedly, you can define a type alias.
+
+Your task is to define `type MyResult<T> = Result<T, String>` and use it in the function signature.
 */
 
+// TODO: Define MyResult
+// type MyResult<T> = ...
+
 fn main() {
-    // TODO: Fix this code
-    let x = "change me";
-    println!("Exercise: {}", x);
+    // let res: MyResult<i32> = Ok(10);
+    // println!("{:?}", res);
 }
 
 #[cfg(test)]

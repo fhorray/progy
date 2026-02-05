@@ -2,16 +2,29 @@
 
 /*
 Difficulty: ⭐⭐⭐
-Topic: Concurrency
+Topic: Threads - Multiple Threads
 
 Description:
-⭐⭐⭐ - Multiple threads
+You can spawn multiple threads in a loop.
+You need to collect their handles to join them later.
+
+Your task is to fix the code to collect handles and join all of them.
 */
 
+use std::thread;
+
 fn main() {
-    // TODO: Fix this code
-    let x = "change me";
-    println!("Exercise: {}", x);
+    let mut handles = vec![];
+
+    for i in 0..10 {
+        let handle = thread::spawn(move || {
+            println!("Thread {}", i);
+        });
+        handles.push(handle);
+    }
+
+    // TODO: Join all handles
+    // for handle in handles { ... }
 }
 
 #[cfg(test)]

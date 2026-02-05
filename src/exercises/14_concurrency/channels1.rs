@@ -2,16 +2,29 @@
 
 /*
 Difficulty: ⭐⭐
-Topic: Concurrency
+Topic: Channels - Sending
 
 Description:
-⭐⭐ - Basic channel
+Channels allow threads to communicate.
+`mpsc::channel` creates a (Sender, Receiver) pair.
+
+Your task is to send "Hello" down the channel.
 */
 
+use std::sync::mpsc;
+use std::thread;
+
 fn main() {
-    // TODO: Fix this code
-    let x = "change me";
-    println!("Exercise: {}", x);
+    let (tx, rx) = mpsc::channel();
+
+    thread::spawn(move || {
+        let val = String::from("Hello");
+        // TODO: Send val
+        // tx.send(val).unwrap();
+    });
+
+    let received = rx.recv().unwrap();
+    println!("Got: {}", received);
 }
 
 #[cfg(test)]

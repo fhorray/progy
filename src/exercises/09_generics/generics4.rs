@@ -1,17 +1,25 @@
 // I AM NOT DONE
 
 /*
-Difficulty: ⭐⭐⭐
-Topic: Generics
+Difficulty: ⭐⭐
+Topic: Generics - Multiple Types
 
 Description:
-⭐⭐⭐ - Methods on generic struct
+You can use multiple generic parameters.
+
+Your task is to define a struct `Point` where `x` and `y` can be different types.
 */
 
+// TODO: Define struct Point<T, U>
+struct Point<T> {
+    x: T,
+    y: T,
+}
+
 fn main() {
-    // TODO: Fix this code
-    let x = "change me";
-    println!("Exercise: {}", x);
+    // let p = Point { x: 5, y: 10.4 };
+
+    // println!("{:?}", p);
 }
 
 #[cfg(test)]

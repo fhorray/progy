@@ -2,16 +2,42 @@
 
 /*
 Difficulty: ⭐⭐⭐
-Topic: Error_Handling
+Topic: Error Handling - Custom Errors
 
 Description:
-⭐⭐⭐ - Return Result from main
+You can define your own error types. They are usually structs or enums.
+For them to be useful, they should implement `std::fmt::Display` and `std::fmt::Debug`.
+
+Your task is to:
+1. Define a struct `CreationError`.
+2. Implement `Display` for it.
+3. Return it from the function.
 */
 
+use std::fmt;
+
+#[derive(Debug)]
+struct CreationError;
+
+// TODO: Implement Display
+impl fmt::Display for CreationError {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "Creation error")
+    }
+}
+
+fn generate_nametag_text(name: String) -> Result<String, CreationError> {
+    if name.is_empty() {
+        // TODO: Return Err(CreationError)
+        Ok(String::new())
+    } else {
+        Ok(format!("Hi! My name is {}", name))
+    }
+}
+
 fn main() {
-    // TODO: Fix this code
-    let x = "change me";
-    println!("Exercise: {}", x);
+    let result = generate_nametag_text(String::new());
+    println!("{:?}", result);
 }
 
 #[cfg(test)]

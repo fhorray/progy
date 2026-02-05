@@ -2,22 +2,30 @@
 
 /*
 Difficulty: ⭐⭐⭐
-Topic: Testing
+Topic: Testing - Expected Panic Message
 
 Description:
-⭐⭐⭐ - Custom failure message
+You can specify the expected panic message to be more precise.
+`#[should_panic(expected = "message")]`
+
+Your task is to update the test to expect the message "Divide by zero".
 */
 
-fn main() {
-    // TODO: Fix this code
-    let x = "change me";
-    println!("Exercise: {}", x);
+pub fn divide(a: i32, b: i32) -> i32 {
+    if b == 0 {
+        panic!("Divide by zero");
+    }
+    a / b
 }
 
 #[cfg(test)]
 mod tests {
+    use super::*;
+
     #[test]
-    fn test_main_runs() {
-        super::main();
+    // TODO: Add expected message to should_panic
+    #[should_panic]
+    fn test_divide_by_zero() {
+        divide(10, 0);
     }
 }

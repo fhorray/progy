@@ -2,16 +2,23 @@
 
 /*
 Difficulty: ⭐⭐⭐
-Topic: Collections
+Topic: Strings - Indexing
 
 Description:
-⭐⭐⭐ - Iterating over chars
+Rust strings do not support indexing like `s[0]` because UTF-8 characters can be multiple bytes.
+To get a character, you need to iterate over chars.
+
+The code below tries to index a string.
+Your task is to fix it by using `.chars().nth(0)` to get the first character.
 */
 
 fn main() {
-    // TODO: Fix this code
-    let x = "change me";
-    println!("Exercise: {}", x);
+    let s = String::from("hello");
+
+    // TODO: Fix this error
+    let h = s[0];
+
+    println!("The first letter is {}", h);
 }
 
 #[cfg(test)]
