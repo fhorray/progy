@@ -2,10 +2,11 @@
   "name": "progy-monorepo",
   "private": true,
   "scripts": {
-    "build": "bun run --cwd apps/prog build",
-    "publish-cli": "bun run --cwd apps/prog publish"
+    "build": "bun run --cwd apps/progy build",
+    "publish-cli": "bun run --cwd apps/progy publish"
   },
   "workspaces": [
     "apps/*"
-  ]
+  ],
+  "version": "0.0.1"
 }
