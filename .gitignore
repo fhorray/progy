@@ -1,3 +1,4 @@
 .prog
 node_modules
 target
+dist

@@ -1,5 +1,5 @@
 import { serve } from "bun";
-import index from "../../public/index.html";
+// import index from "../../public/index.html"; // Removed for static serving
 import { readdir, readFile, writeFile, mkdir, exists, stat } from "node:fs/promises";
 import { join } from "node:path";
 import { spawn } from "node:child_process";
@@ -9,9 +9,14 @@ const PROG_CWD = process.env.PROG_CWD || process.cwd();
 const CONFIG_DIR = join(homedir(), ".progy");
 const GLOBAL_CONFIG_PATH = join(CONFIG_DIR, "config.json");
 const COURSE_CONFIG_PATH = join(PROG_CWD, "course.json");
-const PROG_DIR = join(PROG_CWD, ".prog");
+const PROG_DIR = join(PROG_CWD, ".progy");
 const MANIFEST_PATH = join(PROG_DIR, "exercises.json");
 const PROGRESS_PATH = join(PROG_DIR, "progress.json");
+
+// Define Public Directory (works in dev and prod)
+// In dev: src/backend/server.ts -> ../../public
+// In prod: dist/backend/server.js -> ../public
+const PUBLIC_DIR = join(import.meta.dir, import.meta.file.endsWith(".ts") ? "../../public" : "../public");
 
 console.log(`[INFO] Server starting...`);
 console.log(`[INFO] Working Directory: ${PROG_CWD}`);
@@ -589,7 +594,9 @@ function parseRunnerOutput(rawOutput: string, exitCode: number): { success: bool
 const server = serve({
   port: 3001,
   routes: {
-    "/": index,
+    "/": () => new Response(Bun.file(join(PUBLIC_DIR, "index.html"))),
+    "/main.js": () => new Response(Bun.file(join(PUBLIC_DIR, "main.js"))),
+    "/main.css": () => new Response(Bun.file(join(PUBLIC_DIR, "main.css"))),
 
     "/api/progress": {
       async GET() {

@@ -19,7 +19,6 @@
 ### Prerequisites
 
 - **[Bun](https://bun.sh/)** (v1.0.0 or higher) - Required for the runtime.
-- **[Rust](https://www.rust-lang.org/)** (Recommended) - If you plan to take the Rust course.
 
 ### Installation
 

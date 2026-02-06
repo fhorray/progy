@@ -157,7 +157,12 @@ program
 
     console.log("[INFO] Starting UI...");
 
-    const serverPath = join(import.meta.dir, "backend", "server.ts");
+    // dynamically find server file (ts in dev, js in prod)
+    // In dev: src/cli.ts -> backend/server.ts
+    // In prod: dist/cli.js -> backend/server.js
+    const isTs = import.meta.file.endsWith(".ts");
+    const serverExt = isTs ? "ts" : "js";
+    const serverPath = join(import.meta.dir, "backend", `server.${serverExt}`);
 
     const child = spawn("bun", ["run", "--hot", serverPath], {
       stdio: "inherit",
