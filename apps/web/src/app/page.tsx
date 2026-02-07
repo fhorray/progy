@@ -332,7 +332,7 @@ export default function Home() {
 										</div>
 										<div>
 											<h4 className="text-sm font-black mb-1.5 uppercase tracking-[0.1em]">3. Real-time Verify</h4>
-											<p className="text-xs text-muted-foreground leading-relaxed italic">Start coding. Our engine watches your saves and verifies solutions instantly.</p>
+											<p className="text-xs text-muted-foreground leading-relaxed italic">Start coding. Save your progress and click 'Run tests' to verify your solution instantly.</p>
 										</div>
 									</div>
 								</div>
@@ -460,16 +460,20 @@ export default function Home() {
 								<CardHeader className="p-6 md:p-8">
 									<Badge className="w-fit bg-primary/20 text-primary border-primary/20 mb-4 text-[9px] font-black tracking-widest leading-none">LIFETIME ACCESS</Badge>
 									<CardTitle className="text-xl md:text-2xl font-black italic uppercase tracking-tighter">Lifetime</CardTitle>
-									<div className="mt-4 md:mt-6 text-3xl md:text-4xl font-black">$149</div>
+									<div className="mt-4 md:mt-6 text-3xl md:text-4xl font-black">$99</div>
 								</CardHeader>
 								<CardContent className="px-6 md:px-8 flex-grow">
 									<ul className="space-y-3 md:space-y-4">
-										{["Everything in Free", "One-time Payment", "Bring Your Own Key", "Community Discord"].map((item, i) => (
+										{["Everything in Free", "One-time Payment", "Bring Your Own Key (AI)", "Community Discord"].map((item, i) => (
 											<li key={i} className="flex items-center gap-2.5 text-[11px] md:text-[12px] font-black">
 												<Check className="w-3.5 h-3.5 text-primary shrink-0" /> {item}
 											</li>
 										))}
 									</ul>
+									<p className="mt-6 text-[10px] text-muted-foreground leading-relaxed border-t border-white/5 pt-4">
+										<span className="font-bold text-primary">NOTE:</span> AI Mentor features require your own API Key. <br />
+										Prefer our cloud? Add the <span className="text-foreground">Master AI</span> plan for just <span className="text-foreground">$8/mo</span> later.
+									</p>
 								</CardContent>
 								<CardFooter className="p-6 md:p-8">
 									<Button

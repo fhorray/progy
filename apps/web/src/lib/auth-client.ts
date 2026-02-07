@@ -1,8 +1,9 @@
 import { createAuthClient } from "better-auth/react"
 import { stripeClient } from "@better-auth/stripe/client"
+import { config } from "./config"
 
 export const authClient = createAuthClient({
-  baseURL: "http://localhost:8787", // Adjust if backend URL is different
+  baseURL: config.API_URL,
   plugins: [
     stripeClient({
       subscription: true

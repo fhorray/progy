@@ -19,6 +19,9 @@
 		"binding": "ASSETS",
 		"directory": ".open-next/assets"
 	},
+	"vars": {
+		"API_URL": "https://progy-api.francy.workers.dev"
+	},
 	// "images": {
 	// 	// Enable image optimization
 	// 	// see https://opennext.js.org/cloudflare/howtos/image
