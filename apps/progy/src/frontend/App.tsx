@@ -11,6 +11,7 @@ import { ContentTabs } from './components/content-tabs';
 import { ChallengeDisplay } from './components/challenge-display';
 import { SetupView } from './components/setup-view';
 import { SkillTree } from './components/skill-tree';
+import { PremiumGateModal } from './components/premium-gate-modal';
 
 // Stores & Actions
 import {
@@ -31,7 +32,7 @@ import {
   getAiHint,
   setSelectedExercise,
 } from './stores/course-store';
-import { $viewMode, setViewMode } from './stores/ui-store';
+import { $viewMode, setViewMode, $isPremiumGateOpen } from './stores/ui-store';
 import { ChallengeGenerator } from './components/challenge-generator';
 import { Navbar } from './components/navbar';
 import { UserNav } from './components/user-nav';
@@ -39,10 +40,11 @@ import { fetchLocalSettings } from './stores/user-store';
 import { SecurityBanner } from './components/security-banner';
 
 export function App() {
-  // ...
+  // Initial settings load
   useEffect(() => {
     fetchLocalSettings();
   }, []);
+
   const selectedExercise = useStore($selectedExercise);
   const exerciseGroups = useStore($exerciseGroups);
   const exerciseGroupsQuery = useStore($exerciseGroupsQuery);
@@ -53,6 +55,7 @@ export function App() {
   const isAiLoading = useStore($isAiLoading);
   const output = useStore($output);
   const viewMode = useStore($viewMode);
+  const isPremiumGateOpen = useStore($isPremiumGateOpen);
 
   const [showChallengeGenerator, setShowChallengeGenerator] = useState(false);
   const [generatedChallenge, setGeneratedChallenge] = useState<any>(null);
@@ -159,6 +162,8 @@ export function App() {
           onClose={() => setGeneratedChallenge(null)}
         />
       )}
+
+      <PremiumGateModal />
     </div>
   );
 }

@@ -4,8 +4,9 @@ import { CheckCircle2, Loader2, Play, Sparkles, Terminal, Bot } from 'lucide-rea
 import { Card } from './ui/card';
 import { Badge } from './ui/badge';
 import { Button } from './ui/button';
-import { $selectedExercise, $results } from '../stores/course-store';
+import { $selectedExercise, $results, $isAiLocked } from '../stores/course-store';
 import { OpenInIdeButton } from './open-in-ide-button';
+import { Lock } from 'lucide-react';
 
 interface ExerciseCardProps {
   isRunning: boolean;
@@ -26,6 +27,7 @@ export function ExerciseCard({
 }: ExerciseCardProps) {
   const selectedExercise = useStore($selectedExercise);
   const results = useStore($results);
+  const isAiLocked = useStore($isAiLocked);
 
   if (!selectedExercise) {
     return (
@@ -94,7 +96,11 @@ export function ExerciseCard({
             disabled={isAiLoading}
             className="font-semibold bg-zinc-800/50 hover:bg-zinc-800 border-zinc-700/50"
           >
-            <Sparkles className="mr-2 h-4 w-4 text-purple-400" />
+            {isAiLocked ? (
+              <Lock className="mr-2 h-4 w-4 text-zinc-500" />
+            ) : (
+              <Sparkles className="mr-2 h-4 w-4 text-purple-400" />
+            )}
             Explain
           </Button>
 
@@ -105,7 +111,11 @@ export function ExerciseCard({
             disabled={isAiLoading}
             className="font-semibold bg-zinc-800/50 hover:bg-zinc-800 border-zinc-700/50"
           >
-            <Sparkles className="mr-2 h-4 w-4 text-rust" />
+            {isAiLocked ? (
+              <Lock className="mr-2 h-4 w-4 text-zinc-500" />
+            ) : (
+              <Sparkles className="mr-2 h-4 w-4 text-rust" />
+            )}
             Hint
           </Button>
         </div>

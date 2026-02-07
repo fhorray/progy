@@ -39,12 +39,35 @@ export const $showFriendly = atom<boolean>(true);
 // ... (rest of file)
 
 import { callAi } from '../lib/ai-client';
-import { setActiveContentTab } from './ui-store';
+import { setActiveContentTab, showPremiumGate } from './ui-store';
+import { $user, $isOffline, $localSettings } from './user-store';
+
+export const $isAiLocked = computed([$user, $isOffline, $localSettings], (user, isOffline, settings) => {
+  // If Pro, never locked
+  if (user?.subscription === 'pro') return false;
+
+  // If has local key for selected provider, never locked
+  const provider = settings.aiProvider || 'openai';
+  const hasKey = (provider === 'openai' && settings.openaiKey) ||
+    (provider === 'anthropic' && settings.anthropicKey) ||
+    (provider === 'google' && settings.geminiKey) ||
+    (provider === 'xai' && settings.xaiKey);
+
+  if (hasKey) return false;
+
+  // Otherwise, if Free or Offline, it's locked
+  return user?.subscription === 'free' || isOffline || !user;
+});
 
 export const getAiHint = async () => {
   const selected = $selectedExercise.get();
   const desc = $descriptionQuery.get();
   if (!selected) return;
+
+  if ($isAiLocked.get()) {
+    showPremiumGate();
+    return;
+  }
 
   $isAiLoading.set(true);
   $aiResponse.set(null);
@@ -72,6 +95,11 @@ export const explainExercise = async () => {
 
   // Guard: Don't generate if already loading or if we already have a full response for this exercise
   if (!selected || $isAiLoading.get() || (currentAi && !currentAi.startsWith('Error:'))) return;
+
+  if ($isAiLocked.get()) {
+    showPremiumGate();
+    return;
+  }
 
   $isAiLoading.set(true);
   $aiResponse.set(''); // Start with empty string for streaming

@@ -6,6 +6,7 @@ export interface User {
   email: string;
   image?: string;
   metadata?: string; // JSON string
+  subscription?: string;
 }
 
 export interface Session {
@@ -63,7 +64,7 @@ export const fetchUserSession = async () => {
 
     if (remoteRes.ok) {
       const data = await remoteRes.json();
-      console.log('[DEBUG] Session data received:', data?.user?.name);
+      console.log('[DEBUG] Session data received:', data?.user?.name, 'Plan:', data?.user?.subscription);
       $session.set(data);
     } else {
       const errorText = await remoteRes.text();

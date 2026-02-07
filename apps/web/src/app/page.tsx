@@ -373,7 +373,7 @@ export default function Home() {
 						<div className="mb-12 md:mb-20 reveal">
 							<Badge className="bg-primary/10 text-primary border-primary/20 mb-3 px-2 py-0.5 text-[9px] uppercase font-black tracking-[0.2em]">SPECIFICATIONS</Badge>
 							<h2 className="text-3xl md:text-5xl font-black italic tracking-tighter mb-4 uppercase">Elite Stack.</h2>
-							<p className="text-muted-foreground text-sm max-w-sm leading-relaxed italic font-medium">High-performance tools for engineers who demand the best.</p>
+							<p className="text-muted-foreground text-sm max-w-lg leading-relaxed italic font-medium">High-performance tools for engineers who demand the best.</p>
 						</div>
 
 						<div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-px bg-white/10 border border-white/10 overflow-hidden rounded-xl">
@@ -491,7 +491,7 @@ export default function Home() {
 								<CardHeader className="p-6 md:p-8">
 									<Badge className="w-fit bg-white/5 text-muted-foreground border-white/10 mb-4 text-[9px] font-black tracking-widest leading-none">CLOUD</Badge>
 									<CardTitle className="text-xl md:text-2xl font-black italic uppercase tracking-tighter">Professional</CardTitle>
-									<div className="mt-4 md:mt-6 text-3xl md:text-4xl font-black">$19<span className="text-sm font-bold text-muted-foreground ml-1 font-sans">/mo</span></div>
+									<div className="mt-4 md:mt-6 text-3xl md:text-4xl font-black">$12<span className="text-sm font-bold text-muted-foreground ml-1 font-sans">/mo</span></div>
 								</CardHeader>
 								<CardContent className="px-6 md:px-8 flex-grow">
 									<ul className="space-y-3 md:space-y-4 text-muted-foreground">

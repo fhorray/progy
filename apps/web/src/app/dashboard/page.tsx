@@ -57,11 +57,35 @@ export default function Dashboard() {
 
   // @ts-ignore - subscription type not fully inferred yet
   const plan = session.user.subscription || "free";
-  const planLabel = plan === "pro" ? "PRO" : plan === "standard" ? "STANDARD" : "FREE";
-  const planColor = plan === "pro" ? "bg-purple-500/10 text-purple-400 border-purple-500/20" : plan === "standard" ? "bg-blue-500/10 text-blue-400 border-blue-500/20" : "bg-zinc-500/10 text-zinc-400 border-zinc-500/20";
+  const isLifetime = plan === "lifetime";
+  const isPro = plan === "pro";
+
+  const planLabel = isPro ? "PRO" : isLifetime ? "LIFETIME" : "FREE";
+
+  const planColor = isPro
+    ? "bg-purple-500/10 text-purple-400 border-purple-500/20"
+    : isLifetime
+      ? "bg-primary/10 text-primary border-primary/20"
+      : "bg-zinc-500/10 text-zinc-400 border-zinc-500/20";
+
+  const handleMasterAIUpgrade = async () => {
+    setIsLoadingBilling(true);
+    try {
+      // In better-auth stripe plugin, we can use upgrade()
+      await authClient.subscription.upgrade({
+        plan: "pro", // Or a specific 'master-ai' plan if defined in backend
+        successUrl: "/dashboard",
+        cancelUrl: "/dashboard",
+      });
+    } catch (error) {
+      toast.error("Failed to start upgrade");
+    } finally {
+      setIsLoadingBilling(false);
+    }
+  };
 
   return (
-    <div className="min-h-screen bg-background font-sans">
+    <div className="min-h-screen bg-background font-sans selection:bg-primary/20">
       {/* Navigation */}
       <nav className="fixed top-0 w-full z-50 bg-background/60 backdrop-blur-xl border-b border-white/5">
         <div className="max-w-6xl mx-auto px-4 md:px-6 h-14 flex items-center justify-between">
@@ -71,80 +95,106 @@ export default function Dashboard() {
             </div>
             <span className="font-bold text-base tracking-tight">progy</span>
           </div>
-          <Button variant="ghost" size="sm" onClick={handleSignOut} className="text-xs font-black uppercase tracking-widest text-muted-foreground hover:text-foreground">
+          <Button variant="ghost" size="sm" onClick={handleSignOut} className="text-[10px] font-black uppercase tracking-widest text-muted-foreground hover:text-foreground">
             <LogOut className="w-4 h-4 mr-2" /> Sign Out
           </Button>
         </div>
       </nav>
 
       <main className="pt-24 pb-20 px-4 md:px-6 max-w-4xl mx-auto">
-        <div className="mb-10">
-          <h1 className="text-2xl md:text-3xl font-black uppercase tracking-tight mb-2">Dashboard</h1>
-          <p className="text-muted-foreground text-sm">Manage your subscription and access credentials.</p>
+        <div className="mb-10 reveal">
+          <Badge variant="outline" className="mb-4 border-primary/20 text-primary py-1 px-3 bg-primary/5 rounded-full text-[8px] font-black tracking-[0.2em] uppercase">
+            Management Console
+          </Badge>
+          <h1 className="text-3xl md:text-5xl font-black italic tracking-tighter mb-2 uppercase">Account.</h1>
+          <p className="text-muted-foreground text-sm max-w-lg leading-relaxed italic">
+            Manage your high-intensity developer license and cloud resources.
+          </p>
         </div>
 
         <div className="grid gap-6 md:grid-cols-2">
           {/* User Profile Card */}
-          <Card className="bg-black/40 border-white/10">
-            <CardHeader>
-              <CardTitle className="text-sm font-black uppercase tracking-widest text-muted-foreground">Identity</CardTitle>
+          <Card className="bg-black/40 border-white/5 reveal rounded-2xl p-2 transition-transform hover:-translate-y-1">
+            <CardHeader className="p-6">
+              <CardTitle className="text-[10px] font-black uppercase tracking-[0.3em] text-muted-foreground/50 mb-2">Identity</CardTitle>
             </CardHeader>
-            <CardContent className="space-y-4">
+            <CardContent className="px-6 pb-6 pt-0 space-y-4">
               <div className="flex items-center gap-4">
-                <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold text-xl">
+                <div className="w-14 h-14 rounded-xl bg-primary/20 border border-primary/30 flex items-center justify-center text-primary font-black text-xl">
                   {session.user.name?.charAt(0).toUpperCase()}
                 </div>
                 <div>
-                  <div className="font-bold">{session.user.name}</div>
-                  <div className="text-xs text-muted-foreground font-mono">{session.user.email}</div>
+                  <div className="font-black text-lg tracking-tight uppercase italic">{session.user.name}</div>
+                  <div className="text-[10px] text-muted-foreground font-black uppercase tracking-widest opacity-60 italic">{session.user.email}</div>
                 </div>
               </div>
             </CardContent>
           </Card>
 
           {/* Subscription Card */}
-          <Card className="bg-black/40 border-white/10 relative overflow-hidden">
-            {plan === 'pro' && <div className="absolute top-0 right-0 w-24 h-24 bg-purple-500/10 blur-3xl rounded-full -mr-10 -mt-10"></div>}
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-black uppercase tracking-widest text-muted-foreground">Current Plan</CardTitle>
-              <Badge variant="outline" className={`text-[10px] items-center font-black px-2 py-0.5 border ${planColor}`}>
+          <Card className="bg-black/60 border-primary/20 relative overflow-hidden reveal rounded-2xl p-2 shadow-[0_0_50px_-15px_rgba(251,146,60,0.1)] transition-transform hover:-translate-y-1" style={{ transitionDelay: '0.1s' }}>
+            {isPro && <div className="absolute top-0 right-0 w-32 h-32 bg-purple-500/10 blur-3xl rounded-full -mr-16 -mt-16"></div>}
+            {isLifetime && <div className="absolute top-0 right-0 w-32 h-32 bg-primary/10 blur-3xl rounded-full -mr-16 -mt-16"></div>}
+
+            <CardHeader className="p-6 flex flex-row items-center justify-between space-y-0">
+              <CardTitle className="text-[10px] font-black uppercase tracking-[0.3em] text-muted-foreground/50">License</CardTitle>
+              <Badge variant="outline" className={`text-[9px] items-center font-black px-3 py-1 border ${planColor} leading-none`}>
                 {planLabel}
               </Badge>
             </CardHeader>
-            <CardContent>
-              <div className="mt-4 space-y-2">
+
+            <CardContent className="px-6 pb-6 pt-0">
+              <div className="mt-2 space-y-4">
                 {plan === "free" && (
-                  <p className="text-sm text-muted-foreground">
-                    You are on the <span className="text-white font-bold">Community Plan</span>. Upgrade to unlock full AI capabilities.
+                  <p className="text-[11px] text-muted-foreground font-bold italic leading-relaxed">
+                    You are on the <span className="text-white font-black">COMMUNITY PLAN</span>. <br />
+                    Access all free courses locally. Upgrade for AI Mentor.
                   </p>
                 )}
-                {plan === "standard" && (
-                  <p className="text-sm text-muted-foreground">
-                    You own the <span className="text-blue-400 font-bold">Standard License</span>. Use your own API key in the generic CLI.
-                  </p>
+                {isLifetime && (
+                  <div className="space-y-3">
+                    <p className="text-[11px] text-muted-foreground font-black uppercase tracking-widest leading-relaxed">
+                      LIFETIME ACCESS <span className="text-primary">ACTIVE</span>
+                    </p>
+                    <p className="text-[10px] text-muted-foreground/80 leading-relaxed italic">
+                      Enjoy perpetual access to all current and future courses. <br />
+                      <span className="text-white font-bold opacity-100">AI Note:</span> Personal API Key required for AI functions.
+                    </p>
+                  </div>
                 )}
-                {plan === "pro" && (
-                  <p className="text-sm text-muted-foreground">
-                    You are a <span className="text-purple-400 font-bold">Pro Member</span>. Enjoy unlimited AI access and cloud sync.
+                {isPro && (
+                  <p className="text-[11px] text-muted-foreground font-black uppercase tracking-widest leading-relaxed">
+                    PRO MEMBERSHIP <span className="text-purple-400">ACTIVE</span>
                   </p>
                 )}
               </div>
             </CardContent>
-            <CardFooter>
-              {plan !== "free" ? (
+
+            <CardFooter className="p-6 pt-0">
+              {isPro ? (
                 <Button
                   variant="outline"
                   size="sm"
                   onClick={handleBillingPortal}
                   disabled={isLoadingBilling}
-                  className="w-full border-white/10 hover:bg-white/5 text-xs font-black uppercase tracking-widest"
+                  className="w-full border-white/10 hover:bg-white/5 text-[10px] font-black uppercase tracking-[0.2em] h-10 rounded-lg"
                 >
                   {isLoadingBilling && <Loader2 className="w-3 h-3 mr-2 animate-spin" />}
-                  Manage Subscription
+                  Manage Billing
+                </Button>
+              ) : isLifetime ? (
+                <Button
+                  size="sm"
+                  onClick={handleMasterAIUpgrade}
+                  disabled={isLoadingBilling}
+                  className="w-full bg-primary text-primary-foreground hover:bg-primary/90 text-[10px] font-black uppercase tracking-[0.2em] h-10 rounded-lg shadow-lg shadow-primary/20"
+                >
+                  {isLoadingBilling && <Loader2 className="w-3 h-3 mr-2 animate-spin" />}
+                  Upgrade to Master AI ($8/mo)
                 </Button>
               ) : (
                 <Link href="/#pricing" className="w-full">
-                  <Button size="sm" className="w-full bg-primary text-primary-foreground hover:bg-primary/90 text-xs font-black uppercase tracking-widest">
+                  <Button size="sm" className="w-full bg-primary text-primary-foreground hover:bg-primary/90 text-[10px] font-black uppercase tracking-[0.2em] h-10 rounded-lg">
                     Upgrade Now
                   </Button>
                 </Link>
