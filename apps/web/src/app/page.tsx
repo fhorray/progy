@@ -19,7 +19,7 @@ export default function Home() {
 	const [isLoadingPro, setIsLoadingPro] = useState(false);
 	const router = useRouter();
 	const { data: session, isPending: isSessionLoading } = authClient.useSession();
-	const checkoutState = useStore($checkoutMutation);
+	const checkoutState = useStore($checkoutMutation as any);
 
 	// @ts-ignore
 	const userPlan = session?.user?.subscription || "free";
