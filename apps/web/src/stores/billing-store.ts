@@ -10,8 +10,9 @@ interface CheckoutResponse {
   url: string;
 }
 
-export const $checkoutMutation = createMutatorStore<CheckoutResponse, CheckoutParams>(
-  async ({ plan, token }) => {
+export const $checkoutMutation = createMutatorStore<CheckoutParams, CheckoutResponse>(
+  async ({ data }) => {
+    const { plan, token } = data;
     const res = await fetch(`${config.API_URL}/api/billing/checkout/${plan}`, {
       method: "POST",
       headers: {
