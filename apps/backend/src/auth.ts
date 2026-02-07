@@ -110,6 +110,11 @@ export const authServer = (env: CloudflareBindings) => {
             group: "subscription",
           },
           {
+            name: "pro-discount",
+            priceId: "price_1SyFpZGdycZGJETWwc9zs2uV",
+            group: "subscription",
+          },
+          {
             name: "lifetime",
             priceId: env.STRIPE_PRICE_ID_LIFETIME,
             group: "subscription",
@@ -118,8 +123,10 @@ export const authServer = (env: CloudflareBindings) => {
           onSubscriptionComplete: async ({ subscription, plan }) => {
             console.log(`[STRIPE-HOOK] Subscription complete for ${subscription.referenceId}: ${plan.name}`);
             const db = drizzle(env.DB);
+            // Map pro-discount to pro
+            const status = (plan.name === "standard" || plan.name === "pro-discount") ? "pro" : plan.name;
             await db.update(schema.user)
-              .set({ subscription: plan.name === "standard" ? "pro" : plan.name })
+              .set({ subscription: status })
               .where(eq(schema.user.id, subscription.referenceId))
               .execute();
           },
@@ -136,6 +143,23 @@ export const authServer = (env: CloudflareBindings) => {
           if (event.type === "checkout.session.completed") {
             const session = event.data.object as Stripe.Checkout.Session;
             const planType = session.metadata?.planType;
+
+            // FIX: Cancel existing descriptions if buying Lifetime to prevent double billing
+            if (planType === "lifetime" && session.customer) {
+              try {
+                const customerId = session.customer as string;
+                // List all active subscriptions for this customer
+                const subs = await stripeClient.subscriptions.list({ customer: customerId, status: 'active' });
+                for (const sub of subs.data) {
+                  // Cancel them efficiently
+                  await stripeClient.subscriptions.cancel(sub.id);
+                  console.log(`[UPGRADE-FIX] Cancelled old subscription ${sub.id} because user bought Lifetime.`);
+                }
+              } catch (err) {
+                console.error("[UPGRADE-FIX-ERROR] Failed to cancel old subscriptions:", err);
+              }
+            }
+
             if (planType === "lifetime" || planType === "pro" || planType === "standard") {
               const userEmail = session.customer_details?.email;
               if (userEmail) {

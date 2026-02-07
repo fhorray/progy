@@ -9,11 +9,25 @@ import { Loader2, Terminal, CreditCard, LogOut, Check, ExternalLink } from "luci
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 
 export default function Dashboard() {
   const { data: session, isPending } = authClient.useSession();
   const [isLoadingBilling, setIsLoadingBilling] = useState(false);
   const router = useRouter();
+  const searchParams = useSearchParams();
+
+  useEffect(() => {
+    if (searchParams.get("payment_success")) {
+      toast.success("Payment successful! Updating your profile...", {
+        duration: 5000,
+      });
+      // Force refresh session to get new subscription status
+      authClient.getSession().then(() => {
+        router.refresh();
+      });
+    }
+  }, [searchParams, router]);
 
   const handleSignOut = async () => {
     await authClient.signOut({
@@ -68,21 +82,34 @@ export default function Dashboard() {
       ? "bg-primary/10 text-primary border-primary/20"
       : "bg-zinc-500/10 text-zinc-400 border-zinc-500/20";
 
-  const handleMasterAIUpgrade = async () => {
+  const handleCheckout = async (plan: "pro" | "lifetime") => {
     setIsLoadingBilling(true);
     try {
-      // In better-auth stripe plugin, we can use upgrade()
-      await authClient.subscription.upgrade({
-        plan: "pro", // Or a specific 'master-ai' plan if defined in backend
-        successUrl: window.location.origin + "/dashboard",
-        cancelUrl: window.location.origin + "/dashboard",
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "https://progy.francy.workers.dev"}/api/billing/checkout?plan=${plan}`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${session?.session.token}` // Assuming token is available here or handled by cookies. 
+          // Better auth client usually handles cookies. My backend verifySession checks headers OR better-auth cookies.
+          // Since this is a client component, I should rely on cookies being sent automatically.
+        },
       });
+
+      const data = await res.json() as { url: string };
+      if (data.url) {
+        window.location.href = data.url;
+      } else {
+        toast.error("Failed to start checkout");
+      }
     } catch (error) {
-      toast.error("Failed to start upgrade");
+      toast.error("Failed to start checkout");
     } finally {
       setIsLoadingBilling(false);
     }
   };
+
+  const handleMasterAIUpgrade = () => handleCheckout("pro");
+  const handleLifetimeUpgrade = () => handleCheckout("lifetime");
 
   return (
     <div className="min-h-screen bg-background font-sans selection:bg-primary/20">
@@ -101,7 +128,7 @@ export default function Dashboard() {
         </div>
       </nav>
 
-      <main className="pt-24 pb-20 px-4 md:px-6 container mx-auto">
+      <main className="pt-24 pb-20 px-4 md:px-6 max-w-6xl mx-auto">
         <div className="mb-10">
           <Badge variant="outline" className="mb-4 border-primary/20 text-primary py-1 px-3 bg-primary/5 rounded-full text-[8px] font-black tracking-[0.2em] uppercase">
             Management Console

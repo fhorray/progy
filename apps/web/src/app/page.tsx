@@ -52,11 +52,15 @@ export default function Home() {
 				handleSignIn();
 				return;
 			}
-			await authClient.subscription.upgrade({
+			const res = await $checkoutMutation.mutate({
 				plan: "pro",
-				successUrl: "/dashboard",
-				cancelUrl: "/",
+				token: session.session?.token || ""
 			});
+			if (res.url) {
+				window.location.href = res.url;
+			} else {
+				toast.error("Failed to start subscription");
+			}
 		} catch (error) {
 			toast.error("Failed to start subscription");
 		} finally {
