@@ -14,7 +14,7 @@ interface CheckoutResponse {
 export const $checkoutMutation = createMutatorStore<CheckoutParams, CheckoutResponse>(
   async ({ data }) => {
     const { plan, token } = data;
-    const res = await fetch(`${getCloudflareContext().env.NEXT_PUBLIC_API_URL}/api/billing/checkout/${plan}`, {
+    const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "https://progy.francy.workers.dev/api"}/api/billing/checkout/${plan}`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",

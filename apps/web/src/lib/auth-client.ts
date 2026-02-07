@@ -4,7 +4,7 @@ import { getCloudflareContext } from "@opennextjs/cloudflare"
 
 
 export const authClient = createAuthClient({
-  baseURL: getCloudflareContext().env.NEXT_PUBLIC_API_URL!,
+  baseURL: process.env.NEXT_PUBLIC_API_URL! || "https://progy.francy.workers.dev/api/auth",
   plugins: [
     stripeClient({
       subscription: true
