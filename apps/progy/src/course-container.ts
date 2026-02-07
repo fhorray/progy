@@ -8,13 +8,27 @@ import { homedir } from "node:os";
 const PROGY_HOME = join(homedir(), ".progy");
 const RUNTIME_ROOT = join(PROGY_HOME, "runtime");
 
+const IGNORED_PATTERNS = [
+  "target",
+  "node_modules",
+  ".git",
+  ".DS_Store",
+  ".next",
+  "dist"
+];
+
+const zipFilter = (path: string) => {
+  const parts = path.split(/[/\\]/);
+  return !parts.some(part => IGNORED_PATTERNS.includes(part));
+};
+
 export class CourseContainer {
   /**
    * Packs a directory into a .progy archive
    */
   static async pack(sourceDir: string, destFile: string) {
     const zip = new AdmZip();
-    zip.addLocalFolder(sourceDir);
+    zip.addLocalFolder(sourceDir, "", zipFilter);
     await zip.writeZipPromise(destFile);
   }
 
@@ -61,9 +75,8 @@ export class CourseContainer {
    */
   static async sync(runtimeDir: string, destFile: string) {
     const zip = new AdmZip();
-    // Re-pack everything from runtime
-    // TODO: Consider filtering heavy folders like node_modules if needed
-    zip.addLocalFolder(runtimeDir);
+    // Re-pack everything from runtime, filtering heavy folders
+    zip.addLocalFolder(runtimeDir, "", zipFilter);
     await zip.writeZipPromise(destFile);
   }
 }

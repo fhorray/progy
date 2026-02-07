@@ -13,6 +13,7 @@ export const MANIFEST_PATH = join(PROG_DIR, "exercises.json");
 export const PROGRESS_PATH = join(PROG_DIR, "progress.json");
 
 export const IS_OFFLINE = process.env.PROGY_OFFLINE === "true";
+export const BACKEND_URL = process.env.PROGY_API_URL || "https://progy.francy.workers.dev";
 
 export const DEFAULT_PROGRESS: Progress = {
   stats: {
@@ -25,6 +26,19 @@ export const DEFAULT_PROGRESS: Progress = {
   quizzes: {},
   achievements: []
 };
+
+export interface AIConfig {
+  provider?: 'openai' | 'anthropic' | 'google' | 'xai' | 'ollama';
+  model?: string;
+  apiKey?: string;
+  baseUrl?: string; // For Ollama or custom endpoints
+}
+
+export interface GlobalConfig {
+  token?: string;
+  ai?: AIConfig;
+  [key: string]: any;
+}
 
 // State
 export let currentConfig: CourseConfig | null = null;

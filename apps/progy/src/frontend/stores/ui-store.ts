@@ -2,7 +2,7 @@ import { atom } from 'nanostores';
 
 export type ViewMode = 'editor' | 'map';
 export type SidebarTab = 'learning' | 'practice';
-export type ContentTab = 'description' | 'output' | 'quiz';
+export type ContentTab = 'description' | 'output' | 'quiz' | 'ai';
 
 export const $viewMode = atom<ViewMode>('editor');
 export const $sidebarTab = atom<SidebarTab>('learning');

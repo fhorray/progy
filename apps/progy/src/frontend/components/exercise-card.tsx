@@ -1,6 +1,6 @@
 import React from 'react';
 import { useStore } from '@nanostores/react';
-import { CheckCircle2, Loader2, Play, Sparkles, Terminal } from 'lucide-react';
+import { CheckCircle2, Loader2, Play, Sparkles, Terminal, Bot } from 'lucide-react';
 import { Card } from './ui/card';
 import { Badge } from './ui/badge';
 import { Button } from './ui/button';
@@ -12,6 +12,7 @@ interface ExerciseCardProps {
   isAiLoading: boolean;
   hasOutput: boolean;
   onRunTests: () => void;
+  onExplain: () => void;
   onGetAiHint: () => void;
 }
 
@@ -20,6 +21,7 @@ export function ExerciseCard({
   isAiLoading,
   hasOutput,
   onRunTests,
+  onExplain,
   onGetAiHint,
 }: ExerciseCardProps) {
   const selectedExercise = useStore($selectedExercise);
@@ -84,15 +86,27 @@ export function ExerciseCard({
             )}
             {isRunning ? 'Compiling...' : 'Run Tests'}
           </Button>
+
+          <Button
+            variant="secondary"
+            size="lg"
+            onClick={onExplain}
+            disabled={isAiLoading}
+            className="font-semibold bg-zinc-800/50 hover:bg-zinc-800 border-zinc-700/50"
+          >
+            <Sparkles className="mr-2 h-4 w-4 text-purple-400" />
+            Explain
+          </Button>
+
           <Button
             variant="secondary"
             size="lg"
             onClick={onGetAiHint}
-            disabled={isAiLoading || !hasOutput}
+            disabled={isAiLoading}
             className="font-semibold bg-zinc-800/50 hover:bg-zinc-800 border-zinc-700/50"
           >
             <Sparkles className="mr-2 h-4 w-4 text-rust" />
-            AI Hint
+            Hint
           </Button>
         </div>
       </div>

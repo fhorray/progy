@@ -17,6 +17,9 @@ export interface LocalSettings {
   openaiKey?: string;
   anthropicKey?: string;
   geminiKey?: string;
+  xaiKey?: string;
+  aiProvider?: string;
+  aiModel?: string;
   ide?: string;
 }
 

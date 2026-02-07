@@ -1,3 +1,0 @@
-# Setup
-
-Install Node.js.

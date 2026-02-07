@@ -11,11 +11,17 @@
     "db:studio": "drizzle-kit studio"
   },
   "dependencies": {
+    "@ai-sdk/anthropic": "^3.0.38",
+    "@ai-sdk/google": "^3.0.22",
+    "@ai-sdk/openai": "^3.0.26",
+    "@ai-sdk/xai": "^3.0.48",
     "@hono/node-server": "^1.19.9",
     "@types/node": "^25.2.1",
+    "ai": "^6.0.77",
     "better-auth": "^1.4.18",
     "drizzle-orm": "^0.45.1",
-    "hono": "^4.11.8"
+    "hono": "^4.11.8",
+    "zod": "^4.3.6"
   },
   "devDependencies": {
     "drizzle-kit": "^0.31.8",

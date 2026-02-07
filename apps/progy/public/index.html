@@ -12,6 +12,23 @@
         --color-rust-dark: #8a2b1d;
         --color-rust-light: #dea584;
       }
+
+      @utility custom-scrollbar {
+        &::-webkit-scrollbar {
+          width: 5px;
+          height: 5px;
+        }
+        &::-webkit-scrollbar-track {
+          background: transparent;
+        }
+        &::-webkit-scrollbar-thumb {
+          background: #27272a; /* zinc-800 */
+          border-radius: 10px;
+        }
+        &::-webkit-scrollbar-thumb:hover {
+          background: #ce412b; /* rust */
+        }
+      }
     </style>
 
     <script type="module" src="../src/frontend/main.tsx"></script>

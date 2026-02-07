@@ -5,7 +5,6 @@ import { progressRoutes } from "./endpoints/progress";
 import { configRoutes } from "./endpoints/config";
 import { exercisesRoutes } from "./endpoints/exercises";
 import { setupRoutes } from "./endpoints/setup";
-import { aiRoutes } from "./endpoints/ai";
 import { ideRoutes } from "./endpoints/ide";
 
 import { authRoutes } from "./endpoints/auth";
@@ -31,7 +30,6 @@ try {
       ...configRoutes,
       ...exercisesRoutes,
       ...setupRoutes,
-      ...aiRoutes,
       ...ideRoutes,
       ...authRoutes,
       ...settingsRoutes,

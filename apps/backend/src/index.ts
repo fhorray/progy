@@ -4,6 +4,8 @@ import { cors } from 'hono/cors'
 import { drizzle } from 'drizzle-orm/d1'
 import * as schema from './db/schema'
 import { eq, and } from 'drizzle-orm'
+import { streamText, generateText } from "ai";
+import { getModel, constructSystemPrompt, constructExplanationPrompt, constructGeneratePrompt, type AIConfig, type AIContext } from "./ai/service";
 
 const app = new Hono<{
   Bindings: CloudflareBindings
@@ -158,6 +160,114 @@ app.get('/api/progress/list', async (c) => {
     updatedAt: p.updatedAt
   })))
 })
+
+app.post('/api/ai/generate', async (c) => {
+  try {
+    const { prompt, difficulty, config } = await c.req.json() as { prompt: string; difficulty: string; config: AIConfig };
+
+    if (!config?.apiKey || !config?.provider) {
+      return c.json({ error: 'Missing AI configuration (apiKey or provider)' }, 400);
+    }
+
+    const model = getModel(config);
+    const system = constructGeneratePrompt(prompt, difficulty);
+
+    const { text } = await generateText({
+      model,
+      system,
+      prompt: "Generate the coding challenge JSON now.",
+    });
+
+    try {
+      return c.json(JSON.parse(text));
+    } catch (parseErr) {
+      console.error("[AI-GENERATE-PARSE-ERROR]", text);
+      return c.json({ error: "Failed to parse AI response into JSON" }, 500);
+    }
+  } catch (e: any) {
+    console.error("[AI-GENERATE-ERROR]", e);
+    return c.json({ error: e.message }, 500);
+  }
+});
+
+app.post('/api/ai/hint', async (c) => {
+  try {
+    const { context, config } = await c.req.json() as { context: AIContext; config: AIConfig };
+
+    // Basic validation
+    if (!config?.apiKey || !config?.provider) {
+      return c.json({ error: 'Missing AI configuration (apiKey or provider)' }, 400);
+    }
+
+    const model = getModel(config);
+    const system = constructSystemPrompt(context);
+
+    const { text } = await generateText({
+      model,
+      system,
+      prompt: "Based on the failure above, give me a single helpful hint to fix the code. Do not give the full solution.",
+    });
+
+    return c.json({ hint: text });
+  } catch (e: any) {
+    console.error("[AI-HINT-ERROR]", e);
+    return c.json({ error: e.message }, 500);
+  }
+});
+
+app.post('/api/ai/explain', async (c) => {
+  try {
+    const { context, config } = await c.req.json() as { context: AIContext; config: AIConfig };
+
+    if (!config?.apiKey || !config?.provider) {
+      return c.json({ error: 'Missing AI configuration (apiKey or provider)' }, 400);
+    }
+
+    const model = getModel(config);
+    const system = constructExplanationPrompt(context);
+
+    const result = streamText({
+      model,
+      system,
+      prompt: "Explain the concepts in this code/exercise clearly.",
+    });
+
+    return result.toTextStreamResponse();
+  } catch (e: any) {
+    console.error("[AI-EXPLAIN-ERROR]", e);
+    return c.json({ error: e.message }, 500);
+  }
+});
+
+app.post('/api/ai/chat', async (c) => {
+  try {
+    const { messages, context, config } = await c.req.json() as { messages: any[]; context: AIContext; config: AIConfig };
+
+    if (!config?.apiKey || !config?.provider) {
+      return c.json({ error: 'Missing AI configuration (apiKey or provider)' }, 400);
+    }
+
+    const model = getModel(config);
+    const system = constructSystemPrompt(context);
+
+    // Filter out messages with empty content to avoid API errors
+    const validMessages = messages.filter(m =>
+      (typeof m.content === 'string' && m.content.trim().length > 0) ||
+      (Array.isArray(m.parts) && m.parts.length > 0)
+    );
+
+    const result = streamText({
+      model,
+      system,
+      messages: validMessages,
+    });
+
+    return result.toTextStreamResponse();
+  } catch (e: any) {
+    console.error("[AI-CHAT-ERROR]", e);
+    return c.json({ error: e.message }, 500);
+  }
+});
 
 // Global Error Handler
 app.onError((err, c) => {

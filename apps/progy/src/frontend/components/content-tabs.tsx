@@ -31,6 +31,7 @@ export function ContentTabs() {
   const output = useStore($output);
   const friendlyOutput = useStore($friendlyOutput);
   const aiResponse = useStore($aiResponse);
+  const isAiLoading = useStore($isAiLoading);
   const quizData = useStore($quizData);
   const quizQuery = useStore($quizQuery);
   const selectedExercise = useStore($selectedExercise);
@@ -113,6 +114,12 @@ export function ContentTabs() {
             className="px-4 py-1.5 text-xs data-[state=active]:bg-zinc-700 data-[state=active]:text-zinc-100"
           >
             <Terminal className="w-3.5 h-3.5 mr-2" /> Output
+          </TabsTrigger>
+          <TabsTrigger
+            value="ai"
+            className="px-4 py-1.5 text-xs data-[state=active]:bg-zinc-700 data-[state=active]:text-zinc-100"
+          >
+            <Sparkles className={`w-3.5 h-3.5 mr-2 ${aiResponse ? 'text-rust' : ''}`} /> AI Mentor
           </TabsTrigger>
           {selectedExercise?.hasQuiz && (
             <TabsTrigger
@@ -200,17 +207,6 @@ export function ContentTabs() {
               </pre>
             )
           )}
-
-          {aiResponse && (
-            <div className="mt-8 pt-8 border-t border-zinc-800 animate-in fade-in slide-in-from-bottom-2 duration-300">
-              <div className="flex items-center gap-2 text-rust font-black uppercase tracking-widest text-[10px] mb-4">
-                <Sparkles className="w-3 h-3" /> AI Mentor
-              </div>
-              <div className="bg-zinc-900/50 border border-rust/20 rounded-xl p-5 text-zinc-300 leading-relaxed italic whitespace-pre-wrap">
-                {aiResponse}
-              </div>
-            </div>
-          )}
         </ScrollArea>
       </TabsContent>
 
@@ -242,6 +238,56 @@ export function ContentTabs() {
             <p className="text-sm">Este exercício não possui quiz.</p>
           </div>
         )}
+      </TabsContent>
+      <TabsContent
+        value="ai"
+        className="flex-1 min-h-0 m-0 outline-none"
+      >
+        <ScrollArea className="h-full p-6">
+          {(aiResponse || isAiLoading) && (
+            <div className="animate-in fade-in slide-in-from-bottom-2 duration-300">
+              <div className="flex items-center justify-between mb-6">
+                <div className="flex items-center gap-2 text-rust font-black uppercase tracking-widest text-[10px]">
+                  <Sparkles className={`w-4 h-4 ${isAiLoading ? 'animate-pulse' : ''}`} /> AI Mentor
+                </div>
+                <div className="flex items-center gap-2">
+                  {isAiLoading && <Loader2 className="w-3 h-3 animate-spin text-rust" />}
+                  <button
+                    onClick={() => {
+                      $aiResponse.set(null);
+                      $isAiLoading.set(false);
+                      setActiveContentTab('description');
+                    }}
+                    className="text-zinc-500 hover:text-zinc-300 transition-colors text-xs"
+                  >
+                    Limpar
+                  </button>
+                </div>
+              </div>
+
+              {!aiResponse && isAiLoading ? (
+                <div className="flex flex-col items-center justify-center py-20 bg-zinc-900/20 border border-zinc-800/50 rounded-2xl border-dashed">
+                  <Loader2 className="w-8 h-8 animate-spin text-rust mb-4" />
+                  <p className="text-sm text-zinc-500 italic">O Mentor IA está analisando seu código...</p>
+                </div>
+              ) : (
+                <div className="prose prose-invert prose-sm max-w-none bg-zinc-900/30 border border-zinc-800/50 rounded-2xl p-6 shadow-2xl">
+                  <MarkdownRenderer content={aiResponse || ''} />
+                  {isAiLoading && (
+                    <div className="mt-4 flex items-center gap-2 text-zinc-500 italic text-[10px]">
+                      <span className="flex gap-1">
+                        <span className="w-1 h-1 bg-rust rounded-full animate-bounce [animation-delay:-0.3s]"></span>
+                        <span className="w-1 h-1 bg-rust rounded-full animate-bounce [animation-delay:-0.15s]"></span>
+                        <span className="w-1 h-1 bg-rust rounded-full animate-bounce"></span>
+                      </span>
+                      IA está escrevendo...
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+          )}
+        </ScrollArea>
       </TabsContent>
     </Tabs>
   );

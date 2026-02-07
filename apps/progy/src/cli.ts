@@ -14,6 +14,16 @@ const GLOBAL_CONFIG_PATH = join(CONFIG_DIR, "config.json");
 const BACKEND_URL = process.env.PROGY_API_URL || "https://progy.francy.workers.dev";
 const FRONTEND_URL = process.env.PROGY_FRONTEND_URL || BACKEND_URL;
 
+// Version & Source Check
+import packageJson from "../package.json";
+const isLocal = !import.meta.file.includes("node_modules");
+const sourceLabel = isLocal ? "\x1b[33m(local/dev)\x1b[0m" : "\x1b[32m(npm)\x1b[0m";
+
+// Only log if not running a completion command or internal pipe
+if (!process.argv.includes("--completion") && !process.argv.includes("completion")) {
+  console.log(`\x1b[1m[Progy]\x1b[0m v${packageJson.version} ${sourceLabel}`);
+}
+
 const CONFIG_NAME = "course.json";
 
 // Helper for exists check
@@ -211,7 +221,7 @@ async function startCourse(file: string | undefined, options: { offline: boolean
 program
   .name("progy")
   .description("Universal programming course runner")
-  .version("0.0.1");
+  .version(`${packageJson.version} ${isLocal ? "(local/dev)" : "(npm)"}`);
 
 program
   .command("init")
@@ -463,9 +473,56 @@ func main() {
       // Also create go.mod
       await writeFile(join(courseDir, "go.mod"), `module ${courseName}\n\ngo 1.21\n`);
     }
-
     console.log(`[SUCCESS] Course created!`);
     console.log(`\nTo get started:\n  cd ${courseName}\n  bunx progy init`);
+  });
+
+const configCommand = program
+  .command("config")
+  .description("Manage global configuration");
+
+configCommand
+  .command("set <key> <value>")
+  .description("Set a configuration value (e.g., ai.provider openai)")
+  .action(async (path, value) => {
+    // We use a simple strategy for nested keys like 'ai.provider'
+    const keys = path.split(".");
+    const configPath = join(homedir(), ".progy", "config.json");
+
+    let config: any = {};
+    if (await exists(configPath)) {
+      config = JSON.parse(await readFile(configPath, "utf-8"));
+    }
+
+    let current = config;
+    for (let i = 0; i < keys.length - 1; i++) {
+      const k = keys[i];
+      if (!current[k] || typeof current[k] !== "object") {
+        current[k] = {};
+      }
+      current = current[k];
+    }
+
+    current[keys[keys.length - 1]] = value;
+
+    if (!(await exists(join(homedir(), ".progy")))) {
+      await mkdir(join(homedir(), ".progy"), { recursive: true });
+    }
+    await writeFile(configPath, JSON.stringify(config, null, 2));
+    console.log(`[SUCCESS] Updated ${path} to ${value}`);
+  });
+
+configCommand
+  .command("list")
+  .description("List current configuration")
+  .action(async () => {
+    const configPath = join(homedir(), ".progy", "config.json");
+    if (await exists(configPath)) {
+      const config = await readFile(configPath, "utf-8");
+      console.log(config);
+    } else {
+      console.log("{}");
+    }
   });
 
 program

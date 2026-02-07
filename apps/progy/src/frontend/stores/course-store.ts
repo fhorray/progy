@@ -36,6 +36,101 @@ export const $aiResponse = atom<string | null>(null);
 export const $showFriendly = atom<boolean>(true);
 
 // --- Computed Proxies (to maintain component compatibility) ---
+// ... (rest of file)
+
+import { callAi } from '../lib/ai-client';
+import { setActiveContentTab } from './ui-store';
+
+export const getAiHint = async () => {
+  const selected = $selectedExercise.get();
+  const desc = $descriptionQuery.get();
+  if (!selected) return;
+
+  $isAiLoading.set(true);
+  $aiResponse.set(null);
+  try {
+    const data = await callAi({
+      endpoint: 'hint',
+      context: {
+        exerciseName: selected.friendlyName || selected.name,
+        code: desc.data?.code || '',
+        error: $friendlyOutput.get() || $output.get()
+      }
+    });
+    if (data.hint) $aiResponse.set(data.hint);
+  } catch (err: any) {
+    $aiResponse.set(`Error: ${err.message || 'Failed to get AI hint.'}`);
+  } finally {
+    $isAiLoading.set(false);
+  }
+};
+
+export const explainExercise = async () => {
+  const selected = $selectedExercise.get();
+  const desc = $descriptionQuery.get();
+  const currentAi = $aiResponse.get();
+
+  // Guard: Don't generate if already loading or if we already have a full response for this exercise
+  if (!selected || $isAiLoading.get() || (currentAi && !currentAi.startsWith('Error:'))) return;
+
+  $isAiLoading.set(true);
+  $aiResponse.set(''); // Start with empty string for streaming
+  try {
+    await callAi({
+      endpoint: 'explain',
+      context: {
+        exerciseName: selected.friendlyName || selected.name,
+        instructions: desc.data?.markdown || undefined,
+        code: desc.data?.code || '',
+      },
+      onChunk: (chunk) => {
+        const current = $aiResponse.get() || '';
+        let newContent = current + chunk;
+
+        // Fallback for JSON wrapper (older backend versions)
+        if (newContent.startsWith('{"explanation":"')) {
+          newContent = newContent.replace('{"explanation":"', '');
+          // Basic unescape for streaming (handle quotes and newlines)
+          newContent = newContent.replace(/\\n/g, '\n').replace(/\\"/g, '"');
+        }
+
+        $aiResponse.set(newContent);
+
+        // Auto-switch to AI tab on first chunk
+        if (!current || current === '') {
+          setActiveContentTab('ai');
+        }
+      }
+    });
+
+    // Final comprehensive cleanup
+    let final = $aiResponse.get() || '';
+    if (final.startsWith('{"explanation":"')) {
+      final = final.replace('{"explanation":"', '');
+    }
+    if (final.endsWith('"}')) {
+      final = final.substring(0, final.length - 2);
+    }
+
+    // Unescape common JSON characters
+    final = final
+      .replace(/\\n/g, '\n')
+      .replace(/\\"/g, '"')
+      .replace(/\\\\/g, '\\')
+      .replace(/\\t/g, '\t')
+      .replace(/\\r/g, '\r');
+
+    $aiResponse.set(final.trim());
+    setActiveContentTab('ai');
+
+    // If result tab "description" is active, maybe we want to switch to the new AI tab?
+    // We'll handle tab switching in the component if needed.
+  } catch (err: any) {
+    $aiResponse.set(`Error: ${err.message || 'Failed to get explanation.'}`);
+  } finally {
+    $isAiLoading.set(false);
+  }
+};
 
 export const $exerciseGroups = computed($exerciseGroupsQuery, (q) => q.data || {});
 export const $progress = computed($progressQuery, (q) => q.data || null);
@@ -65,9 +160,11 @@ export const setResults = (results: Record<string, TestStatus>) => $results.set(
 
 export const setSelectedExercise = (exercise: Exercise | null) => {
   $selectedExercise.set(exercise);
-  // No imperative fetch needed! The queries will react to $selectedExercise.
+  // Always reset AI state on selection change
+  $aiResponse.set(null);
+  $isAiLoading.set(false);
+
   if (!exercise) {
-    $aiResponse.set(null);
     $output.set('');
     $friendlyOutput.set('');
   }
@@ -112,25 +209,6 @@ export const runTests = async () => {
   }
 };
 
-export const getAiHint = async () => {
-  const selected = $selectedExercise.get();
-  if (!selected) return;
-
-  $isAiLoading.set(true);
-  try {
-    const res = await fetch('/api/ai/hint', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ code: '', error: $output.get() }),
-    });
-    const data = await res.json();
-    $aiResponse.set(data.hint);
-  } catch (err) {
-    $aiResponse.set('Failed to get AI hint.');
-  } finally {
-    $isAiLoading.set(false);
-  }
-};
 
 // Sync Results with Progress when loaded
 $progress.subscribe(progress => {

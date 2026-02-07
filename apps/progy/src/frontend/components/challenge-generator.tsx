@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Sparkles, Loader2, Wand2, X } from 'lucide-react';
 import { Button } from './ui/button';
 import { Card } from './ui/card';
+import { callAi } from '../lib/ai-client';
 
 interface GeneratedChallenge {
   title: string;
@@ -36,13 +37,11 @@ export function ChallengeGenerator({
     setError(null);
 
     try {
-      const res = await fetch('/api/ai/generate', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ prompt, difficulty }),
+      const data = await callAi({
+        endpoint: 'generate',
+        prompt,
+        difficulty
       });
-
-      const data = await res.json();
 
       if (data.error) {
         setError(data.error);
@@ -50,8 +49,8 @@ export function ChallengeGenerator({
       }
 
       onChallengeGenerated(data);
-    } catch (err) {
-      setError('Failed to generate challenge. Please try again.');
+    } catch (err: any) {
+      setError(err.message || 'Failed to generate challenge. Please try again.');
     } finally {
       setIsGenerating(false);
     }
@@ -101,15 +100,14 @@ export function ChallengeGenerator({
                 <button
                   key={level}
                   onClick={() => setDifficulty(level)}
-                  className={`flex-1 py-2 px-4 rounded-lg text-xs font-semibold transition-all ${
-                    difficulty === level
+                  className={`flex-1 py-2 px-4 rounded-lg text-xs font-semibold transition-all ${difficulty === level
                       ? level === 'easy'
                         ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30'
                         : level === 'medium'
                           ? 'bg-amber-500/20 text-amber-400 border border-amber-500/30'
                           : 'bg-red-500/20 text-red-400 border border-red-500/30'
                       : 'bg-zinc-800 text-zinc-500 border border-zinc-700 hover:border-zinc-600'
-                  }`}
+                    }`}
                 >
                   {level === 'easy'
                     ? 'Fácil'

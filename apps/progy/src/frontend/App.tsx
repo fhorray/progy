@@ -27,6 +27,7 @@ import {
   fetchExercises,
   fetchProgress,
   runTests,
+  explainExercise,
   getAiHint,
   setSelectedExercise,
 } from './stores/course-store';
@@ -132,6 +133,7 @@ export function App() {
                 isAiLoading={isAiLoading}
                 hasOutput={!!output}
                 onRunTests={runTests}
+                onExplain={explainExercise}
                 onGetAiHint={getAiHint}
               />
               <ContentTabs />
