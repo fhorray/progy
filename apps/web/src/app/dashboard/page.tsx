@@ -92,9 +92,10 @@ export default function Dashboard() {
     try {
       const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "https://progy.francy.workers.dev"}/api/billing/checkout?plan=${plan}`, {
         method: "POST",
+        credentials: "include",
         headers: {
           "Content-Type": "application/json",
-          "Authorization": `Bearer ${session?.session.token}` // Assuming token is available here or handled by cookies. 
+          "Authorization": `Bearer ${session?.session.token}`
           // Better auth client usually handles cookies. My backend verifySession checks headers OR better-auth cookies.
           // Since this is a client component, I should rely on cookies being sent automatically.
         },

@@ -16,6 +16,7 @@ export const $checkoutMutation = createMutatorStore<CheckoutParams, CheckoutResp
     const { plan, token } = data;
     const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "https://progy.francy.workers.dev"}/api/billing/checkout?plan=${plan}`, {
       method: "POST",
+      credentials: "include",
       headers: {
         "Content-Type": "application/json",
         "Authorization": `Bearer ${token}`
