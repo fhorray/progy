@@ -132,22 +132,22 @@ export const authServer = (env: CloudflareBindings) => {
               .execute();
           }
         },
-        // onEvent: async (event) => {
-        //   if (event.type === "checkout.session.completed") {
-        //     const session = event.data.object as Stripe.Checkout.Session;
-        //     const planType = session.metadata?.planType;
-        //     if (planType === "lifetime" || planType === "pro" || planType === "standard") {
-        //       const userEmail = session.customer_details?.email;
-        //       if (userEmail) {
-        //         console.log(`[STRIPE-WEBHOOK-SYNC] Syncing ${planType} to user ${userEmail}`);
-        //         await drizzle(env.DB).update(schema.user)
-        //           .set({ subscription: planType === "standard" ? "pro" : planType })
-        //           .where(eq(schema.user.email, userEmail))
-        //           .execute();
-        //       }
-        //     }
-        //   }
-        // },
+        onEvent: async (event) => {
+          if (event.type === "checkout.session.completed") {
+            const session = event.data.object as Stripe.Checkout.Session;
+            const planType = session.metadata?.planType;
+            if (planType === "lifetime" || planType === "pro" || planType === "standard") {
+              const userEmail = session.customer_details?.email;
+              if (userEmail) {
+                console.log(`[STRIPE-WEBHOOK-SYNC] Syncing ${planType} to user ${userEmail}`);
+                await drizzle(env.DB).update(schema.user)
+                  .set({ subscription: planType === "standard" ? "pro" : planType })
+                  .where(eq(schema.user.email, userEmail))
+                  .execute();
+              }
+            }
+          }
+        },
       }),
     ],
   });

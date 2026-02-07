@@ -207,25 +207,33 @@ app.post('/api/ai/generate', async (c) => {
     let finalConfig = { ...clientConfig };
 
     // Check for Pro Plan (via better-auth subscription table or user metadata)
-    // Assuming 'pro' plan is stored in subscription table
     const activePro = await db.select().from(schema.subscription)
       .where(and(
-        eq(schema.subscription.userId, session.user.id),
+        eq(schema.subscription.referenceId, session.user.id),
         eq(schema.subscription.status, 'active'),
         eq(schema.subscription.plan, 'pro')
       )).get();
 
-    // Check for Lifetime Plan (one-time)
-    // @ts-ignore
-    const isLifetime = session.user.subscription === 'lifetime';
+    // Check for Lifetime Plan
+    const activeLifetime = await db.select().from(schema.subscription)
+      .where(and(
+        eq(schema.subscription.referenceId, session.user.id),
+        eq(schema.subscription.status, 'active'),
+        eq(schema.subscription.plan, 'lifetime')
+      )).get();
 
-    if (activePro) {
+    // @ts-ignore
+    const isPro = !!activePro || session.user.subscription === 'pro';
+    // @ts-ignore
+    const isLifetime = !!activeLifetime || session.user.subscription === 'lifetime';
+
+    if (isPro) {
       // Pro users use backend key
       finalConfig.apiKey = c.env.OPENAI_API_KEY;
       finalConfig.provider = 'openai';
     } else if (isLifetime) {
       // Lifetime users must provide key
-      if (!finalConfig.apiKey) return c.json({ error: 'Lifetime plan requires your own API Key' }, 403);
+      if (!finalConfig.apiKey) return c.json({ error: 'Lifetime plan requires your own API Key. Configure it in Settings.' }, 403);
     } else {
       // Free users
       return c.json({ error: 'AI features require a Lifetime or Pro subscription' }, 403);
@@ -270,20 +278,29 @@ app.post('/api/ai/hint', async (c) => {
     // Check for Pro Plan
     const activePro = await db.select().from(schema.subscription)
       .where(and(
-        eq(schema.subscription.userId, session.user.id),
+        eq(schema.subscription.referenceId, session.user.id),
         eq(schema.subscription.status, 'active'),
         eq(schema.subscription.plan, 'pro')
       )).get();
 
     // Check for Lifetime Plan
-    // @ts-ignore
-    const isLifetime = session.user.subscription === 'lifetime';
+    const activeLifetime = await db.select().from(schema.subscription)
+      .where(and(
+        eq(schema.subscription.referenceId, session.user.id),
+        eq(schema.subscription.status, 'active'),
+        eq(schema.subscription.plan, 'lifetime')
+      )).get();
 
-    if (activePro) {
+    // @ts-ignore
+    const isPro = !!activePro || session.user.subscription === 'pro';
+    // @ts-ignore
+    const isLifetime = !!activeLifetime || session.user.subscription === 'lifetime';
+
+    if (isPro) {
       finalConfig.apiKey = c.env.OPENAI_API_KEY;
       finalConfig.provider = 'openai';
     } else if (isLifetime) {
-      if (!finalConfig.apiKey) return c.json({ error: 'Lifetime plan requires your own API Key' }, 403);
+      if (!finalConfig.apiKey) return c.json({ error: 'Lifetime plan requires your own API Key. Configure it in Settings.' }, 403);
     } else {
       return c.json({ error: 'AI features require a Lifetime or Pro subscription' }, 403);
     }
@@ -321,19 +338,28 @@ app.post('/api/ai/explain', async (c) => {
 
     const activePro = await db.select().from(schema.subscription)
       .where(and(
-        eq(schema.subscription.userId, session.user.id),
+        eq(schema.subscription.referenceId, session.user.id),
         eq(schema.subscription.status, 'active'),
         eq(schema.subscription.plan, 'pro')
       )).get();
 
-    // @ts-ignore
-    const isStandard = session.user.subscription === 'standard';
+    const activeLifetime = await db.select().from(schema.subscription)
+      .where(and(
+        eq(schema.subscription.referenceId, session.user.id),
+        eq(schema.subscription.status, 'active'),
+        eq(schema.subscription.plan, 'lifetime')
+      )).get();
 
-    if (activePro) {
+    // @ts-ignore
+    const isPro = !!activePro || session.user.subscription === 'pro';
+    // @ts-ignore
+    const isLifetime = !!activeLifetime || session.user.subscription === 'lifetime';
+
+    if (isPro) {
       finalConfig.apiKey = c.env.OPENAI_API_KEY;
       finalConfig.provider = 'openai';
-    } else if (isStandard) {
-      if (!finalConfig.apiKey) return c.json({ error: 'Standard plan requires your own API Key' }, 403);
+    } else if (isLifetime) {
+      if (!finalConfig.apiKey) return c.json({ error: 'Lifetime plan requires your own API Key. Configure it in Settings.' }, 403);
     } else {
       return c.json({ error: 'AI features require a Lifetime or Pro subscription' }, 403);
     }
@@ -371,19 +397,28 @@ app.post('/api/ai/chat', async (c) => {
 
     const activePro = await db.select().from(schema.subscription)
       .where(and(
-        eq(schema.subscription.userId, session.user.id),
+        eq(schema.subscription.referenceId, session.user.id),
         eq(schema.subscription.status, 'active'),
         eq(schema.subscription.plan, 'pro')
       )).get();
 
-    // @ts-ignore
-    const isStandard = session.user.subscription === 'standard';
+    const activeLifetime = await db.select().from(schema.subscription)
+      .where(and(
+        eq(schema.subscription.referenceId, session.user.id),
+        eq(schema.subscription.status, 'active'),
+        eq(schema.subscription.plan, 'lifetime')
+      )).get();
 
-    if (activePro) {
+    // @ts-ignore
+    const isPro = !!activePro || session.user.subscription === 'pro';
+    // @ts-ignore
+    const isLifetime = !!activeLifetime || session.user.subscription === 'lifetime';
+
+    if (isPro) {
       finalConfig.apiKey = c.env.OPENAI_API_KEY;
       finalConfig.provider = 'openai';
-    } else if (isStandard) {
-      if (!finalConfig.apiKey) return c.json({ error: 'Standard plan requires your own API Key' }, 403);
+    } else if (isLifetime) {
+      if (!finalConfig.apiKey) return c.json({ error: 'Lifetime plan requires your own API Key. Configure it in Settings.' }, 403);
     } else {
       return c.json({ error: 'AI features require a Lifetime or Pro subscription' }, 403);
     }

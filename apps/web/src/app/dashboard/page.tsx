@@ -95,13 +95,13 @@ export default function Dashboard() {
             </div>
             <span className="font-bold text-base tracking-tight">progy</span>
           </div>
-          <Button variant="ghost" size="sm" onClick={handleSignOut} className="text-[10px] font-black uppercase tracking-widest text-muted-foreground hover:text-foreground">
+          <Button variant="ghost" size="sm" onClick={handleSignOut} className="cursor-pointer text-[10px] font-black uppercase tracking-widest text-muted-foreground hover:text-foreground">
             <LogOut className="w-4 h-4 mr-2" /> Sign Out
           </Button>
         </div>
       </nav>
 
-      <main className="pt-24 pb-20 px-4 md:px-6 max-w-4xl mx-auto">
+      <main className="pt-24 pb-20 px-4 md:px-6 container mx-auto">
         <div className="mb-10">
           <Badge variant="outline" className="mb-4 border-primary/20 text-primary py-1 px-3 bg-primary/5 rounded-full text-[8px] font-black tracking-[0.2em] uppercase">
             Management Console

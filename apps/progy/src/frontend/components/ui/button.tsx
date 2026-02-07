@@ -5,17 +5,17 @@ const Button = React.forwardRef<
   HTMLButtonElement,
   React.ButtonHTMLAttributes<HTMLButtonElement> & {
     variant?:
-      | 'default'
-      | 'destructive'
-      | 'outline'
-      | 'secondary'
-      | 'ghost'
-      | 'link';
+    | 'default'
+    | 'destructive'
+    | 'outline'
+    | 'secondary'
+    | 'ghost'
+    | 'link';
     size?: 'default' | 'sm' | 'lg' | 'icon';
   }
 >(({ className, variant = 'default', size = 'default', ...props }, ref) => {
   const variants = {
-    default: 'cursor-pointer bg-rust text-white hover:bg-rust-dark shadow-sm',
+    default: 'bg-rust text-white hover:bg-rust-dark shadow-sm',
     destructive: 'bg-red-900 text-red-100 hover:bg-red-800 shadow-sm',
     outline:
       'border border-zinc-700 bg-transparent shadow-sm hover:bg-zinc-800 hover:text-zinc-100',
@@ -33,7 +33,7 @@ const Button = React.forwardRef<
     <button
       ref={ref}
       className={cn(
-        'inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-zinc-400 disabled:pointer-events-none disabled:opacity-50',
+        'inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-zinc-400 disabled:pointer-events-none disabled:opacity-50 cursor-pointer',
         variants[variant],
         sizes[size],
         className,

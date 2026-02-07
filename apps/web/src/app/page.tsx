@@ -108,19 +108,21 @@ export default function Home() {
 
 					<div className="flex items-center gap-3">
 						{session ? (
-							<div className="hidden sm:flex items-center gap-3">
-								<div className="flex flex-col items-end leading-none">
-									<span className="text-[10px] font-black uppercase tracking-widest text-foreground">
-										{session.user.name}
-									</span>
-									<span className="text-[8px] font-black uppercase tracking-[0.2em] text-primary">
-										{isLifetime ? "LIFETIME" : isPro ? "PRO" : "FREE"}
-									</span>
+							<Link href="/dashboard">
+								<div className="hidden sm:flex items-center gap-3">
+									<div className="flex flex-col items-end leading-none">
+										<span className="text-[10px] font-black uppercase tracking-widest text-foreground">
+											{session.user.name}
+										</span>
+										<span className="text-[8px] font-black uppercase tracking-[0.2em] text-primary">
+											{isLifetime ? "LIFETIME" : isPro ? "PRO" : "FREE"}
+										</span>
+									</div>
+									<div className="w-8 h-8 rounded bg-primary/20 border border-primary/30 flex items-center justify-center text-[10px] font-black text-primary">
+										{session.user.name?.charAt(0).toUpperCase()}
+									</div>
 								</div>
-								<div className="w-8 h-8 rounded bg-primary/20 border border-primary/30 flex items-center justify-center text-[10px] font-black text-primary">
-									{session.user.name?.charAt(0).toUpperCase()}
-								</div>
-							</div>
+							</Link>
 						) : (
 							<div className="hidden sm:flex items-center gap-3">
 								<Button
