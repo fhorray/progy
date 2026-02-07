@@ -6,6 +6,7 @@
 
 ## ✨ Features
 
+
 - **Interactive CLI**: Learn directly in your terminal with the `progy` CLI. It manages your efficient workflow.
 - **Web Dashboard**: Track your progress, view rich lesson details (Markdown, Videos), and manage your courses in a sleek, modern interface.
 - **IDE Integration**: Open exercises directly in your favorite editor (**VS Code**, **Cursor**, **Zed**, **Vim**) with a single click. intelligent file detection ensures you open the right file.
