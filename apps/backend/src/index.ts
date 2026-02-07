@@ -12,14 +12,14 @@ const app = new Hono<{
   Bindings: CloudflareBindings
 }>()
 
-app.route('/api/billing', billing)
-
 app.use('*', cors({
   origin: ['http://localhost:3001', 'https://progy.francy.workers.dev', 'https://progy-web.francy.workers.dev'],
   allowHeaders: ['Content-Type', 'Authorization'],
   allowMethods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   credentials: true,
 }))
+
+app.route('/api/billing', billing)
 
 // Debugging Middleware for Stripe/Auth
 app.use("/api/auth/*", async (c, next) => {
