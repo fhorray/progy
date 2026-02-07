@@ -27,6 +27,13 @@ export const authServer = (env: CloudflareBindings) => {
         subscription: schema.subscription,
       },
     }),
+    user: {
+      additionalFields: {
+        subscription: {
+          type: "string",
+        },
+      },
+    },
     secret: env.BETTER_AUTH_SECRET,
     baseURL: env.BETTER_AUTH_URL ? `${env.BETTER_AUTH_URL.replace(/\/$/, "")}/api/auth` : "https://progy.francy.workers.dev/api/auth",
     trustedOrigins: [
@@ -82,7 +89,13 @@ export const authServer = (env: CloudflareBindings) => {
             name: "pro",
             priceId: env.STRIPE_PRICE_ID_PRO,
             group: "subscription",
-          }],
+          },
+          {
+            name: "lifetime",
+            priceId: env.STRIPE_PRICE_ID_LIFETIME,
+            group: "subscription",
+          }
+          ],
         },
         onEvent: async (event) => {
           if (event.type === "checkout.session.completed") {
@@ -91,10 +104,8 @@ export const authServer = (env: CloudflareBindings) => {
               const userEmail = session.customer_details?.email;
               if (userEmail) {
                 // Use drizzle-orm operators for update query
-                // @ts-ignore - d1 types
                 await drizzle(env.DB).update(schema.user)
                   .set({ subscription: 'lifetime' })
-                  // @ts-ignore - d1 types
                   .where(eq(schema.user.email, userEmail))
                   .execute();
               }
@@ -105,6 +116,8 @@ export const authServer = (env: CloudflareBindings) => {
     ],
   });
 };
+
+export type AuthServer = ReturnType<typeof authServer>;
 
 export const authClient = createAuthClient({
   baseURL: process.env.BETTER_AUTH_URL,

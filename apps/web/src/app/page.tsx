@@ -21,11 +21,8 @@ export default function Home() {
 	const { data: session, isPending: isSessionLoading } = authClient.useSession();
 	const checkoutState = useStore($checkoutMutation as any);
 
-	// @ts-ignore
 	const userPlan = session?.user?.subscription || "free";
-	// @ts-ignore
-	const isPro = userPlan === "pro" || (session?.user as any)?.subscription === "pro"; // Double check
-	// @ts-ignore
+	const isPro = userPlan === "pro";
 	const isLifetime = userPlan === "lifetime";
 
 	const handleLifetimeCheckout = async () => {

@@ -17,7 +17,7 @@ export function PremiumGateModal() {
   const isOpen = useStore($isPremiumGateOpen);
 
   const handleUpgrade = () => {
-    window.open('https://fhorray.github.io/progy', '_blank'); // Adjust if needed
+    window.open('https://progy-web.francy.workers.dev/dashboard', '_blank');
   };
 
   return (

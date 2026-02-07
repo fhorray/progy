@@ -26,6 +26,7 @@ export default function Dashboard() {
     });
   };
 
+
   const handleBillingPortal = async () => {
     setIsLoadingBilling(true);
     try {
@@ -55,7 +56,6 @@ export default function Dashboard() {
     return null;
   }
 
-  // @ts-ignore - subscription type not fully inferred yet
   const plan = session.user.subscription || "free";
   const isLifetime = plan === "lifetime";
   const isPro = plan === "pro";
@@ -102,7 +102,7 @@ export default function Dashboard() {
       </nav>
 
       <main className="pt-24 pb-20 px-4 md:px-6 max-w-4xl mx-auto">
-        <div className="mb-10 reveal">
+        <div className="mb-10">
           <Badge variant="outline" className="mb-4 border-primary/20 text-primary py-1 px-3 bg-primary/5 rounded-full text-[8px] font-black tracking-[0.2em] uppercase">
             Management Console
           </Badge>
@@ -114,7 +114,7 @@ export default function Dashboard() {
 
         <div className="grid gap-6 md:grid-cols-2">
           {/* User Profile Card */}
-          <Card className="bg-black/40 border-white/5 reveal rounded-2xl p-2 transition-transform hover:-translate-y-1">
+          <Card className="bg-black/40 border-white/5 rounded-2xl p-2 transition-transform hover:-translate-y-1">
             <CardHeader className="p-6">
               <CardTitle className="text-[10px] font-black uppercase tracking-[0.3em] text-muted-foreground/50 mb-2">Identity</CardTitle>
             </CardHeader>
@@ -132,7 +132,7 @@ export default function Dashboard() {
           </Card>
 
           {/* Subscription Card */}
-          <Card className="bg-black/60 border-primary/20 relative overflow-hidden reveal rounded-2xl p-2 shadow-[0_0_50px_-15px_rgba(251,146,60,0.1)] transition-transform hover:-translate-y-1" style={{ transitionDelay: '0.1s' }}>
+          <Card className="bg-black/60 border-primary/20 relative overflow-hidden rounded-2xl p-2 shadow-[0_0_50px_-15px_rgba(251,146,60,0.1)] transition-transform hover:-translate-y-1" style={{ transitionDelay: '0.1s' }}>
             {isPro && <div className="absolute top-0 right-0 w-32 h-32 bg-purple-500/10 blur-3xl rounded-full -mr-16 -mt-16"></div>}
             {isLifetime && <div className="absolute top-0 right-0 w-32 h-32 bg-primary/10 blur-3xl rounded-full -mr-16 -mt-16"></div>}
 
