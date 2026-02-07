@@ -132,5 +132,82 @@ func main() {
 }
 `,
     introFilename: "main.go"
+  },
+  generic: {
+    courseJson: {
+      id: "my-course",
+      name: "My New Course",
+      runner: {
+        command: "node",
+        args: ["./runner/index.js", "test", "{{id}}"],
+        cwd: "."
+      },
+      content: {
+        root: ".",
+        exercises: "content"
+      },
+      setup: {
+        checks: [],
+        guide: "SETUP.md"
+      }
+    },
+    setupMd: `# Setup Guide
+
+This file helps students set up their environment.
+
+## Prerequisites
+- Node.js (v18+)
+- [Your Requirement Here]
+`,
+    introReadme: `# Intro
+
+Welcome to your new course.
+`,
+    introCode: `console.log("Hello from the generic course!");`,
+    introFilename: "hello.js"
   }
 };
+
+export const RUNNER_README = `# Progy Runner Guide
+
+This directory contains the "Runner" for your course. The Runner is responsible for executing student code and returning structured feedback to Progy.
+
+## The Contract (Simple Runner Protocol - SRP)
+
+Progy executes your runner command (defined in \`course.json\`) and expects **JSON output** on \`stdout\`.
+
+### Input
+The runner receives arguments defined in \`course.json\`. Usually:
+- \`test\` (action)
+- \`{{id}}\` (exercise ID, e.g. "01_intro/exercise1")
+
+### Output (JSON)
+Your runner must print a JSON object to \`stdout\` (surrounded by \`__SRP_BEGIN__\` and \`__SRP_END__\` tags if there is other noise, or just pure JSON).
+
+**Format:**
+\`\`\`json
+{
+  "success": true,   // or false
+  "summary": "Tests passed!",
+  "diagnostics": [
+    {
+      "severity": "error", // or "warning"
+      "message": "Syntax error on line 5",
+      "file": "main.rs",
+      "line": 5
+    }
+  ],
+  "tests": [
+    { "name": "Test A", "status": "pass", "message": "Good job" },
+    { "name": "Test B", "status": "fail", "message": "Expected 10, got 5" }
+  ]
+}
+\`\`\`
+
+### Exit Codes
+- **0**: Runner executed successfully (even if tests failed).
+- **Non-zero**: Runner crashed or system error.
+
+## Customizing
+You can use **any language** for your runner (Python, Rust, Bash, Node.js). Just update \`runner.command\` in \`course.json\`.
+`;

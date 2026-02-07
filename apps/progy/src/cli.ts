@@ -5,7 +5,7 @@ import { join, resolve, relative, basename } from "node:path";
 import { spawn } from "node:child_process";
 import { homedir, tmpdir } from "node:os";
 import { stat } from "node:fs/promises"; // Import stat for exists helper
-import { TEMPLATES } from "./templates";
+import { TEMPLATES, RUNNER_README } from "./templates";
 import { CourseLoader } from "./course-loader";
 import { CourseContainer } from "./course-container";
 
@@ -119,16 +119,78 @@ function openBrowser(url: string) {
 
 // cloneCourse removed, moved to CourseLoader
 
+// Helper to run the server
+async function runServer(runtimeCwd: string, isOffline: boolean, containerFile: string | null) {
+  console.log(`[INFO] Starting UI in ${isOffline ? 'OFFLINE' : 'ONLINE'} mode...`);
+
+  // dynamically find server file
+  const isTs = import.meta.file.endsWith(".ts");
+  const serverExt = isTs ? "ts" : "js";
+  const serverPath = join(import.meta.dir, "backend", `server.${serverExt}`);
+
+  const serverArgs = ["run", serverPath];
+  if (process.env.ENABLE_HMR === "true") {
+    serverArgs.splice(1, 0, "--hot");
+  }
+
+  const child = spawn("bun", serverArgs, {
+    stdio: "inherit",
+    env: {
+      ...process.env,
+      PROG_CWD: runtimeCwd, // Point server to runtime!
+      PROGY_OFFLINE: isOffline ? "true" : "false"
+    },
+  });
+
+  const cleanup = () => {
+    if (child && !child.killed) {
+      child.kill();
+    }
+    process.exit(0);
+  };
+
+  process.on("SIGINT", cleanup);
+  process.on("SIGTERM", cleanup);
+  process.on("exit", () => {
+    if (child && !child.killed) child.kill();
+  });
+
+  // Watcher for Sync
+  if (containerFile) {
+    console.log(`[SYNC] Auto-save enabled.`);
+    const { watch } = await import("node:fs");
+    let debounceTimer: ReturnType<typeof setTimeout> | null = null;
+
+    const watcher = watch(runtimeCwd, { recursive: true }, (event, filename) => {
+      // Ignore temporary files if needed, or specific patterns
+      if (!filename || filename.includes(".git") || filename.includes("node_modules")) return;
+
+      if (debounceTimer) clearTimeout(debounceTimer);
+      debounceTimer = setTimeout(async () => {
+        try {
+          await CourseContainer.sync(runtimeCwd, containerFile);
+        } catch (e) {
+          console.error(`[SYNC] Failed to save: ${e}`);
+        }
+      }, 1000); // 1s write debounce
+    });
+
+    child.on("close", () => {
+      watcher.close();
+      console.log(`[SYNC] Final save...`);
+      CourseContainer.sync(runtimeCwd, containerFile).then(() => process.exit(0));
+    });
+  } else {
+    child.on("close", (code) => process.exit(code ?? 0));
+  }
+}
+
 async function startCourse(file: string | undefined, options: { offline: boolean }) {
   const cwd = process.cwd();
   const isOffline = !!options.offline;
 
-  // ---------------------------------------------------------
-  // RUNTIME LOGIC
-  // ---------------------------------------------------------
-
   let runtimeCwd = cwd;
-  let containerFile = "";
+  let containerFile: string | null = null;
 
   // 1. Detect .progy file
   if (file && file.endsWith(".progy") && await exists(file)) {
@@ -163,65 +225,81 @@ async function startCourse(file: string | undefined, options: { offline: boolean
       // No course found
       console.log(`[INFO] No .progy file or course structure found.`);
       console.log(`Run 'progy init' to create a new course.`);
-      // We allow server to start so it can show "No Course" UI if implemented.
     }
   }
 
-  console.log(`[INFO] Starting UI in ${isOffline ? 'OFFLINE' : 'ONLINE'} mode...`);
-
-  // dynamically find server file
-  const isTs = import.meta.file.endsWith(".ts");
-  const serverExt = isTs ? "ts" : "js";
-  const serverPath = join(import.meta.dir, "backend", `server.${serverExt}`);
-
-  const serverArgs = ["run", serverPath];
-  if (process.env.ENABLE_HMR === "true") {
-    serverArgs.splice(1, 0, "--hot");
-  }
-
-  const child = spawn("bun", serverArgs, {
-    stdio: "inherit",
-    env: {
-      ...process.env,
-      PROG_CWD: runtimeCwd, // Point server to runtime!
-      PROGY_OFFLINE: isOffline ? "true" : "false"
-    },
-  });
-
-  // Watcher for Sync
-  if (containerFile) {
-    console.log(`[SYNC] Auto-save enabled.`);
-    const { watch } = await import("node:fs");
-    let debounceTimer: ReturnType<typeof setTimeout> | null = null;
-
-    const watcher = watch(runtimeCwd, { recursive: true }, (event, filename) => {
-      // Ignore temporary files if needed, or specific patterns
-      if (!filename || filename.includes(".git") || filename.includes("node_modules")) return;
-
-      if (debounceTimer) clearTimeout(debounceTimer);
-      debounceTimer = setTimeout(async () => {
-        try {
-          await CourseContainer.sync(runtimeCwd, containerFile);
-        } catch (e) {
-          console.error(`[SYNC] Failed to save: ${e}`);
-        }
-      }, 1000); // 1s write debounce
-    });
-
-    child.on("close", () => {
-      watcher.close();
-      console.log(`[SYNC] Final save...`);
-      CourseContainer.sync(runtimeCwd, containerFile).then(() => process.exit(0));
-    });
-  } else {
-    child.on("close", (code) => process.exit(code ?? 0));
-  }
+  await runServer(runtimeCwd, isOffline, containerFile);
 }
 
 program
   .name("progy")
   .description("Universal programming course runner")
   .version(`${packageJson.version} ${isLocal ? "(local/dev)" : "(npm)"}`);
+
+program
+  .command("validate")
+  .description("Validate the current directory as a Progy course")
+  .argument("[path]", "Path to course directory", ".")
+  .action(async (path) => {
+    const target = resolve(path);
+    console.log(`[VAL] Validating course at: ${target}`);
+    try {
+      const config = await CourseLoader.validateCourse(target);
+      console.log(`\n✅ Course is Valid!`);
+      console.log(`   ID: ${config.id}`);
+      console.log(`   Name: ${config.name}`);
+      console.log(`   Content: ${config.content.root}`);
+    } catch (e: any) {
+      console.error(`\n❌ Validation Failed:`);
+      console.error(e.message);
+      process.exit(1);
+    }
+  });
+
+program
+  .command("dev")
+  .description("Run the current directory as a course (Hot-reload/No-packaging)")
+  .option("--offline", "Run in offline mode")
+  .action(async (options) => {
+    const cwd = process.cwd();
+    // Validate first
+    try {
+      await CourseLoader.validateCourse(cwd);
+    } catch (e: any) {
+      console.error(`[ERROR] Current directory is not a valid course:`);
+      console.error(e.message);
+      process.exit(1);
+    }
+
+    console.log(`[DEV] Starting in Development Mode (Source: ${cwd})`);
+    // Run server pointing to CWD, null containerFile (no sync)
+    await runServer(cwd, !!options.offline, null);
+  });
+
+program
+  .command("pack")
+  .description("Package the current directory into a .progy file")
+  .option("-o, --out <file>", "Output filename")
+  .action(async (options) => {
+    const cwd = process.cwd();
+    try {
+      const config = await CourseLoader.validateCourse(cwd);
+      const filename = options.out || `${config.id}.progy`;
+      const outPath = resolve(filename);
+
+      console.log(`[PACK] Packaging course '${config.id}'...`);
+      await CourseContainer.pack(cwd, outPath);
+      console.log(`[SUCCESS] Created: ${filename}`);
+    } catch (e: any) {
+      console.error(`\n❌ Packaging Failed:`);
+      console.error(e.message);
+      process.exit(1);
+    }
+  });
+
+
+
+// ... existing imports ...
 
 program
   .command("init")
@@ -235,133 +313,179 @@ program
     const hasConfig = await exists(courseConfigPath);
     let sourceInfo: { url: string; branch?: string; path?: string } | null = null;
 
-    // Enforce Login if Online
+    // Default to 'generic' if no course specified
+    const lang = options.course || "generic";
+
+    if (hasConfig && !options.course) {
+      console.log(`[INFO] Detected '${CONFIG_NAME}'. Starting progy...`);
+      // proceed to local check or auto-start logic if needed, 
+      // but typically 'init' without args in a valid dir might just mean "ensure everything is ready"
+      // For now, let's fall through to start if we want, OR just exit. 
+      // The original logic just said "Starting progy..." but didn't actually call startCourse there?
+      // Ah, looking at previous code:
+      // if (!options.course) { if (hasConfig) log... else ERROR }
+
+      // Let's defer to startCourse if config exists
+      const config = JSON.parse(await readFile(courseConfigPath, "utf-8"));
+      console.log(`[INFO] Course '${config.name}' found.`);
+      await startCourse(undefined, { offline: isOffline });
+      return;
+    }
+
+    // Enforce Login if Online (only if we are actually initializing a new course via download/copy)
+    // If generic, we don't necessarily need login? 
+    // Let's keep consistency.
     let token: string | null = null;
     if (!isOffline) {
       token = await loadToken();
       if (!token) {
         console.error("❌ Authentication required for Online Mode.");
-        console.error("   Run `bunx progy login` to authenticate.");
-        console.error("   Or use `--offline` for Guest access (progress will only be saved locally).");
         process.exit(1);
       }
     }
 
-    // If no course provided, check if we are already in a course directory
-    if (!options.course) {
-      if (hasConfig) {
-        console.log(`[INFO] Detected '${CONFIG_NAME}'. Starting progy...`);
-      } else {
-        console.error(`[ERROR] No '${CONFIG_NAME}' found. Please specify a course to initialize:`);
-        console.error(`       progy init --course <rust|go|cloudflare...>`);
-        process.exit(1);
-      }
-    } else {
-      // Course provided, so we are initializing
-      const lang = options.course;
-      console.log(`[INFO] Initializing ${lang} course in ${cwd}...`);
+    console.log(`[INFO] Initializing ${lang} course in ${cwd}...`);
 
-      const coursesDir = await findCoursesDir();
-      let installed = false;
+    // Handle "generic" template explicitly
+    if (lang === "generic") {
+      const tmpl = TEMPLATES["generic"];
+      if (!tmpl) throw new Error("Generic template not found");
 
-      // 1. Try Local Courses Folder (Monorepo)
-      if (coursesDir) {
-        console.log(`[INFO] Checking local courses directory: ${coursesDir}`);
-        const sourceDir = join(coursesDir, lang);
-        if (await exists(sourceDir)) {
-          try {
-            console.log(`[VAL] Validating local course...`);
-            await CourseLoader.validateCourse(sourceDir);
+      // Write course.json
+      await writeFile(join(cwd, CONFIG_NAME), JSON.stringify(tmpl.courseJson, null, 2));
 
-            const files = ["content", "runner", "Cargo.toml", "go.mod", "SETUP.md", CONFIG_NAME];
-            for (const file of files) {
-              const srcPath = join(sourceDir, file);
-              const destPath = join(cwd, file);
-              if (await exists(srcPath)) {
-                console.log(`[COPY] ${file}...`);
-                await cp(srcPath, destPath, { recursive: true });
-              }
+      // Write SETUP.md
+      await writeFile(join(cwd, "SETUP.md"), tmpl.setupMd);
+
+      // Write Content
+      const contentDir = join(cwd, "content", "01_intro");
+      await mkdir(contentDir, { recursive: true });
+      await writeFile(join(contentDir, "README.md"), tmpl.introReadme);
+      await writeFile(join(contentDir, tmpl.introFilename), tmpl.introCode);
+
+      // Write Runner README
+      const runnerDir = join(cwd, "runner");
+      await mkdir(runnerDir, { recursive: true });
+      await writeFile(join(runnerDir, "README.md"), RUNNER_README);
+
+      // Generic runner example (node)
+      await writeFile(join(runnerDir, "index.js"), `
+const args = process.argv.slice(2);
+console.log("__SRP_BEGIN__");
+console.log(JSON.stringify({ 
+  success: true, 
+  summary: "Generic Runner Executed",
+  tests: [{ name: "Test", status: "pass" }] 
+}));
+console.log("__SRP_END__");
+`);
+
+      console.log(`[SUCCESS] Initialized generic course.`);
+      console.log(`Run 'bunx progy dev' to start developing.`);
+      return;
+    }
+
+    // Existing Logic for specific courses...
+    // Existing Logic for specific courses...
+    const coursesDir = await findCoursesDir();
+    let installed = false;
+
+    // 1. Try Local Courses Folder (Monorepo)
+    if (coursesDir) {
+      console.log(`[INFO] Checking local courses directory: ${coursesDir}`);
+      const sourceDir = join(coursesDir, lang);
+      if (await exists(sourceDir)) {
+        try {
+          console.log(`[VAL] Validating local course...`);
+          await CourseLoader.validateCourse(sourceDir);
+
+          const files = ["content", "runner", "Cargo.toml", "go.mod", "SETUP.md", CONFIG_NAME];
+          for (const file of files) {
+            const srcPath = join(sourceDir, file);
+            const destPath = join(cwd, file);
+            if (await exists(srcPath)) {
+              console.log(`[COPY] ${file}...`);
+              await cp(srcPath, destPath, { recursive: true });
             }
-            installed = true;
-          } catch (e) {
-            console.warn(`[WARN] Local course validation failed: ${e}`);
           }
-        }
-      }
-
-      // 1. Optimistic Check: If [course].progy exists, use it validly
-      // Note: aliases like "javascript" might map to "js-essentials", so this only catches exact matches
-      // or if the user provided the ID directly.
-      const optimisticFile = join(cwd, `${lang}.progy`);
-      if (await exists(optimisticFile)) {
-        console.log(`[INFO] Found '${lang}.progy'. Opening existing file...`);
-        await startCourse(optimisticFile, { offline: isOffline });
-        return;
-      }
-
-      // 2. Download and Package
-      const tempDir = join(tmpdir(), `progy-init-${Date.now()}`);
-      await mkdir(tempDir, { recursive: true });
-      let courseId = lang.replace(/\//g, "-");
-
-      try {
-        // Download to temp
-        sourceInfo = await CourseLoader.load(lang, tempDir);
-
-        // Read config to get real ID and inject metadata
-        const configPath = join(tempDir, CONFIG_NAME);
-        if (await exists(configPath)) {
-          const configContent = await readFile(configPath, "utf-8");
-          const config = JSON.parse(configContent);
-
-          if (config.id) courseId = config.id;
-
-          // Metadata Injection
-          let updated = false;
-          if (sourceInfo) {
-            config.repo = sourceInfo.url;
-            updated = true;
-          }
-
-          if (updated) {
-            await writeFile(configPath, JSON.stringify(config, null, 2));
-            console.log(`[META] Course metadata injected.`);
-          }
-        }
-
-        // Pack to .progy file
-        const progyFile = join(cwd, `${courseId}.progy`);
-        if (await exists(progyFile)) {
-          console.log(`[INFO] File '${courseId}.progy' already exists. Using existing file.`);
-          // Skip packaging, just proceed to start
-        } else {
-          // Package the course
-          console.log(`[INFO] Packaging course from ${tempDir}...`);
-          await CourseContainer.pack(tempDir, progyFile);
-          console.log(`[SUCCESS] Course packaged: ${courseId}.progy`);
-        }
-
-        // 4. Clean up temp
-        if (tempDir && await exists(tempDir)) {
-          await rm(tempDir, { recursive: true, force: true });
-        }
-
-        console.log(`\nTo start the course, run:\n  bunx progy`);
-
-        // Auto-start
-        await startCourse(progyFile, { offline: isOffline });
-
-      } catch (e) {
-        console.error(`[ERROR] Failed to initialize course: ${e}`);
-        await rm(tempDir, { recursive: true, force: true });
-        process.exit(1);
-      } finally {
-        if (await exists(tempDir)) {
-          await rm(tempDir, { recursive: true, force: true });
+          installed = true;
+        } catch (e) {
+          console.warn(`[WARN] Local course validation failed: ${e}`);
         }
       }
     }
 
+    // 1. Optimistic Check: If [course].progy exists, use it validly
+    // Note: aliases like "javascript" might map to "js-essentials", so this only catches exact matches
+    // or if the user provided the ID directly.
+    const optimisticFile = join(cwd, `${lang}.progy`);
+    if (await exists(optimisticFile)) {
+      console.log(`[INFO] Found '${lang}.progy'. Opening existing file...`);
+      await startCourse(optimisticFile, { offline: isOffline });
+      return;
+    }
+
+    // 2. Download and Package
+    const tempDir = join(tmpdir(), `progy-init-${Date.now()}`);
+    await mkdir(tempDir, { recursive: true });
+    let courseId = lang.replace(/\//g, "-");
+
+    try {
+      // Download to temp
+      sourceInfo = await CourseLoader.load(lang, tempDir);
+
+      // Read config to get real ID and inject metadata
+      const configPath = join(tempDir, CONFIG_NAME);
+      if (await exists(configPath)) {
+        const configContent = await readFile(configPath, "utf-8");
+        const config = JSON.parse(configContent);
+
+        if (config.id) courseId = config.id;
+
+        // Metadata Injection
+        let updated = false;
+        if (sourceInfo) {
+          config.repo = sourceInfo.url;
+          updated = true;
+        }
+
+        if (updated) {
+          await writeFile(configPath, JSON.stringify(config, null, 2));
+          console.log(`[META] Course metadata injected.`);
+        }
+      }
+
+      // Pack to .progy file
+      const progyFile = join(cwd, `${courseId}.progy`);
+      if (await exists(progyFile)) {
+        console.log(`[INFO] File '${courseId}.progy' already exists. Using existing file.`);
+        // Skip packaging, just proceed to start
+      } else {
+        // Package the course
+        console.log(`[INFO] Packaging course from ${tempDir}...`);
+        await CourseContainer.pack(tempDir, progyFile);
+        console.log(`[SUCCESS] Course packaged: ${courseId}.progy`);
+      }
+
+      // 4. Clean up temp
+      if (tempDir && await exists(tempDir)) {
+        await rm(tempDir, { recursive: true, force: true });
+      }
+
+      console.log(`\nTo start the course, run:\n  bunx progy`);
+
+      // Auto-start
+      await startCourse(progyFile, { offline: isOffline });
+
+    } catch (e) {
+      console.error(`[ERROR] Failed to initialize course: ${e}`);
+      await rm(tempDir, { recursive: true, force: true });
+      process.exit(1);
+    } finally {
+      if (await exists(tempDir)) {
+        await rm(tempDir, { recursive: true, force: true });
+      }
+    }
   });
 
 program
