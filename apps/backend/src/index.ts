@@ -12,7 +12,7 @@ const app = new Hono<{
 }>()
 
 app.use('*', cors({
-  origin: ['http://localhost:3001', 'https://progy.francy.workers.dev'],
+  origin: ['http://localhost:3001', 'https://progy.francy.workers.dev', 'https://progy-web.francy.workers.dev'],
   allowHeaders: ['Content-Type', 'Authorization'],
   allowMethods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   credentials: true,
