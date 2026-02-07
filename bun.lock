@@ -4,6 +4,9 @@
   "workspaces": {
     "": {
       "name": "progy-monorepo",
+      "devDependencies": {
+        "@types/bun": "latest",
+      },
     },
     "apps/backend": {
       "name": "backend",
@@ -21,14 +24,14 @@
     },
     "apps/progy": {
       "name": "progy",
-      "version": "0.2.0",
+      "version": "0.6.5",
       "bin": {
         "progy": "./dist/cli.js",
       },
       "dependencies": {
         "better-auth": "^1.1.16",
         "commander": "^12.1.0",
-        "zod": "^4.0.0-canary.618",
+        "zod": "^4.3.6",
       },
       "devDependencies": {
         "@nanostores/query": "^0.3.4",

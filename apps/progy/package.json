@@ -1,6 +1,6 @@
 {
   "name": "progy",
-  "version": "0.5.0",
+  "version": "0.6.5",
   "description": "The interactive CLI and learning platform for Progy courses.",
   "license": "MIT",
   "repository": {
@@ -31,7 +31,7 @@
   "scripts": {
     "dev": "bun run --hot src/backend/server.ts",
     "start": "bun run src/backend/server.ts",
-    "build": "bun run scripts/build.ts",
+    "build": "bun run ../../scripts/build.ts",
     "prepublishOnly": "bun run build"
   },
   "devDependencies": {

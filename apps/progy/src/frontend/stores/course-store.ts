@@ -1,6 +1,6 @@
 import { atom, map, computed } from 'nanostores';
 import type { Exercise, GroupedExercises, TestStatus, Progress } from '../types';
-import { createFetcherStore } from './query-client';
+import { createFetcherStore, mutateCache } from './query-client';
 
 // --- State Queries ---
 
@@ -96,7 +96,14 @@ export const runTests = async () => {
     $friendlyOutput.set(data.friendlyOutput || '');
     const status: TestStatus = data.success ? 'pass' : 'fail';
     $results.setKey(selected.id, status);
-    if (data.success) fetchProgress();
+
+    if (data.success) {
+      if (data.progress) {
+        mutateCache('/api/progress', data.progress);
+      } else {
+        fetchProgress();
+      }
+    }
   } catch (err) {
     $output.set('Failed to run tests.');
     $results.setKey(selected.id, 'fail');

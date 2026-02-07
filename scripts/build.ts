@@ -4,7 +4,7 @@ import { existsSync } from "node:fs";
 
 console.log("[BUILD] Starting build process...");
 
-const ROOT = join(import.meta.dir, ".."); // apps/prog
+const ROOT = join(import.meta.dir, "../apps/progy");
 const DIST = join(ROOT, "dist");
 const PUBLIC_SRC = join(ROOT, "public");
 const PUBLIC_DIST = join(DIST, "public");

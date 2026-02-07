@@ -1,7 +1,7 @@
 #!/usr/bin/env bun
 import { program } from "commander";
 import { cp, exists, mkdir, writeFile, readFile } from "node:fs/promises";
-import { join, resolve } from "node:path";
+import { join, resolve, relative } from "node:path";
 import { spawn } from "node:child_process";
 import { homedir } from "node:os";
 import { TEMPLATES } from "./templates";
@@ -40,6 +40,53 @@ async function loadToken(): Promise<string | null> {
     return config.token || null;
   } catch {
     return null;
+  }
+}
+
+// Helper to get git info
+async function getGitInfo(cwd: string): Promise<{ remoteUrl: string | null; root: string | null }> {
+  try {
+    const remoteProc = spawn("git", ["remote", "get-url", "origin"], { cwd });
+    const remoteUrl = await new Promise<string | null>((resolve) => {
+      let data = "";
+      remoteProc.stdout.on("data", (d) => data += d.toString());
+      remoteProc.on("close", (code) => resolve(code === 0 ? data.trim() : null));
+    });
+
+    const rootProc = spawn("git", ["rev-parse", "--show-toplevel"], { cwd });
+    const root = await new Promise<string | null>((resolve) => {
+      let data = "";
+      rootProc.stdout.on("data", (d) => data += d.toString());
+      rootProc.on("close", (code) => resolve(code === 0 ? data.trim() : null));
+    });
+
+    return { remoteUrl, root };
+  } catch {
+    return { remoteUrl: null, root: null };
+  }
+}
+
+function generateCourseId(remoteUrl: string, repoRoot: string, cwd: string): string {
+  try {
+    // 1. Extract slug from URL (e.g., https://github.com/user/repo.git -> user/repo)
+    let slug = "";
+    if (remoteUrl.startsWith("http")) {
+      const parts = remoteUrl.replace(/\.git$/, "").split("/");
+      slug = parts.slice(-2).join("/");
+    } else if (remoteUrl.startsWith("git@")) {
+      const parts = remoteUrl.replace(/\.git$/, "").split(":");
+      slug = parts[1] || "";
+    }
+
+    if (!slug) return "local/course";
+
+    // 2. Get relative path using Node's path.relative for safety
+    const relPath = relative(repoRoot.trim(), cwd.trim()).replace(/\\/g, "/");
+
+    // 3. Combine (if relPath is empty, it means cwd == root)
+    return relPath ? `${slug}/${relPath}` : slug;
+  } catch {
+    return "local/course";
   }
 }
 
@@ -131,6 +178,26 @@ program
         }
       }
       console.log("[INFO] Initialization complete!");
+    }
+
+    // Dynamic ID Injection
+    if (hasConfig || options.course) {
+      try {
+        const configContent = await readFile(courseConfigPath, "utf-8");
+        const config = JSON.parse(configContent);
+
+        const { remoteUrl, root } = await getGitInfo(cwd);
+        if (remoteUrl && root) {
+          const newId = generateCourseId(remoteUrl, root, cwd);
+          if (config.id !== newId) {
+            console.log(`[ID] Updating course ID to match repository: ${newId}`);
+            config.id = newId;
+            await writeFile(courseConfigPath, JSON.stringify(config, null, 2));
+          }
+        }
+      } catch (e) {
+        console.warn(`[WARN] Failed to update dynamic course ID: ${e}`);
+      }
     }
 
     console.log(`[INFO] Starting UI in ${isOffline ? 'OFFLINE' : 'ONLINE'} mode...`);

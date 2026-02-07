@@ -53,7 +53,8 @@ app.get('/api/registry', (c) => {
   })
 })
 
-app.get('/api/auth/get-session', async (c) => {
+// Helper for robust session verification
+async function verifySession(c: any) {
   const auth = authServer(c.env)
   const authHeader = c.req.header('Authorization')
   const db = drizzle(c.env.DB)
@@ -63,9 +64,6 @@ app.get('/api/auth/get-session', async (c) => {
     token = authHeader.split(' ')[1]
   }
 
-  // Debug: Log token exactly
-  console.log(`[SESSION-CHECK] Received token: [${token}]`)
-
   try {
     // 1. Better Auth check
     const session = await auth.api.getSession({
@@ -73,13 +71,11 @@ app.get('/api/auth/get-session', async (c) => {
     })
 
     if (session) {
-      console.log(`[SESSION-CHECK] Better Auth Success: ${session.user.email}`)
-      return c.json(session)
+      return session
     }
 
     // 2. Manual Lookup
     if (token) {
-      console.log(`[SESSION-CHECK] Manual lookup for: [${token}]`)
       // Try both id and token match
       const sessionRow = await db.select()
         .from(schema.session)
@@ -93,8 +89,7 @@ app.get('/api/auth/get-session', async (c) => {
           .get()
 
         if (userRow) {
-          console.log(`[SESSION-CHECK] Manual Success: ${userRow.email}`)
-          return c.json({ user: userRow, session: sessionRow })
+          return { user: userRow, session: sessionRow }
         }
       } else {
         // Check if it matches ID instead
@@ -107,22 +102,29 @@ app.get('/api/auth/get-session', async (c) => {
             .from(schema.user)
             .where(eq(schema.user.id, sessionById.userId))
             .get()
-          if (userRow) return c.json({ user: userRow, session: sessionById })
+          if (userRow) return { user: userRow, session: sessionById }
         }
       }
     }
-
-    return c.json(null)
+    return null
   } catch (err: any) {
-    console.error(`[SESSION-CHECK] Error: ${err.message}`)
-    return c.json({ error: err.message }, 500)
+    console.error(`[AUTH-ERROR] ${err.message}`)
+    return null
   }
+}
+
+app.get('/api/auth/get-session', async (c) => {
+  const session = await verifySession(c)
+  if (session) {
+    console.log(`[SESSION-CHECK] Success: ${session.user.email}`)
+    return c.json(session)
+  }
+  return c.json(null)
 })
 
 app.post('/api/progress/sync', async (c) => {
-  const auth = authServer(c.env)
   const db = drizzle(c.env.DB)
-  const session = await auth.api.getSession({ headers: c.req.raw.headers })
+  const session = await verifySession(c)
 
   if (!session) return c.json({ error: 'Unauthorized' }, 401)
 
@@ -151,9 +153,8 @@ app.post('/api/progress/sync', async (c) => {
 })
 
 app.get('/api/progress/get', async (c) => {
-  const auth = authServer(c.env)
   const db = drizzle(c.env.DB)
-  const session = await auth.api.getSession({ headers: c.req.raw.headers })
+  const session = await verifySession(c)
 
   if (!session) return c.json({ error: 'Unauthorized' }, 401)
 

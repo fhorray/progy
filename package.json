@@ -11,6 +11,9 @@
   },
   "workspaces": [
     "apps/*"
-  ]
+  ],
+  "devDependencies": {
+    "@types/bun": "latest"
+  }
 
 }

@@ -6,8 +6,9 @@
     "deploy": "wrangler deploy --minify",
     "cf-typegen": "wrangler types --env-interface CloudflareBindings",
     "db:generate": "drizzle-kit generate",
-    "db:migrate": "wrangler d1 execute progy --remote --file=./drizzle/0000_awesome_marvel_zombies.sql",
-    "db:migrate:local": "wrangler d1 execute progy --file=./drizzle/0000_awesome_marvel_zombies.sql"
+    "db:migrate": "bun ../../scripts/migrate-d1.ts --remote",
+    "db:migrate:local": "bun ../../scripts/migrate-d1.ts --local",
+    "db:studio": "drizzle-kit studio"
   },
   "dependencies": {
     "@hono/node-server": "^1.19.9",

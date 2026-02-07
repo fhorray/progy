@@ -1,5 +1,5 @@
 {
-  "id": "rust",
+  "id": "fhorray/rust-flow/apps/progy",
   "name": "Rust",
   "runner": {
     "command": "cargo",
