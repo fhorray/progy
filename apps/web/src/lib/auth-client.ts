@@ -1,9 +1,10 @@
 import { createAuthClient } from "better-auth/react"
 import { stripeClient } from "@better-auth/stripe/client"
-import { config } from "./config"
+import { getCloudflareContext } from "@opennextjs/cloudflare"
+
 
 export const authClient = createAuthClient({
-  baseURL: config.API_URL,
+  baseURL: getCloudflareContext().env.NEXT_PUBLIC_API_URL!,
   plugins: [
     stripeClient({
       subscription: true

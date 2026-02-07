@@ -11,7 +11,7 @@ import { CourseContainer } from "./course-container";
 
 const CONFIG_DIR = join(homedir(), ".progy");
 const GLOBAL_CONFIG_PATH = join(CONFIG_DIR, "config.json");
-const BACKEND_URL = process.env.PROGY_API_URL || "https://progy-api.francy.workers.dev";
+const BACKEND_URL = process.env.PROGY_API_URL || "https://progy.francy.workers.dev";
 const FRONTEND_URL = process.env.PROGY_FRONTEND_URL || "https://progy.francy.workers.dev";
 
 // Version & Source Check
@@ -536,7 +536,7 @@ program
     const { deviceAuthorizationClient } = await import("better-auth/client/plugins");
 
     const authClient = createAuthClient({
-      baseURL: BACKEND_URL,
+      baseURL: `${BACKEND_URL}/api/auth`,
       plugins: [deviceAuthorizationClient()],
     });
 

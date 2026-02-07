@@ -1,5 +1,6 @@
+import { getCloudflareContext } from '@opennextjs/cloudflare';
 import { createMutatorStore } from './query-client';
-import { config } from '@/lib/config';
+
 
 interface CheckoutParams {
   plan: 'lifetime' | 'pro';
@@ -13,7 +14,7 @@ interface CheckoutResponse {
 export const $checkoutMutation = createMutatorStore<CheckoutParams, CheckoutResponse>(
   async ({ data }) => {
     const { plan, token } = data;
-    const res = await fetch(`${config.API_URL}/api/billing/checkout/${plan}`, {
+    const res = await fetch(`${getCloudflareContext().env.NEXT_PUBLIC_API_URL}/api/billing/checkout/${plan}`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",

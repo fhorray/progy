@@ -137,7 +137,7 @@ app.get('/api/progress/get', async (c) => {
         eq(schema.courseProgress.userId, session.user.id),
         eq(schema.courseProgress.courseId, courseId)
       )
-    )
+    ).get()
   if (progress?.data) {
     try {
       return c.json(JSON.parse(progress.data))
@@ -409,15 +409,17 @@ app.notFound((c) => {
 })
 
 // Better Auth Handler
-app.all('/api/auth/*', async (c) => {
-  const auth = authServer(c.env)
-  const authHeader = c.req.header('Authorization')
-  if (authHeader) {
-    console.log(`[AUTH-DEBUG] Authorization header found: ${authHeader.substring(0, 20)}...`)
+app.all('/api/auth/:path{.*}', async (c) => {
+  try {
+    const auth = authServer(c.env)
+    console.log(`[AUTH-DEBUG] Handling request for: ${c.req.path}`);
+    const res = await auth.handler(c.req.raw)
+    console.log(`[AUTH-DEBUG] Better-Auth response: ${res.status}`);
+    return res
+  } catch (err: any) {
+    console.error(`[AUTH-FATAL] ${err.message}`, err.stack)
+    return c.json({ error: 'Internal Auth Error', message: err.message }, 500)
   }
-  const res = await auth.handler(c.req.raw)
-  console.log(`[AUTH] Path: ${c.req.path}, Status: ${res.status}`)
-  return res
 })
 
 // CLI Auth routes removed - handled by Better Auth deviceAuthorization plugin

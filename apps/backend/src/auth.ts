@@ -14,6 +14,10 @@ export const authServer = (env: CloudflareBindings) => {
     apiVersion: "2026-01-28.clover", // Fixed version type helper
   });
 
+  if (!env.BETTER_AUTH_SECRET) {
+    console.error("[AUTH-SECRET-MISSING] BETTER_AUTH_SECRET is not defined in environment variables!");
+  }
+
   return betterAuth({
     database: drizzleAdapter(drizzle(env.DB), {
       provider: "sqlite",
@@ -28,7 +32,7 @@ export const authServer = (env: CloudflareBindings) => {
     trustedOrigins: [
       "http://localhost:3001",
       "https://progy.francy.workers.dev",
-      "https://progy-api.francy.workers.dev"
+      "https://progy-web.francy.workers.dev"
     ],
     socialProviders: {
       github: {
@@ -91,7 +95,7 @@ export const authServer = (env: CloudflareBindings) => {
                 await drizzle(env.DB).update(schema.user)
                   .set({ subscription: 'lifetime' })
                   // @ts-ignore - d1 types
-                  .where(schema.eq(schema.user.email, userEmail))
+                  .where(eq(schema.user.email, userEmail))
                   .execute();
               }
             }
