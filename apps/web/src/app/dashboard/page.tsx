@@ -57,7 +57,7 @@ export default function Dashboard() {
         }
       });
       if (res.ok) {
-        const data = await res.json();
+        const data = await res.json() as CourseProgress[];
         setProgressList(data);
       }
     } catch (e) {
