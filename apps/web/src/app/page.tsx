@@ -23,7 +23,8 @@ export default function Home() {
 
 	const userPlan = session?.user?.subscription || "free";
 	const isPro = userPlan === "pro";
-	const isLifetime = userPlan === "lifetime";
+	// @ts-ignore
+	const isLifetime = session?.user?.hasLifetime || userPlan === "lifetime";
 
 	const handleLifetimeCheckout = async () => {
 		if (!session) {

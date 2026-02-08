@@ -150,6 +150,10 @@ last_sync = "${new Date().toISOString()}"
       content += `!content/**/*${ext}\n`;
     }
 
+    // Allow Progy Notes (AI/User Notes)
+    content += `!progy-notes/\n`;
+    content += `!progy-notes/**\n`;
+
     await writeFile(join(cwd, ".gitignore"), content);
   }
 
