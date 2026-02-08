@@ -162,7 +162,7 @@ The Stripe plugin integrates Stripe's payment and subscription functionality wit
     import { stripeClient } from "@better-auth/stripe/client"
 
     export const authClient = createAuthClient({
-        // ... your existing config
+        basePath: "/auth",
         plugins: [
             stripeClient({
                 subscription: true //if you want to enable subscription management

@@ -558,7 +558,7 @@ program
     const { deviceAuthorizationClient } = await import("better-auth/client/plugins");
 
     const authClient = createAuthClient({
-      baseURL: `${BACKEND_URL}/api/auth`,
+      baseURL: BACKEND_URL,
       plugins: [deviceAuthorizationClient()],
     });
 

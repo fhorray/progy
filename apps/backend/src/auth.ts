@@ -20,6 +20,8 @@ export const authServer = (env: CloudflareBindings) => {
   }
 
   return betterAuth({
+    basePath: "/auth",
+
     database: drizzleAdapter(drizzle(env.DB), {
       provider: "sqlite",
       schema: {

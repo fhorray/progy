@@ -283,7 +283,10 @@ export async function scanAndGenerateManifest(config: CourseConfig) {
       if (await exists(infoTomlPath)) {
         try {
           const infoContent = await readFile(infoTomlPath, "utf-8");
-          const parsed = Bun.TOML.parse(infoContent) as any;
+          // Pre-process: Bun.TOML.parse fails on bare keys starting with digits (e.g. 01_mutability)
+          // We wrap them in quotes if They start with a digit and are followed by alphanumeric/chars until =
+          const fixedContent = infoContent.replace(/^(\s*)(\d+[\w-]*)\s*=/gm, '$1"$2" =');
+          const parsed = Bun.TOML.parse(fixedContent) as any;
           if (parsed.module?.message) moduleTitle = parsed.module.message;
           if (Array.isArray(parsed.exercises)) {
             for (const ex of parsed.exercises) { if (ex.name) exercisesFromToml[ex.name] = ex; }
