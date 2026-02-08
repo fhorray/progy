@@ -4,7 +4,7 @@ import { cors } from 'hono/cors'
 import { drizzle } from 'drizzle-orm/d1'
 import * as schema from './db/schema'
 import { eq, and } from 'drizzle-orm'
-import { authMiddleware, type AuthVariables } from './auth-utils'
+import { authMiddleware, verifySession, type AuthVariables } from './auth-utils'
 import { streamText, generateText } from "ai";
 import { getModel, constructSystemPrompt, constructExplanationPrompt, constructGeneratePrompt, type AIConfig, type AIContext } from "./ai/service";
 import billing from './endpoints/billing'
@@ -27,6 +27,14 @@ app.use('*', authMiddleware);
 app.route('/billing', billing)
 app.route('/git', git)
 
+app.get('/auth/get-session', async (c) => {
+  const session = await verifySession(c)
+  if (session) {
+    console.log(`[SESSION-CHECK] Success: ${session.user.email}`)
+    return c.json(session)
+  }
+  return c.json(null)
+})
 
 // Debugging Middleware for Stripe/Auth
 app.use("/auth/*", async (c, next) => {

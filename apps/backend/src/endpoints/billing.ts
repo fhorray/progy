@@ -5,16 +5,14 @@ import Stripe from "stripe";
 import { user } from "../db/schema";
 import { eq } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/d1";
-import type { AuthVariables } from "../auth-utils";
+import { verifySession } from "../auth-utils";
 
 const billing = new Hono<{
   Bindings: CloudflareBindings;
-  Variables: AuthVariables;
 }>();
 
 billing.post("/checkout", async (c) => {
-  const session = c.get('session');
-  const user = c.get('user');
+  const session = await verifySession(c);
 
   if (!session || !user) {
     return c.json({ error: "Unauthorized" }, 401);
@@ -35,7 +33,7 @@ billing.post("/checkout", async (c) => {
   let mode: Stripe.Checkout.SessionCreateParams.Mode = "subscription";
 
   // DISCOUNT LOGIC: If buying Pro but already Lifetime, use Discount Price
-  if (plan === "pro" && user.subscription === "lifetime") {
+  if (plan === "pro" && session.user.subscription === "lifetime") {
     priceId = "price_1SyFpZGdycZGJETWwc9zs2uV";
   }
 
@@ -45,7 +43,7 @@ billing.post("/checkout", async (c) => {
   }
 
   const checkoutSession = await stripe.checkout.sessions.create({
-    customer_email: user.email,
+    customer_email: session.user.email,
     line_items: [
       {
         price: priceId,
@@ -56,7 +54,7 @@ billing.post("/checkout", async (c) => {
     success_url: `${redirectBase}/dashboard?payment_success=true`,
     cancel_url: `${redirectBase}/dashboard`,
     metadata: {
-      userId: user.id,
+      userId: session.user.id,
       planType: plan,
     },
   });

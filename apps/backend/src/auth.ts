@@ -43,6 +43,7 @@ export const authServer = (env: CloudflareBindings) => {
     secret: env.BETTER_AUTH_SECRET,
     baseURL: env.BETTER_AUTH_URL ? `${env.BETTER_AUTH_URL.replace(/\/$/, "")}/auth` : "https://api.progy.dev/auth",
     trustedOrigins: [
+      "http://localhost:3000",
       "http://localhost:3001",
       "https://api.progy.dev",
       "https://progy.dev"
@@ -58,7 +59,6 @@ export const authServer = (env: CloudflareBindings) => {
       crossSubDomainCookies: {
         enabled: true,
       },
-      cookieDomain: ".francy.workers.dev",
     },
     trustHost: true,
     callbacks: {
