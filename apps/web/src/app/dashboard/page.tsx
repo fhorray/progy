@@ -104,14 +104,31 @@ export default function Dashboard() {
   const handleBillingPortal = async () => {
     setIsLoadingBilling(true);
     try {
-      const { data } = await authClient.subscription.billingPortal();
+      const { data, error } = await authClient.subscription.billingPortal();
+
       if (data?.url) {
         window.location.href = data.url;
-      } else {
-        toast.error("Could not redirect to billing portal");
+        return;
       }
-    } catch (error) {
-      toast.error("Failed to access billing portal");
+
+      console.error("Billing Portal Error:", error);
+
+      if (error?.status === 400 || error?.code === "UNABLE_TO_CREATE_BILLING_PORTAL_SESSION") {
+        toast.error("Billing profile not found. Redirecting to setup...", {
+          description: "We'll create a new billing session for you."
+        });
+        // Fallback: Send them to checkout to update/create their record
+        // This is safe because Stripe will separate the new sub or we can handle it.
+        // Ideally we just want to update payment method, but checkout "setup" mode is complex here.
+        // We'll send to Pro checkout.
+        await handleCheckout("pro");
+      } else {
+        toast.error("Could not access billing portal.", {
+          description: "Please try again later or contact support."
+        });
+      }
+    } catch (e) {
+      toast.error("An unexpected error occurred");
     } finally {
       setIsLoadingBilling(false);
     }

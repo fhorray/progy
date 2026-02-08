@@ -57,19 +57,20 @@ try {
         }
       }
 
-      // Handle generic routes (SPA Fallback)
-      // If the path doesn't start with /api and doesn't have an extension, serve index.html
-      // Handle generic routes (SPA Fallback)
-      // If the path doesn't start with /api and doesn't have an extension, serve index.html
-      if (!url.pathname.startsWith('') && !url.pathname.includes('.')) {
-        return new Response(Bun.file(join(PUBLIC_DIR, "index.html")));
-      }
-
-      // Try to serve static file from public dir
       const localFilePath = join(PUBLIC_DIR, url.pathname);
       const file = Bun.file(localFilePath);
+
+      // 1. Try to serve static file if it exists
       if (await file.exists()) {
         return new Response(file);
+      }
+
+      // 2. SPA Fallback: If it's not found and doesn't look like an API call or asset, serve index.html
+      // We assume API routes are handled by the 'routes' object or separate logic.
+      // Since 'routes' object handles exact matches or specific patterns, if we are here, it's a 404 or a client-side route.
+      // We check if it lacks a file extension to assume it's a route.
+      if (!url.pathname.includes('.')) {
+        return new Response(Bun.file(join(PUBLIC_DIR, "index.html")));
       }
 
       return new Response("Not Found", { status: 404 });
