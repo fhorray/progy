@@ -13,6 +13,13 @@ const PUBLIC_DIST = join(DIST, "public");
 await rm(DIST, { recursive: true, force: true });
 await mkdir(PUBLIC_DIST, { recursive: true });
 
+// Copy static assets
+// We need to copy everything from PUBLIC_SRC to PUBLIC_DIST excluding index.html which is processed later
+// But simplest is to copy all and overwrite index.html later.
+// Bun/Node cp
+const { cp } = await import("node:fs/promises");
+await cp(PUBLIC_SRC, PUBLIC_DIST, { recursive: true });
+
 console.log("[BUILD] Building Frontend...");
 // 2. Build Frontend
 const frontendBuild = await Bun.build({

@@ -9,6 +9,7 @@ export interface ProgyConfig {
     id: string;
     repo: string;
     branch?: string;
+    path?: string;
   };
   sync?: {
     last_sync?: string;
@@ -20,7 +21,7 @@ export class SyncManager {
     return join(homedir(), ".progy", "courses", courseId);
   }
 
-  static async ensureOfficialCourse(courseId: string, repoUrl: string, branch = "main"): Promise<string> {
+  static async ensureOfficialCourse(courseId: string, repoUrl: string, branch = "main", path?: string): Promise<string> {
     const cacheDir = this.getCacheDir(courseId);
 
     const gitDir = join(cacheDir, ".git");
@@ -35,8 +36,17 @@ export class SyncManager {
       console.log(`[SYNC] Cloning official course cache: ${courseId}...`);
       await rm(cacheDir, { recursive: true, force: true });
       await mkdir(cacheDir, { recursive: true });
-      // public clone
-      await GitUtils.clone(repoUrl, cacheDir, "", branch);
+
+      if (path) {
+        await GitUtils.exec(["init"], cacheDir);
+        await GitUtils.addRemote(cacheDir, "", repoUrl);
+        await GitUtils.sparseCheckout(cacheDir, [path]);
+        // Pull with depth 1 for speed
+        await GitUtils.exec(["pull", "--depth=1", "origin", branch], cacheDir);
+      } else {
+        // public clone
+        await GitUtils.clone(repoUrl, cacheDir, "", branch);
+      }
     }
     return cacheDir;
   }
@@ -78,6 +88,7 @@ export class SyncManager {
 id = "${config.course.id}"
 repo = "${config.course.repo}"
 branch = "${config.course.branch || 'main'}"
+path = "${config.course.path || ''}"
 
 [sync]
 last_sync = "${new Date().toISOString()}"
@@ -105,22 +116,22 @@ last_sync = "${new Date().toISOString()}"
 
     // Try exact match first
     if (extensions[lowerId]) {
-        extList = extensions[lowerId];
+      extList = extensions[lowerId];
     } else {
-        // Try prefix match (e.g. rust-advanced -> rust)
-        for (const [key, val] of Object.entries(extensions)) {
-            if (lowerId.startsWith(key)) {
-                extList = val;
-                break;
-            }
+      // Try prefix match (e.g. rust-advanced -> rust)
+      for (const [key, val] of Object.entries(extensions)) {
+        if (lowerId.startsWith(key)) {
+          extList = val;
+          break;
         }
+      }
     }
 
     // Fallback: If no match, warn and allow common source files?
     // Or strictly allow nothing? Strict is safer per requirements.
     if (extList.length === 0) {
-        console.warn(`[WARN] Unknown language for course '${courseId}'. gitignore might be too strict.`);
-        console.warn(`       Please manually edit .gitignore to whitelist your source files.`);
+      console.warn(`[WARN] Unknown language for course '${courseId}'. gitignore might be too strict.`);
+      console.warn(`       Please manually edit .gitignore to whitelist your source files.`);
     }
 
     // Ignore everything by default
@@ -142,8 +153,9 @@ last_sync = "${new Date().toISOString()}"
     await writeFile(join(cwd, ".gitignore"), content);
   }
 
-  static async applyLayering(cwd: string, cacheDir: string, force = false) {
-    await this.copyRecursive(cacheDir, cwd, force);
+  static async applyLayering(cwd: string, cacheDir: string, force = false, sourcePath?: string) {
+    const src = sourcePath ? join(cacheDir, sourcePath) : cacheDir;
+    await this.copyRecursive(src, cwd, force);
   }
 
   private static async copyRecursive(src: string, dest: string, force: boolean) {
@@ -151,56 +163,56 @@ last_sync = "${new Date().toISOString()}"
     await mkdir(dest, { recursive: true });
 
     for (const entry of entries) {
-        if (entry.name === ".git") continue;
+      if (entry.name === ".git") continue;
 
-        const srcPath = join(src, entry.name);
-        const destPath = join(dest, entry.name);
+      const srcPath = join(src, entry.name);
+      const destPath = join(dest, entry.name);
 
-        if (entry.isDirectory()) {
-            await this.copyRecursive(srcPath, destPath, force);
-        } else {
-            // Logic to preserve user exercise files
-            const relPath = srcPath.replace(src, "").replace(/\\/g, "/");
-            const isContent = relPath.includes("/content/");
+      if (entry.isDirectory()) {
+        await this.copyRecursive(srcPath, destPath, force);
+      } else {
+        // Logic to preserve user exercise files
+        const relPath = srcPath.replace(src, "").replace(/\\/g, "/");
+        const isContent = relPath.includes("/content/");
 
-            let shouldOverwrite = true;
+        let shouldOverwrite = true;
 
-            if (isContent) {
-                // Heuristic: If it looks like source code, treat as exercise file
-                const isCode = /\.(rs|go|ts|js|py|lua|c|cpp|h|toml|mod|sum|json)$/.test(entry.name);
-                if (isCode && !force) {
-                     if (await this.exists(destPath)) {
-                         shouldOverwrite = false;
-                     }
-                }
+        if (isContent) {
+          // Heuristic: If it looks like source code, treat as exercise file
+          const isCode = /\.(rs|go|ts|js|py|lua|c|cpp|h|toml|mod|sum|json)$/.test(entry.name);
+          if (isCode && !force) {
+            if (await this.exists(destPath)) {
+              shouldOverwrite = false;
             }
-
-            if (shouldOverwrite) {
-                await copyFile(srcPath, destPath);
-            }
+          }
         }
+
+        if (shouldOverwrite) {
+          await copyFile(srcPath, destPath);
+        }
+      }
     }
   }
 
   static async resetExercise(cwd: string, cacheDir: string, relativePath: string) {
-      const srcPath = join(cacheDir, relativePath);
-      const destPath = join(cwd, relativePath);
+    const srcPath = join(cacheDir, relativePath);
+    const destPath = join(cwd, relativePath);
 
-      if (await this.exists(srcPath)) {
-          await mkdir(dirname(destPath), { recursive: true });
-          await copyFile(srcPath, destPath);
-          console.log(`[RESET] Restored ${relativePath}`);
-      } else {
-          throw new Error(`File ${relativePath} not found in official course.`);
-      }
+    if (await this.exists(srcPath)) {
+      await mkdir(dirname(destPath), { recursive: true });
+      await copyFile(srcPath, destPath);
+      console.log(`[RESET] Restored ${relativePath}`);
+    } else {
+      throw new Error(`File ${relativePath} not found in official course.`);
+    }
   }
 
   private static async exists(path: string) {
-      try {
-          await stat(path);
-          return true;
-      } catch {
-          return false;
-      }
+    try {
+      await stat(path);
+      return true;
+    } catch {
+      return false;
+    }
   }
 }

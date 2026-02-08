@@ -63,6 +63,11 @@ export class GitUtils {
     return this.exec(["init", "-b", "main"], cwd);
   }
 
+  static async sparseCheckout(cwd: string, paths: string[]): Promise<GitResult> {
+    await this.exec(["config", "core.sparseCheckout", "true"], cwd);
+    return this.exec(["sparse-checkout", "set", ...paths], cwd);
+  }
+
   static async addRemote(cwd: string, token: string, repoUrl: string): Promise<GitResult> {
     const authUrl = this.getAuthUrl(repoUrl, token);
     // Remove if exists first to be safe?

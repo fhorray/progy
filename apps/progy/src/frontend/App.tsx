@@ -3,42 +3,25 @@ import { useStore } from '@nanostores/react';
 import { Loader2 } from 'lucide-react';
 import 'highlight.js/styles/github-dark.css';
 
-// Components
-import { Sidebar } from './components/sidebar';
-import { ExerciseCard } from './components/exercise-card';
-import { ContentTabs } from './components/content-tabs';
 
-import { ChallengeDisplay } from './components/challenge-display';
-import { SetupView } from './components/setup-view';
-import { SkillTree } from './components/skill-tree';
-import { PremiumGateModal } from './components/premium-gate-modal';
+// Views
+import { MapView } from './views/map-view';
+import { EditorView } from './views/editor-view';
+import { GitView } from './views/git-view';
 
 // Stores & Actions
 import {
   $selectedExercise,
   $exerciseGroups,
-  $exerciseGroupsQuery,
-  $results,
-  $progress,
-  $setupReady,
   $error,
-  $isRunning,
-  $isAiLoading,
-  $output,
-  fetchExercises,
-  fetchProgress,
-  runTests,
-  explainExercise,
-  getAiHint,
   setSelectedExercise,
 } from './stores/course-store';
-import { $viewMode, setViewMode, $isPremiumGateOpen } from './stores/ui-store';
-import { ChallengeGenerator } from './components/challenge-generator';
+import { $router } from './stores/router';
+import { ChallengeGenerator } from './components/modals/challenge-generator-modal';
 import { Navbar } from './components/navbar';
-import { UserNav } from './components/user-nav';
 import { fetchLocalSettings } from './stores/user-store';
 import { SecurityBanner } from './components/security-banner';
-import { GitPanel } from './components/git-panel';
+import { cn } from './lib/utils';
 
 export function App() {
   // Initial settings load
@@ -48,27 +31,43 @@ export function App() {
 
   const selectedExercise = useStore($selectedExercise);
   const exerciseGroups = useStore($exerciseGroups);
-  const exerciseGroupsQuery = useStore($exerciseGroupsQuery);
-  const results = useStore($results);
-  const setupReady = useStore($setupReady);
   const error = useStore($error);
-  const isRunning = useStore($isRunning);
-  const isAiLoading = useStore($isAiLoading);
-  const output = useStore($output);
-  const viewMode = useStore($viewMode);
-  const isPremiumGateOpen = useStore($isPremiumGateOpen);
+  const router = useStore($router);
 
-  const [showChallengeGenerator, setShowChallengeGenerator] = useState(false);
-  const [generatedChallenge, setGeneratedChallenge] = useState<any>(null);
 
-  // ... (existing effects)
+
+
+  // Router-based rendering
+  console.log('[App] Current Route:', router?.route);
+  if (router?.route === 'editor') {
+    console.log('[App] Params:', router.params);
+  }
+
+  let content;
+  if (!router) {
+    return <span>404 - Not found!</span>
+  } else if (router.route === 'home' || router.route === 'editor') {
+    content = <EditorView />
+  } else if (router.route === 'editorModule') {
+    content = <EditorView moduleId={router.params.moduleId} />
+  } else if (router.route === 'editorExercise') {
+    content = (
+      <EditorView
+        exerciseId={router.params.exerciseId}
+        moduleId={router.params.moduleId}
+      />
+    )
+  } else if (router.route === 'git') {
+    content = <GitView />
+  } else if (router.route === 'map') {
+    content = <MapView />
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-zinc-950 via-zinc-950 to-zinc-900 text-zinc-100 flex flex-col font-sans selection:bg-rust/30">
+      {/* SECURITY BNANNER */}
       <SecurityBanner />
-      <Navbar
-        onGenerateChallenge={() => setShowChallengeGenerator(true)}
-      />
+      <Navbar />
 
       {error && (
         <div className="bg-red-500/10 border-b border-red-500/20 p-2 text-center text-xs text-red-400">
@@ -77,65 +76,14 @@ export function App() {
       )}
 
       <main
-        className={`flex-1 w-full overflow-hidden flex ${viewMode === 'editor' ? 'container mx-auto py-6' : ''}`}
+        className={cn('flex-1 w-full overflow-hidden flex', {
+          // TODO
+        })}
       >
-        {viewMode === 'map' ? (
-          // ... (map view)
-          <div className="w-full h-full bg-zinc-950/50 flex-1">
-            <SkillTree
-              exerciseGroups={exerciseGroups}
-              results={results}
-              selectedExerciseId={selectedExercise?.id}
-              onSelectExercise={(ex) => {
-                setSelectedExercise(ex as any);
-                setViewMode('editor');
-              }}
-            />
-          </div>
-        ) : viewMode === 'git' ? (
-          <div className="w-full h-full bg-zinc-950/50 flex-1 flex flex-col items-center justify-center p-8">
-            <div className="container mx-auto h-full max-h-[800px]">
-              <GitPanel />
-            </div>
-          </div>
-        ) : (
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 h-[calc(100vh-120px)] flex-1">
-            <Sidebar />
-
-            <section className="lg:col-span-9 flex flex-col gap-4 h-full min-h-0">
-              <ExerciseCard
-                isRunning={isRunning}
-                isAiLoading={isAiLoading}
-                hasOutput={!!output}
-                onRunTests={runTests}
-                onExplain={explainExercise}
-                onGetAiHint={getAiHint}
-              />
-              <ContentTabs />
-            </section>
-          </div>
-        )}
+        {content}
       </main>
 
-      {showChallengeGenerator && (
-        <ChallengeGenerator
-          onClose={() => setShowChallengeGenerator(false)}
-          onChallengeGenerated={(challenge) => {
-            setGeneratedChallenge(challenge);
-            setShowChallengeGenerator(false);
-            setSelectedExercise(null);
-          }}
-        />
-      )}
 
-      {generatedChallenge && !selectedExercise && (
-        <ChallengeDisplay
-          challenge={generatedChallenge}
-          onClose={() => setGeneratedChallenge(null)}
-        />
-      )}
-
-      <PremiumGateModal />
-    </div>
+    </div >
   );
 }

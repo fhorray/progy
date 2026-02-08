@@ -7,7 +7,14 @@ import { createFetcherStore, mutateCache } from './query-client';
 export const $exerciseGroupsQuery = createFetcherStore<GroupedExercises>(['/api/exercises']);
 export const $progressQuery = createFetcherStore<Progress>(['/api/progress']);
 
-export const $selectedExercise = atom<Exercise | null>(null);
+// Persist selected exercise to localStorage so it survives refreshes
+export const $selectedExercise = persistentAtom<Exercise | null>('progy:selectedExercise', null, {
+  encode: JSON.stringify,
+  decode: JSON.parse,
+});
+
+// Persist the expanded module in the sidebar
+export const $expandedModule = persistentAtom<string | undefined>('progy:expandedModule', undefined);
 
 // Reactive chain for exercise details (Description)
 export const $descriptionQuery = createFetcherStore<{ code: string; markdown: string }>([
@@ -23,25 +30,74 @@ export const $quizQuery = createFetcherStore<any>([
   computed($selectedExercise, (ex) => (ex?.hasQuiz ? ex.path : null)),
 ]);
 
+
 // --- State Atoms (Local/UI) ---
 
+/**
+ * Computed property that returns the exercise groups.
+ * @returns {GroupedExercises} The exercise groups.
+ */
 export const $results = map<Record<string, TestStatus>>({});
+
+/**
+ * Computed property that returns the setup ready state.
+ * @returns {boolean | null} The setup ready state.
+ */
 export const $setupReady = atom<boolean | null>(null);
+
+/**
+ * Computed property that returns the error state.
+ * @returns {string | null} The error state.
+ */
 export const $error = atom<string | null>(null);
+
+/**
+ * Computed property that returns the output state.
+ * @returns {string} The output state.
+ */
 export const $output = atom<string>('');
+
+/**
+ * Computed property that returns the friendly output state.
+ * @returns {string} The friendly output state.
+ */
 export const $friendlyOutput = atom<string>('');
+
+/**
+ * Computed property that returns the is running state.
+ * @returns {boolean} The is running state.
+ */
 export const $isRunning = atom<boolean>(false);
+
+/**
+ * Computed property that returns the is AI loading state.
+ * @returns {boolean} The is AI loading state.
+ */
 export const $isAiLoading = atom<boolean>(false);
+
+/**
+ * Computed property that returns the AI response state.
+ * @returns {string | null} The AI response state.
+ */
 export const $aiResponse = atom<string | null>(null);
+
+/**
+ * Computed property that returns the show friendly state.
+ * @returns {boolean} The show friendly state.
+ */
 export const $showFriendly = atom<boolean>(true);
 
 // --- Computed Proxies (to maintain component compatibility) ---
-// ... (rest of file)
-
 import { callAi } from '../lib/ai-client';
-import { $activeContentTab, setActiveContentTab, showPremiumGate } from './ui-store';
+import { $activeContentTab, setActiveContentTab } from './ui-store';
 import { $user, $isOffline, $localSettings } from './user-store';
+import { persistentAtom } from '@nanostores/persistent';
 
+/**
+ * Computed property that determines if AI features are locked.
+ * 
+ * @returns {boolean} True if AI features are locked, false otherwise.
+ */
 export const $isAiLocked = computed([$user, $isOffline, $localSettings], (user, isOffline, settings) => {
   // If Pro, never locked
   if (user?.subscription === 'pro') return false;
@@ -59,13 +115,16 @@ export const $isAiLocked = computed([$user, $isOffline, $localSettings], (user, 
   return user?.subscription === 'free' || isOffline || !user;
 });
 
+/**
+ * Gets an AI hint for the currently selected exercise.
+ * @returns {Promise<void>} 
+ */
 export const getAiHint = async () => {
   const selected = $selectedExercise.get();
   const desc = $descriptionQuery.get();
   if (!selected) return;
 
   if ($isAiLocked.get()) {
-    showPremiumGate();
     return;
   }
 
@@ -88,6 +147,10 @@ export const getAiHint = async () => {
   }
 };
 
+/**
+ * Explains the currently selected exercise using AI.
+ * @returns {Promise<void>} 
+ */
 export const explainExercise = async () => {
   const selected = $selectedExercise.get();
   const desc = $descriptionQuery.get();
@@ -97,7 +160,7 @@ export const explainExercise = async () => {
   if (!selected || $isAiLoading.get() || (currentAi && !currentAi.startsWith('Error:'))) return;
 
   if ($isAiLocked.get()) {
-    showPremiumGate();
+
     return;
   }
 
@@ -160,32 +223,83 @@ export const explainExercise = async () => {
   }
 };
 
+/**
+ * Computed property that returns the exercise groups.
+ * @returns {Record<string, Exercise[]>} The exercise groups.
+ */
 export const $exerciseGroups = computed($exerciseGroupsQuery, (q) => q.data || {});
+/**
+ * Computed property that returns the progress.
+ * @returns {Progress | null} The progress.
+ */
 export const $progress = computed($progressQuery, (q) => q.data || null);
+/**
+ * Computed property that returns the description.
+ * @returns {string | null} The description.
+ */
 export const $description = computed($descriptionQuery, (q) => q.data?.markdown || null);
+/**
+ * Computed property that returns the quiz data.
+ * @returns {any | null} The quiz data.
+ */
 export const $quizData = computed($quizQuery, (q) => q.data || null);
 
+/**
+ * Computed property that returns the total number of exercises.
+ * @returns {number} The total number of exercises.
+ */
 export const $totalExercises = computed($exerciseGroups, (groups) =>
   Object.values(groups).reduce((acc, curr) => acc + (Array.isArray(curr) ? curr.length : 0), 0)
 );
 
+/**
+ * Computed property that returns the number of completed exercises.
+ * @returns {number} The number of completed exercises.
+ */
 export const $completedCount = computed($results, (results) =>
   Object.values(results).filter(s => s === 'pass').length
 );
 
+/**
+ * Computed property that returns the progress percentage.
+ * @returns {number} The progress percentage.
+ */
 export const $progressPercent = computed([$totalExercises, $completedCount], (total, completed) =>
   total > 0 ? Math.round((completed / total) * 100) : 0
 );
 
-// --- Basic Setters ---
 
+// ======================================//
+//          --- Basic Setters ---        //
+// ======================================//
+
+/**
+ * Sets the setup ready state.
+ * @param {boolean | null} ready - The setup ready state.
+ */
 export const setSetupReady = (ready: boolean | null) => $setupReady.set(ready);
+/**
+ * Sets the error state.
+ * @param {string | null} err - The error state.
+ */
 export const setError = (err: string | null) => $error.set(err);
+/**
+ * Sets the friendly output state.
+ * @param {boolean} show - The friendly output state.
+ */
 export const setShowFriendly = (show: boolean) => $showFriendly.set(show);
+/**
+ * Sets the results state.
+ * @param {Record<string, TestStatus>} results - The results state.
+ */
 export const setResults = (results: Record<string, TestStatus>) => $results.set(results);
 
 // --- Actions & Queries ---
 
+/**
+ * Sets the selected exercise.
+ * @param {Exercise | null} exercise - The exercise to set.
+ */
 export const setSelectedExercise = (exercise: Exercise | null) => {
   $selectedExercise.set(exercise);
   // Always reset AI state on selection change
@@ -198,9 +312,18 @@ export const setSelectedExercise = (exercise: Exercise | null) => {
   }
 };
 
+/**
+ * Fetches the exercises.
+ */
 export const fetchExercises = () => $exerciseGroupsQuery.revalidate();
+/**
+ * Fetches the progress.
+ */
 export const fetchProgress = () => $progressQuery.revalidate();
 
+/**
+ * Runs the tests for the currently selected exercise.
+ */
 export const runTests = async () => {
   const selected = $selectedExercise.get();
   if (!selected) return;
@@ -239,7 +362,9 @@ export const runTests = async () => {
 };
 
 
-// Sync Results with Progress when loaded
+/**
+ * Syncs the results with the progress.
+ */
 $progress.subscribe(progress => {
   if (progress && progress.exercises) {
     const newResults: Record<string, TestStatus> = {};
@@ -249,5 +374,14 @@ $progress.subscribe(progress => {
     // Only update if different to avoid cycles/jitter? 
     // Map set is cheap.
     $results.set(newResults);
+  }
+});
+
+/**
+ * Syncs the expanded module with the selected exercise.
+ */
+$selectedExercise.subscribe(exercise => {
+  if (exercise && exercise.module) {
+    $expandedModule.set(exercise.module);
   }
 });

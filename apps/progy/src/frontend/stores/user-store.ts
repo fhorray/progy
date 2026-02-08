@@ -1,4 +1,7 @@
+import { useStore } from '@nanostores/react';
 import { atom, computed } from 'nanostores';
+import { createFetcherStore, mutateCache, revalidateKeys } from './query-client';
+import { API_URL } from '@consts';
 
 export interface User {
   id: string;
@@ -24,71 +27,75 @@ export interface LocalSettings {
   ide?: string;
 }
 
-export const $session = atom<Session | null>(null);
-export const $localSettings = atom<LocalSettings>({});
-export const $isUserLoading = atom<boolean>(false);
-export const $remoteApiUrl = atom<string>('https://progy.francy.workers.dev');
-export const $isOffline = atom<boolean>(false);
-export const $isOfficial = atom<boolean>(true); // Default to true to avoid flash
+interface ConfigResponse {
+  remoteApiUrl?: string;
+  isOffline?: boolean;
+  isOfficial?: boolean;
+}
 
-// Computed user for easier access
-export const $user = computed($session, (s) => s?.user || null);
+interface TokenResponse {
+  token?: string;
+}
 
-// Actions
-export const fetchUserSession = async () => {
-  $isUserLoading.set(true);
-  try {
-    // 1. Get remote URL from local config
-    const configRes = await fetch('/api/config');
-    const config = await configRes.json();
-    if (config.remoteApiUrl) $remoteApiUrl.set(config.remoteApiUrl);
-    $isOffline.set(config.isOffline || false);
-    $isOfficial.set(config.isOfficial !== false); // Default true if undefined
+// --- Queries ---
 
-    // 2. Get local token
-    const tokenRes = await fetch('/api/auth/token');
-    const { token } = await tokenRes.json();
+export const $configQuery = createFetcherStore<ConfigResponse>(['/api/config']);
+export const $tokenQuery = createFetcherStore<TokenResponse>(['/api/auth/token']);
+export const $localSettingsQuery = createFetcherStore<LocalSettings>(['/api/local-settings']);
 
-    if (!token) {
-      $session.set(null);
-      return;
-    }
+// --- Derived State ---
 
-    // 3. Get session from remote backend using token
-    console.log('[DEBUG] Fetching session with token:', token.substring(0, 5) + '...');
-    const remoteRes = await fetch(`${$remoteApiUrl.get()}/api/auth/get-session`, {
+// Use API_URL from constants as base default
+const BASE_API_URL = API_URL.endsWith('/api') ? API_URL.slice(0, -4) : API_URL;
+
+export const $remoteApiUrl = computed($configQuery, (config) => {
+  return config.data?.remoteApiUrl || BASE_API_URL;
+});
+
+export const $isOffline = computed($configQuery, (config) => !!config.data?.isOffline);
+export const $isOfficial = computed($configQuery, (config) => config.data?.isOfficial !== false);
+
+// Authenticated Session Query
+export const $sessionQuery = createFetcherStore([
+  $remoteApiUrl,
+  '/api/auth/get-session',
+  computed($tokenQuery, (t) => t.data?.token)
+], {
+  fetcher: async (baseUrl, path, token) => {
+    if (!token) return null;
+    const res = await fetch(`${baseUrl}${path}`, {
       headers: {
         'Authorization': `Bearer ${token}`
       }
     });
-
-    if (remoteRes.ok) {
-      const data = await remoteRes.json();
-      console.log('[DEBUG] Session data received:', data?.user?.name, 'Plan:', data?.user?.subscription);
-      $session.set(data);
-    } else {
-      const errorText = await remoteRes.text();
-      console.warn('[WARN] Session fetch failed:', remoteRes.status, errorText);
-      $session.set(null);
-    }
-  } catch (e) {
-    console.error('Failed to fetch user session', e);
-    $session.set(null);
-  } finally {
-    $isUserLoading.set(false);
+    if (!res.ok) throw new Error('Failed to fetch session');
+    return res.json();
   }
-};
+});
 
-export const fetchLocalSettings = async () => {
-  try {
-    const res = await fetch('/api/local-settings');
-    const data = await res.json();
-    $localSettings.set(data);
-  } catch (e) {
-    console.error('Failed to fetch local settings', e);
-  }
-};
+// Main Session Atom/Computed
+export const $session = computed($sessionQuery, (q) => q.data as Session | null);
+export const $user = computed($session, (s) => s?.user || null);
 
+export const $localSettings = computed($localSettingsQuery, (q) => q.data || {});
+
+// Loading state aggregates all queries
+export const $isUserLoading = computed(
+  [$configQuery, $tokenQuery, $sessionQuery],
+  (config, token, session) => config.loading || token.loading || session.loading
+);
+
+// --- Actions ---
+
+/**
+ * Fetches the local settings.
+ */
+export const fetchLocalSettings = () => $localSettingsQuery.revalidate();
+
+/**
+ * Updates the local settings.
+ * @param {Partial<LocalSettings>} settings - The settings to update.
+ */
 export const updateLocalSettings = async (settings: Partial<LocalSettings>) => {
   try {
     const res = await fetch('/api/local-settings', {
@@ -97,24 +104,29 @@ export const updateLocalSettings = async (settings: Partial<LocalSettings>) => {
       body: JSON.stringify(settings),
     });
     if (res.ok) {
-      $localSettings.set({ ...$localSettings.get(), ...settings });
+      // Optimistic update using mutateCache
+      mutateCache('/api/local-settings', { ...$localSettings.get(), ...settings });
+      // Revalidate to ensure consistency
+      $localSettingsQuery.revalidate();
     }
   } catch (e) {
     console.error('Failed to update local settings', e);
   }
 };
 
+/**
+ * Updates the user metadata.
+ * @param {any} metadata - The metadata to update.
+ */
 export const updateMetadata = async (metadata: any) => {
   const user = $user.get();
-  const tokenRes = await fetch('/api/auth/token');
-  const { token } = await tokenRes.json();
+  const token = $tokenQuery.get().data?.token;
 
   if (!user || !token) return;
 
   try {
-    // Update remote metadata via Better Auth endpoint or custom endpoint
-    // Using a generic update-user endpoint if available, or Better Auth update
-    const res = await fetch(`${$remoteApiUrl.get()}/api/auth/update-user`, {
+    const remoteUrl = $remoteApiUrl.get();
+    const res = await fetch(`${remoteUrl}/api/auth/update-user`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -128,38 +140,60 @@ export const updateMetadata = async (metadata: any) => {
     });
 
     if (res.ok) {
-      // Optimistic update
-      const currentSession = $session.get();
-      if (currentSession) {
-        $session.set({
-          ...currentSession,
-          user: {
-            ...currentSession.user,
-            metadata: JSON.stringify(metadata)
-          }
-        });
-      }
+      // Revalidate session to get updated metadata
+      $sessionQuery.revalidate();
     }
   } catch (e) {
     console.error('Failed to update metadata', e);
   }
 };
 
+/**
+ * Logs out the user.
+ */
 export const logout = async () => {
   try {
     // 1. Clear local token on CLI server
     await fetch('/api/auth/token', { method: 'POST' });
 
-    // 2. Reset local store
-    $session.set(null);
-
-    // 3. Clear Query Cache (revalidate to fetch null/guest state)
-    // We can't easily clear the cache directly with nanoquery without a method, 
-    // but revalidating will force a new fetch which will return null/guest.
-    fetchUserSession();
+    // 2. Revalidate queries
+    // Invalidating token query will cause it to re-fetch, return null, 
+    // which cascades to session query returning null.
+    revalidateKeys(['/api/auth/token']);
 
     console.log('[AUTH] Logged out successfully');
   } catch (e) {
     console.error('[AUTH] Logout failed', e);
   }
+};
+
+/**
+ * Returns the user store.
+ * @returns {object} The user store.
+ */
+export const useUser = () => {
+  const user = useStore($user);
+  const session = useStore($session);
+  const isUserLoading = useStore($isUserLoading);
+  const isOffline = useStore($isOffline);
+  const isOfficial = useStore($isOfficial);
+  const remoteApiUrl = useStore($remoteApiUrl);
+  const localSettings = useStore($localSettings);
+
+  return {
+    user,
+    session,
+    isUserLoading,
+    isOffline,
+    isOfficial,
+    remoteApiUrl,
+    localSettings,
+
+    actions: {
+      fetchLocalSettings,
+      updateLocalSettings,
+      updateMetadata,
+      logout
+    }
+  };
 };

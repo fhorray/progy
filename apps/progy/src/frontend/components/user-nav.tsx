@@ -15,7 +15,6 @@ import {
   $user,
   $isUserLoading,
   $isOffline,
-  fetchUserSession,
   logout,
 } from '../stores/user-store';
 import { SettingsDialog } from './settings-dialog';
@@ -30,7 +29,7 @@ export function UserNav() {
   const [showMyCourses, setShowMyCourses] = useState(false);
 
   useEffect(() => {
-    fetchUserSession();
+    // Session is now fetched automatically via nanoquery
   }, []);
 
   if (isLoading) {

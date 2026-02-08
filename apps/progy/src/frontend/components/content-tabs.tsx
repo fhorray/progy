@@ -1,30 +1,35 @@
-import React from 'react';
 import { useStore } from '@nanostores/react';
-import { Book, Terminal, Brain, Loader2, Wand2, Sparkles } from 'lucide-react';
-import { Tabs, TabsList, TabsTrigger, TabsContent } from './ui/tabs';
-import { ScrollArea } from './ui/scroll-area';
-import { Label } from './ui/label';
-import { Switch } from './ui/switch';
-import { MarkdownRenderer } from './markdown-renderer';
-import { QuizView } from './quiz-view';
-import { $activeContentTab, setActiveContentTab } from '../stores/ui-store';
+import { Book, Brain, Loader2, Sparkles, Terminal } from 'lucide-react';
 import {
+  $aiResponse,
   $description,
   $descriptionQuery,
-  $output,
   $friendlyOutput,
   $isAiLoading,
-  $aiResponse,
+  $isRunning,
+  $output,
   $quizData,
   $quizQuery,
   $selectedExercise,
   $showFriendly,
-  $isRunning,
   fetchProgress,
   setShowFriendly,
 } from '../stores/course-store';
+import { MarkdownRenderer } from './markdown-renderer';
+import { QuizView } from './quiz-view';
+import { Label } from './ui/label';
+import { ScrollArea } from './ui/scroll-area';
+import { Switch } from './ui/switch';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from './ui/tabs';
+import { useState } from 'react';
+import { $activeContentTab, setActiveContentTab } from '@/stores/ui-store';
+
+// TYPES
+export type ContentTab = 'description' | 'output' | 'quiz' | 'ai';
 
 export function ContentTabs() {
+
+  // Stores
   const activeTab = useStore($activeContentTab);
   const description = useStore($description);
   const descriptionQuery = useStore($descriptionQuery);
@@ -98,29 +103,36 @@ export function ContentTabs() {
   return (
     <Tabs
       value={activeTab}
-      onValueChange={(v) => setActiveContentTab(v as any)}
+      onValueChange={(v) => setActiveContentTab(v as ContentTab)}
       className="flex-1 flex flex-col min-h-0 bg-[#0a0a0a] rounded-xl border border-zinc-800/50 overflow-hidden"
     >
       <div className="flex-none px-4 py-2 border-b border-zinc-800/50 bg-zinc-900/40 flex items-center justify-between">
         <TabsList className="bg-zinc-800/30 p-0.5 h-9">
+          {/* Description Tab */}
           <TabsTrigger
             value="description"
             className="px-4 py-1.5 text-xs data-[state=active]:bg-zinc-700 data-[state=active]:text-zinc-100"
           >
             <Book className="w-3.5 h-3.5 mr-2" /> Description
           </TabsTrigger>
+
+          {/* Output Tab */}
           <TabsTrigger
             value="output"
             className="px-4 py-1.5 text-xs data-[state=active]:bg-zinc-700 data-[state=active]:text-zinc-100"
           >
             <Terminal className="w-3.5 h-3.5 mr-2" /> Output
           </TabsTrigger>
+
+          {/* AI Mentor Tab */}
           <TabsTrigger
             value="ai"
             className="px-4 py-1.5 text-xs data-[state=active]:bg-zinc-700 data-[state=active]:text-zinc-100"
           >
             <Sparkles className={`w-3.5 h-3.5 mr-2 ${aiResponse ? 'text-rust' : ''}`} /> AI Mentor
           </TabsTrigger>
+
+          {/* Quiz Tab */}
           {selectedExercise?.hasQuiz && (
             <TabsTrigger
               value="quiz"
@@ -131,6 +143,7 @@ export function ContentTabs() {
           )}
         </TabsList>
 
+        {/* Output Mode Switch */}
         {activeTab === 'output' && output && (
           <div className="flex items-center gap-4">
             <div className="flex items-center gap-2 bg-zinc-800/50 px-3 py-1.5 rounded-full border border-zinc-700/50">
@@ -162,6 +175,7 @@ export function ContentTabs() {
         )}
       </div>
 
+      {/* Description Tab */}
       <TabsContent
         value="description"
         className="flex-1 min-h-0 m-0 outline-none"
@@ -187,11 +201,12 @@ export function ContentTabs() {
         </ScrollArea>
       </TabsContent>
 
+      {/* Output Tab */}
       <TabsContent
         value="output"
         className="flex-1 min-h-0 m-0 outline-none bg-zinc-950 font-mono text-sm"
       >
-        <ScrollArea className="h-full p-6">
+        <ScrollArea className="w-full h-full p-6">
           {!output && (
             <pre className="font-mono text-sm leading-relaxed text-zinc-600 italic">
               // Run tests to see output...
@@ -202,7 +217,7 @@ export function ContentTabs() {
             <MarkdownRenderer content={friendlyOutput} />
           ) : (
             output && (
-              <pre className="font-mono text-sm leading-relaxed whitespace-pre-wrap">
+              <pre className="font-mono text-sm leading-relaxed whitespace-pre-wrap break-all">
                 {output.split('\n').map(renderRawLine)}
               </pre>
             )
@@ -210,6 +225,7 @@ export function ContentTabs() {
         </ScrollArea>
       </TabsContent>
 
+      {/* Quiz Tab */}
       <TabsContent
         value="quiz"
         className="flex-1 min-h-0 m-0 outline-none bg-[#0a0a0a]"
@@ -239,6 +255,8 @@ export function ContentTabs() {
           </div>
         )}
       </TabsContent>
+
+      {/* AI Mentor Tab */}
       <TabsContent
         value="ai"
         className="flex-1 min-h-0 m-0 outline-none"

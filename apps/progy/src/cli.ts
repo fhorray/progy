@@ -265,15 +265,15 @@ program
     }
 
     if (!courseId && !isOffline) {
-       console.error("❌ Please specify a course ID (e.g., 'progy init -c rust') or run inside an existing course.");
-       process.exit(1);
+      console.error("❌ Please specify a course ID (e.g., 'progy init -c rust') or run inside an existing course.");
+      process.exit(1);
     }
 
     if (isOffline) {
-        console.log("[INFO] Offline mode: Skipping Git Sync.");
-        // Simplified offline fallback (Legacy Template Logic could go here)
-        console.warn("⚠️  Offline init not fully supported in this version. Use online mode to sync first.");
-        return;
+      console.log("[INFO] Offline mode: Skipping Git Sync.");
+      // Simplified offline fallback (Legacy Template Logic could go here)
+      console.warn("⚠️  Offline init not fully supported in this version. Use online mode to sync first.");
+      return;
     }
 
     // 1. Authentication
@@ -287,13 +287,13 @@ program
 
     try {
       const res = await fetch(`${BACKEND_URL}/api/git/credentials`, {
-          headers: { "Authorization": `Bearer ${token}` }
+        headers: { "Authorization": `Bearer ${token}` }
       });
       if (res.ok) {
-          gitCreds = await res.json() as any;
-          console.log(`[SYNC] Connected as GitHub user: ${gitCreds?.user}`);
+        gitCreds = await res.json() as any;
+        console.log(`[SYNC] Connected as GitHub user: ${gitCreds?.user}`);
       } else {
-          throw new Error("Git auth failed");
+        throw new Error("Git auth failed");
       }
     } catch (e) {
       console.warn("⚠️  Authentication check failed. Please re-login.");
@@ -301,90 +301,96 @@ program
     }
 
     try {
-        // 2. Resolve Official Course URL
-        console.log(`[SYNC] Resolving official course '${courseId}'...`);
-        const officialSource = await CourseLoader.resolveSource(courseId);
+      // 2. Resolve Official Course URL
+      console.log(`[SYNC] Resolving official course '${courseId}'...`);
+      const officialSource = await CourseLoader.resolveSource(courseId);
 
-        // 3. Ensure User Repository Exists
-        console.log(`[SYNC] Checking user repository...`);
-        const ensureRes = await fetch(`${BACKEND_URL}/api/git/ensure-repo`, {
-          method: "POST",
-          headers: {
-            "Authorization": `Bearer ${token}`,
-            "Content-Type": "application/json"
-          },
-          body: JSON.stringify({ courseId })
+      // 3. Ensure User Repository Exists
+      console.log(`[SYNC] Checking user repository...`);
+      const ensureRes = await fetch(`${BACKEND_URL}/api/git/ensure-repo`, {
+        method: "POST",
+        headers: {
+          "Authorization": `Bearer ${token}`,
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({ courseId })
+      });
+
+      if (!ensureRes.ok) throw new Error("Failed to ensure user repository");
+      const userRepoInfo = await ensureRes.json() as { repoUrl: string, isNew: boolean };
+
+      // 4. Setup User Workspace (Clone/Pull User Repo)
+      // Check if we are already in a git repo
+      if (await exists(join(cwd, ".git"))) {
+        const { remoteUrl } = await GitUtils.getGitInfo(cwd);
+        // Safety check: Are we in the right repo?
+        if (remoteUrl && remoteUrl.includes(userRepoInfo.repoUrl.replace("https://github.com/", ""))) {
+          console.log(`[SYNC] Pulling latest user progress...`);
+          await GitUtils.pull(cwd);
+        } else {
+          console.warn(`[WARN] Current git remote (${remoteUrl}) differs from expected (${userRepoInfo.repoUrl}). Skipping user pull.`);
+        }
+      } else {
+        // Clone User Repo
+        // If directory is not empty, we might have issues.
+        // Ideally init should be run in empty dir or matching dir.
+        const files = await readdir(cwd);
+        if (files.length > 0 && !existingConfig) {
+          console.warn(`[WARN] Directory not empty. Initializing in place...`);
+          await GitUtils.init(cwd);
+          await GitUtils.addRemote(cwd, gitCreds?.token || "", userRepoInfo.repoUrl);
+          await GitUtils.pull(cwd);
+        } else {
+          console.log(`[SYNC] Cloning user repository...`);
+          await GitUtils.clone(userRepoInfo.repoUrl, cwd, gitCreds?.token || "");
+        }
+      }
+
+      // 5. Sync Official Content (Layering)
+      console.log(`[SYNC] Downloading official course content...`);
+      const cacheDir = await SyncManager.ensureOfficialCourse(
+        courseId,
+        officialSource.url,
+        officialSource.branch,
+        officialSource.path
+      );
+
+      console.log(`[SYNC] Updating workspace...`);
+      // Force=false preserves user exercises
+      await SyncManager.applyLayering(cwd, cacheDir, false, officialSource.path);
+
+      // 6. Final Configuration (If new or missing)
+      if (!existingConfig) {
+        console.log(`[SYNC] Configuring workspace...`);
+
+        // Save progy.toml
+        await SyncManager.saveConfig(cwd, {
+          course: {
+            id: courseId,
+            repo: officialSource.url,
+            branch: officialSource.branch,
+            path: officialSource.path
+          }
         });
 
-        if (!ensureRes.ok) throw new Error("Failed to ensure user repository");
-        const userRepoInfo = await ensureRes.json() as { repoUrl: string, isNew: boolean };
+        // Generate .gitignore
+        await SyncManager.generateGitIgnore(cwd, courseId);
 
-        // 4. Setup User Workspace (Clone/Pull User Repo)
-        // Check if we are already in a git repo
-        if (await exists(join(cwd, ".git"))) {
-             const { remoteUrl } = await GitUtils.getGitInfo(cwd);
-             // Safety check: Are we in the right repo?
-             if (remoteUrl && remoteUrl.includes(userRepoInfo.repoUrl.replace("https://github.com/", ""))) {
-                 console.log(`[SYNC] Pulling latest user progress...`);
-                 await GitUtils.pull(cwd);
-             } else {
-                 console.warn(`[WARN] Current git remote (${remoteUrl}) differs from expected (${userRepoInfo.repoUrl}). Skipping user pull.`);
-             }
-        } else {
-             // Clone User Repo
-             // If directory is not empty, we might have issues.
-             // Ideally init should be run in empty dir or matching dir.
-             const files = await readdir(cwd);
-             if (files.length > 0 && !existingConfig) {
-                 console.warn(`[WARN] Directory not empty. Initializing in place...`);
-                 await GitUtils.init(cwd);
-                 await GitUtils.addRemote(cwd, gitCreds.token, userRepoInfo.repoUrl);
-                 await GitUtils.pull(cwd);
-             } else {
-                 console.log(`[SYNC] Cloning user repository...`);
-                 await GitUtils.clone(userRepoInfo.repoUrl, cwd, gitCreds.token);
-             }
+        // Initial Push of Config if new
+        if (userRepoInfo.isNew || !(await exists(join(cwd, "progy.toml")))) {
+          await GitUtils.configUser(cwd, "Progy Bot", "bot@progy.dev");
+          await GitUtils.exec(["add", "."], cwd); // .gitignore filters this!
+          await GitUtils.exec(["commit", "-m", "Initialize course workspace"], cwd);
+          await GitUtils.exec(["push", "-u", "origin", "main"], cwd);
         }
+      }
 
-        // 5. Sync Official Content (Layering)
-        console.log(`[SYNC] Downloading official course content...`);
-        const cacheDir = await SyncManager.ensureOfficialCourse(courseId, officialSource.url, officialSource.branch);
-
-        console.log(`[SYNC] Updating workspace...`);
-        // Force=false preserves user exercises
-        await SyncManager.applyLayering(cwd, cacheDir, false);
-
-        // 6. Final Configuration (If new or missing)
-        if (!existingConfig) {
-            console.log(`[SYNC] Configuring workspace...`);
-
-            // Save progy.toml
-            await SyncManager.saveConfig(cwd, {
-                course: {
-                    id: courseId,
-                    repo: officialSource.url,
-                    branch: officialSource.branch
-                }
-            });
-
-            // Generate .gitignore
-            await SyncManager.generateGitIgnore(cwd, courseId);
-
-            // Initial Push of Config if new
-            if (userRepoInfo.isNew || !(await exists(join(cwd, "progy.toml")))) {
-                 await GitUtils.configUser(cwd, "Progy Bot", "bot@progy.dev");
-                 await GitUtils.exec(["add", "."], cwd); // .gitignore filters this!
-                 await GitUtils.exec(["commit", "-m", "Initialize course workspace"], cwd);
-                 await GitUtils.exec(["push", "-u", "origin", "main"], cwd);
-            }
-        }
-
-        console.log("[SUCCESS] Course initialized!");
-        console.log("Run 'progy dev' to start.");
+      console.log("[SUCCESS] Course initialized!");
+      console.log("Run 'progy dev' to start.");
 
     } catch (e: any) {
-        console.error(`[ERROR] Init failed: ${e.message}`);
-        process.exit(1);
+      console.error(`[ERROR] Init failed: ${e.message}`);
+      process.exit(1);
     }
   });
 
@@ -636,7 +642,7 @@ program
     // Enforce .gitignore policy
     const config = await SyncManager.loadConfig(cwd);
     if (config?.course?.id) {
-        await SyncManager.generateGitIgnore(cwd, config.course.id);
+      await SyncManager.generateGitIgnore(cwd, config.course.id);
     }
 
     // Acquire Lock
@@ -713,8 +719,8 @@ program
     // Load Progy Config
     const config = await SyncManager.loadConfig(cwd);
     if (!config) {
-        console.error("❌ Missing progy.toml. Is this a valid Progy workspace?");
-        return;
+      console.error("❌ Missing progy.toml. Is this a valid Progy workspace?");
+      return;
     }
 
     if (!(await GitUtils.lock(cwd))) {
@@ -740,13 +746,14 @@ program
       // 2. Sync Official Content (Upstream)
       console.log(`[SYNC] Checking official course updates...`);
       const cacheDir = await SyncManager.ensureOfficialCourse(
-          config.course.id,
-          config.course.repo,
-          config.course.branch
+        config.course.id,
+        config.course.repo,
+        config.course.branch,
+        config.course.path
       );
 
       console.log(`[SYNC] Applying official updates...`);
-      await SyncManager.applyLayering(cwd, cacheDir, false);
+      await SyncManager.applyLayering(cwd, cacheDir, false, config.course.path);
 
       // 3. Sync User Content (Downstream)
       console.log(`[SYNC] Pulling your progress...`);
@@ -762,7 +769,7 @@ program
         console.log("Tip: Resolve conflicts manually in the 'content' directory.");
       }
     } catch (e: any) {
-        console.error(`[ERROR] Sync failed: ${e.message}`);
+      console.error(`[ERROR] Sync failed: ${e.message}`);
     } finally {
       await GitUtils.unlock(cwd);
     }
@@ -780,25 +787,25 @@ program
     // Load Config
     const config = await SyncManager.loadConfig(cwd);
     if (!config) {
-        console.error("❌ Not a valid Progy workspace (missing progy.toml).");
-        process.exit(1);
+      console.error("❌ Not a valid Progy workspace (missing progy.toml).");
+      process.exit(1);
     }
 
     try {
-        console.log(`[RESET] restoring ${targetFile}...`);
+      console.log(`[RESET] restoring ${targetFile}...`);
 
-        // Ensure cache is available (we don't pull to save time, unless missing)
-        const cacheDir = SyncManager.getCacheDir(config.course.id);
-        if (!(await exists(cacheDir))) {
-             console.log("[SYNC] Cache missing. Downloading course...");
-             await SyncManager.ensureOfficialCourse(config.course.id, config.course.repo, config.course.branch);
-        }
+      // Ensure cache is available (we don't pull to save time, unless missing)
+      const cacheDir = SyncManager.getCacheDir(config.course.id);
+      if (!(await exists(cacheDir))) {
+        console.log("[SYNC] Cache missing. Downloading course...");
+        await SyncManager.ensureOfficialCourse(config.course.id, config.course.repo, config.course.branch);
+      }
 
-        // Reset
-        await SyncManager.resetExercise(cwd, cacheDir, targetFile);
-        console.log(`[SUCCESS] File reset to original state.`);
+      // Reset
+      await SyncManager.resetExercise(cwd, cacheDir, targetFile);
+      console.log(`[SUCCESS] File reset to original state.`);
     } catch (e: any) {
-        console.error(`[ERROR] Reset failed: ${e.message}`);
+      console.error(`[ERROR] Reset failed: ${e.message}`);
     }
   });
 

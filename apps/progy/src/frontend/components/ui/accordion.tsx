@@ -14,13 +14,18 @@ const Accordion = React.forwardRef<
     type?: 'single' | 'multiple';
     collapsible?: boolean;
     defaultValue?: string;
+    value?: string;
+    onValueChange?: (value: string) => void;
   }
 >(
   (
-    { className, type = 'single', collapsible, defaultValue, ...props },
+    { className, type = 'single', collapsible, defaultValue, value: controlledValue, onValueChange, ...props },
     ref,
   ) => {
-    const [value, setValue] = React.useState(defaultValue || '');
+    const [internalValue, setInternalValue] = React.useState(defaultValue || '');
+
+    const isControlled = controlledValue !== undefined;
+    const value = isControlled ? controlledValue : internalValue;
 
     return (
       <AccordionContext.Provider
@@ -28,7 +33,13 @@ const Accordion = React.forwardRef<
           value,
           onValueChange: (newValue) => {
             if (type === 'single') {
-              setValue(collapsible && value === newValue ? '' : newValue);
+              const nextValue = collapsible && value === newValue ? '' : newValue;
+              if (onValueChange) {
+                onValueChange(nextValue);
+              }
+              if (!isControlled) {
+                setInternalValue(nextValue);
+              }
             }
           },
         }}

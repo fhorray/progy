@@ -1,27 +1,42 @@
-import React from 'react';
-import { useStore } from '@nanostores/react';
+import React, { useState } from 'react';
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
   DialogDescription,
-  DialogFooter
-} from './ui/dialog';
-import { Button } from './ui/button';
-import { Badge } from './ui/badge';
-import { $isPremiumGateOpen, closePremiumGate } from '../stores/ui-store';
+  DialogFooter,
+  DialogClose,
+  DialogTrigger
+} from '../ui/dialog';
+import { Button } from '../ui/button';
+import { Badge } from '../ui/badge';
 import { Sparkles, Key, Zap, ChevronRight, Rocket, ShieldCheck } from 'lucide-react';
+import { APP_URL } from '@consts';
+import { useStore } from '@nanostores/react';
+import { $isAiLocked } from '../../stores/course-store';
 
-export function PremiumGateModal() {
-  const isOpen = useStore($isPremiumGateOpen);
+export function PremiumGateModal({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
+  const [open, setOpen] = useState(false);
+  const isLocked = useStore($isAiLocked);
+
+  if (!isLocked) {
+    return <>{children}</>;
+  }
 
   const handleUpgrade = () => {
-    window.open('https://progy-web.francy.workers.dev/dashboard', '_blank');
+    window.open(`${APP_URL}/#pricing`, '_blank');
   };
 
   return (
-    <Dialog open={isOpen} onOpenChange={(open) => !open && closePremiumGate()}>
+    <Dialog open={open} onOpenChange={setOpen}>
+      <DialogTrigger asChild>
+        {children}
+      </DialogTrigger>
       <DialogContent className="sm:max-w-[480px] bg-zinc-950 border-white/5 p-0 overflow-hidden rounded-2xl">
         <div className="relative p-6 md:p-8">
           {/* Background Glow */}
@@ -59,38 +74,31 @@ export function PremiumGateModal() {
               <ChevronRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
             </Button>
 
-            <Button
-              variant="outline"
-              onClick={closePremiumGate}
-              className="w-full h-14 bg-white/5 border-white/10 hover:bg-white/10 text-white font-black text-[11px] tracking-[0.15em] uppercase rounded-xl flex items-center justify-between px-6 group"
-            >
-              <div className="flex items-center gap-3">
-                <Key className="w-4 h-4 text-zinc-400" />
-                <span>Use Personal API Key</span>
-              </div>
-              <span className="text-[9px] text-zinc-500 font-bold group-hover:text-zinc-300 transition-colors">Settings</span>
-            </Button>
-          </div>
+            <DialogClose asChild>
 
-          <div className="mt-8 pt-6 border-t border-white/5 grid grid-cols-2 gap-4 relative z-10">
-            <div className="flex items-center gap-2 opacity-60">
-              <Zap className="w-3.5 h-3.5 text-rust shrink-0" />
-              <span className="text-[10px] font-black uppercase tracking-widest text-zinc-400">Zero Latency</span>
-            </div>
-            <div className="flex items-center gap-2 opacity-60">
-              <ShieldCheck className="w-3.5 h-3.5 text-rust shrink-0" />
-              <span className="text-[10px] font-black uppercase tracking-widest text-zinc-400">Unlimited Energy</span>
-            </div>
+              <Button
+                variant="outline"
+                className="w-full h-14 bg-white/5 border-white/10 hover:bg-white/10 text-white font-black text-[11px] tracking-[0.15em] uppercase rounded-xl flex items-center justify-between px-6 group"
+              >
+                <div className="flex items-center gap-3">
+                  <Key className="w-4 h-4 text-zinc-400" />
+                  <span>Use Personal API Key</span>
+                </div>
+                <span className="text-[9px] text-zinc-500 font-bold group-hover:text-zinc-300 transition-colors">Settings</span>
+              </Button>
+            </DialogClose>
           </div>
         </div>
 
         <div className="bg-white/5 p-4 text-center border-t border-white/5">
-          <button
-            onClick={closePremiumGate}
-            className="text-[9px] font-black uppercase tracking-[0.3em] text-zinc-500 hover:text-zinc-300 transition-colors"
-          >
-            Maybe Later
-          </button>
+          <DialogClose asChild>
+
+            <button
+              className="cursor-pointer text-[9px] font-black uppercase tracking-[0.3em] text-zinc-500 hover:text-zinc-300 transition-colors"
+            >
+              Maybe Later
+            </button>
+          </DialogClose>
         </div>
       </DialogContent>
     </Dialog>

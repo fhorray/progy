@@ -24,6 +24,9 @@ try {
       "/": () => new Response(Bun.file(join(PUBLIC_DIR, "index.html"))),
       "/main.js": () => new Response(Bun.file(join(PUBLIC_DIR, "main.js"))),
       "/main.css": () => new Response(Bun.file(join(PUBLIC_DIR, "main.css"))),
+      "/sounds/success.mp3": () => new Response(Bun.file(join(PUBLIC_DIR, "sounds/success.mp3"))),
+      "/sounds/error.mp3": () => new Response(Bun.file(join(PUBLIC_DIR, "sounds/error.mp3"))),
+      "/sounds/success-2.mp3": () => new Response(Bun.file(join(PUBLIC_DIR, "sounds/success-2.mp3"))),
 
       // Spread specialized routes
       ...healthRoutes,
@@ -37,19 +40,34 @@ try {
       ...gitRoutes,
     },
     development: { hmr: process.env.ENABLE_HMR === "true" },
-    fetch(req) {
+    async fetch(req) {
+      const url = new URL(req.url);
+
       // CSRF Protection: Strict Origin Check
       const origin = req.headers.get("Origin");
       const host = req.headers.get("Host");
 
-      // Allow requests with no Origin (like curl, CLI, or same-origin GETs)
-      // But if Origin is present, it MUST match the host (localhost:3001)
       if (origin) {
         const originUrl = new URL(origin);
         if (originUrl.host !== host) {
           console.warn(`[SECURITY] Blocked CSRF attempt from ${origin}`);
           return new Response("Forbidden", { status: 403 });
         }
+      }
+
+      // Handle generic routes (SPA Fallback)
+      // If the path doesn't start with /api and doesn't have an extension, serve index.html
+      // Handle generic routes (SPA Fallback)
+      // If the path doesn't start with /api and doesn't have an extension, serve index.html
+      if (!url.pathname.startsWith('/api') && !url.pathname.includes('.')) {
+        return new Response(Bun.file(join(PUBLIC_DIR, "index.html")));
+      }
+
+      // Try to serve static file from public dir
+      const localFilePath = join(PUBLIC_DIR, url.pathname);
+      const file = Bun.file(localFilePath);
+      if (await file.exists()) {
+        return new Response(file);
       }
 
       return new Response("Not Found", { status: 404 });
