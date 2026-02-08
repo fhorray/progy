@@ -127,7 +127,7 @@ export const updateMetadata = async (metadata: any) => {
 
   try {
     const remoteUrl = $remoteApiUrl.get();
-    const res = await fetch(`${remoteUrl}/api/auth/update-user`, {
+    const res = await fetch(`${remoteUrl}/auth/update-user`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',

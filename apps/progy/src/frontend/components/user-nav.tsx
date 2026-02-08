@@ -17,7 +17,7 @@ import {
   $isOffline,
   logout,
 } from '../stores/user-store';
-import { SettingsDialog } from './settings-dialog';
+import { SettingsDialog } from './modals/settings-dialog';
 import { MyCoursesDialog } from './my-courses-dialog';
 
 export function UserNav() {

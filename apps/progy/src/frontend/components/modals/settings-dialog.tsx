@@ -6,7 +6,7 @@ import {
   DialogHeader,
   DialogTitle,
   DialogClose,
-} from './ui/dialog';
+} from '../ui/dialog';
 import { X, Monitor, Cpu, Key, Save, Check, Settings } from 'lucide-react';
 import {
   $user,
@@ -14,9 +14,9 @@ import {
   fetchLocalSettings,
   updateLocalSettings,
   updateMetadata,
-} from '../stores/user-store';
-import { Button } from './ui/button';
-import { Label } from './ui/label';
+} from '../../stores/user-store';
+import { Button } from '../ui/button';
+import { Label } from '../ui/label';
 
 export function SettingsDialog({ onClose }: { onClose: () => void }) {
   const user = useStore($user);

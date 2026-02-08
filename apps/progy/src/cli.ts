@@ -286,7 +286,7 @@ program
     }
 
     try {
-      const res = await fetch(`${BACKEND_URL}/api/git/credentials`, {
+      const res = await fetch(`${BACKEND_URL}/git/credentials`, {
         headers: { "Authorization": `Bearer ${token}` }
       });
       if (res.ok) {
@@ -307,7 +307,7 @@ program
 
       // 3. Ensure User Repository Exists
       console.log(`[SYNC] Checking user repository...`);
-      const ensureRes = await fetch(`${BACKEND_URL}/api/git/ensure-repo`, {
+      const ensureRes = await fetch(`${BACKEND_URL}/git/ensure-repo`, {
         method: "POST",
         headers: {
           "Authorization": `Bearer ${token}`,
@@ -656,7 +656,7 @@ program
       // Refresh Token in Remote to prevent 403
       if (token) {
         try {
-          const res = await fetch(`${BACKEND_URL}/api/git/credentials`, {
+          const res = await fetch(`${BACKEND_URL}/git/credentials`, {
             headers: { "Authorization": `Bearer ${token}` }
           });
           if (res.ok) {
@@ -734,7 +734,7 @@ program
       const token = await loadToken();
       if (token) {
         try {
-          const res = await fetch(`${BACKEND_URL}/api/git/credentials`, {
+          const res = await fetch(`${BACKEND_URL}/git/credentials`, {
             headers: { "Authorization": `Bearer ${token}` }
           });
           if (res.ok) {

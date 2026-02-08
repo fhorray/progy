@@ -48,6 +48,8 @@ export function ContentTabs() {
   const selectedExercise = useStore($selectedExercise);
   const showFriendly = useStore($showFriendly);
   const isRunning = useStore($isRunning);
+  const isAiLocked = useStore($isAiLocked);
+  const history = useStore($aiHistory)
 
   const handleQuizComplete = async (score: number) => {
     if (!selectedExercise) return;
@@ -269,7 +271,7 @@ export function ContentTabs() {
       >
         <ScrollArea className="h-full p-6">
           {/* LOCKED STATE */}
-          {useStore($isAiLocked) ? (
+          {isAiLocked ? (
             <div className="flex flex-col items-center justify-center h-full text-zinc-500 gap-6 py-12 text-center">
               <div className="w-16 h-16 bg-zinc-900 rounded-full flex items-center justify-center border border-zinc-800">
                 <div className="w-12 h-12 bg-zinc-900 rounded-full flex items-center justify-center border border-zinc-800 shadow-inner">
@@ -367,7 +369,7 @@ export function ContentTabs() {
 
                   {/* HISTORY */}
                   {(() => {
-                    const history = useStore($aiHistory) || [];
+                    history || [];
                     const exerciseHistory = history
                       .filter((h: any) => h.exerciseId === selectedExercise?.id)
                       .sort((a: any, b: any) => b.timestamp - a.timestamp);

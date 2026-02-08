@@ -54,7 +54,7 @@ export function MarkdownRenderer({ content }: MarkdownRendererProps) {
             />
           ),
           p: ({ ...props }) => (
-            <p className="mb-4 leading-relaxed" {...props} />
+            <div className="mb-4 leading-relaxed" {...props} />
           ),
           ul: ({ ...props }) => (
             <ul className="list-disc list-inside mb-4 space-y-1" {...props} />

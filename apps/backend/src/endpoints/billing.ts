@@ -32,9 +32,14 @@ billing.post("/checkout", async (c) => {
   let priceId = c.env.STRIPE_PRICE_ID_PRO;
   let mode: Stripe.Checkout.SessionCreateParams.Mode = "subscription";
 
-  // DISCOUNT LOGIC: If buying Pro but already Lifetime, use Discount Price
+  // DISCOUNT LOGIC: If buying Pro but already Lifetime, use Coupon
+  // Ideally, this coupon makes the price $8/mo instead of $20/mo (if Pro is $20)
+  const discounts = [];
   if (plan === "pro" && session.user.subscription === "lifetime") {
-    priceId = "price_1SyFpZGdycZGJETWwc9zs2uV";
+    // priceId remains standard Pro price
+    discounts.push({
+      coupon: "S2Q7Vcxw",
+    });
   }
 
   if (plan === "lifetime") {
@@ -51,6 +56,7 @@ billing.post("/checkout", async (c) => {
       },
     ],
     mode: mode,
+    discounts: discounts.length > 0 ? discounts : undefined,
     success_url: `${redirectBase}/dashboard?payment_success=true`,
     cancel_url: `${redirectBase}/dashboard`,
     metadata: {

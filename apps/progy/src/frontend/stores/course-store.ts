@@ -100,6 +100,7 @@ import { persistentAtom } from '@nanostores/persistent';
  */
 export const $isAiLocked = computed([$user, $isOffline, $localSettings], (user, isOffline, settings) => {
   // If Pro, never locked (includes AI access)
+  if (user?.subscription === null || user?.subscription === '') return false;
   if (user?.subscription === 'pro') return false;
 
   // Check for API keys

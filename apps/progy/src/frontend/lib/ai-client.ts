@@ -37,7 +37,7 @@ export async function callAi(options: AiRequestOptions) {
   };
 
   // 3. Perform Request
-  const res = await fetch(`${remoteUrl}/api/ai/${options.endpoint}`, {
+  const res = await fetch(`${remoteUrl}/ai/${options.endpoint}`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',

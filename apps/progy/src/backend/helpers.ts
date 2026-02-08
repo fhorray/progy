@@ -142,7 +142,7 @@ export async function saveProgress(progress: Progress) {
 async function syncProgressWithCloud(courseId: string, progress: Progress, token: string) {
   const remoteUrl = process.env.PROGY_API_URL || "https://api.progy.dev";
   try {
-    const res = await fetch(`${remoteUrl}/api/progress/sync`, {
+    const res = await fetch(`${remoteUrl}/progress/sync`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -163,7 +163,7 @@ async function syncProgressWithCloud(courseId: string, progress: Progress, token
 async function fetchProgressFromCloud(courseId: string, token: string): Promise<Progress | null> {
   const remoteUrl = process.env.PROGY_API_URL || "https://api.progy.dev";
   try {
-    const res = await fetch(`${remoteUrl}/api/progress/get?courseId=${courseId}`, {
+    const res = await fetch(`${remoteUrl}/progress/get?courseId=${courseId}`, {
       headers: {
         'Authorization': `Bearer ${token}`
       }
