@@ -112,23 +112,11 @@ export default function Dashboard() {
       }
 
       console.error("Billing Portal Error:", error);
-
-      if (error?.status === 400 || error?.code === "UNABLE_TO_CREATE_BILLING_PORTAL_SESSION") {
-        toast.error("Billing profile not found. Redirecting to setup...", {
-          description: "We'll create a new billing session for you."
-        });
-        // Fallback: Send them to checkout to update/create their record
-        // This is safe because Stripe will separate the new sub or we can handle it.
-        // Ideally we just want to update payment method, but checkout "setup" mode is complex here.
-        // We'll send to Pro checkout.
-        await handleCheckout("pro");
-      } else {
-        toast.error("Could not access billing portal.", {
-          description: "Please try again later or contact support."
-        });
-      }
+      toast.error("Billing portal unavailable", {
+        description: error?.message || "Please refresh the page and try again. If you just subscribed, wait a few seconds."
+      });
     } catch (e) {
-      toast.error("An unexpected error occurred");
+      toast.error("An unexpected error occurred accessing the billing portal");
     } finally {
       setIsLoadingBilling(false);
     }
@@ -143,7 +131,7 @@ export default function Dashboard() {
   }
 
   if (!session) {
-    router.push("/auth/signin");
+    router.push("/");
     return null;
   }
 
@@ -290,7 +278,7 @@ export default function Dashboard() {
             </CardContent>
 
             <CardFooter className="p-6 pt-0">
-              {plan === "pro" || plan === "pro-discount" ? (
+              {isPro ? (
                 <Button
                   variant="outline"
                   size="sm"

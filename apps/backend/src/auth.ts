@@ -46,7 +46,6 @@ export const authServer = (env: CloudflareBindings) => {
     secret: env.BETTER_AUTH_SECRET,
     baseURL: env.BETTER_AUTH_URL ? `${env.BETTER_AUTH_URL.replace(/\/$/, "")}/auth` : "https://api.progy.dev/auth",
     trustedOrigins: [
-      "http://localhost:3000",
       "http://localhost:3001",
       "https://api.progy.dev",
       "https://progy.dev"
@@ -69,7 +68,7 @@ export const authServer = (env: CloudflareBindings) => {
         const db = drizzle(env.DB);
 
         // 1. Check for any active "pro" or "pro-discount" subscription in the subscription table
-        // This takes precedence over the user's base 'subscription' field (which might be 'lifetime')
+        // We query the DB specifically for active records to ensure the session is always accurate
         // @ts-ignore
         const activeSub = await db.select().from(schema.subscription).where(
           and(
@@ -82,13 +81,18 @@ export const authServer = (env: CloudflareBindings) => {
         ).get();
 
         const isActuallyPro = activeSub && (activeSub.status === "active" || activeSub.status === "trialing");
+        const currentSubscription = isActuallyPro ? "pro" : (user.subscription || "free");
+        const hasLifetime = !!user.hasLifetime || user.subscription === "lifetime";
+
+        console.log(`[SESSION-SYNC] User: ${user.email}, Sub: ${currentSubscription}, Lifetime: ${hasLifetime}, HasCustomer: ${!!user.stripeCustomerId}`);
 
         return {
           ...session,
           user: {
-            ...session.user,
-            subscription: isActuallyPro ? "pro" : (user.subscription || "free"),
-            hasLifetime: !!user.hasLifetime || user.subscription === "lifetime"
+            ...user, // Preserve all database fields (id, email, stripeCustomerId, etc.)
+            ...session.user, // Keep session-specific stuff
+            subscription: currentSubscription,
+            hasLifetime: hasLifetime
           }
         };
       }
