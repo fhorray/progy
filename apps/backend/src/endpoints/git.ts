@@ -4,17 +4,20 @@ import { authServer } from "../auth";
 import { account } from "../db/schema";
 import { eq, and } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/d1";
+import type { AuthVariables } from "../auth-utils";
 
-import { verifySession } from "../auth-utils";
 
-const git = new Hono<{ Bindings: CloudflareBindings }>();
+const git = new Hono<{
+  Bindings: CloudflareBindings;
+  Variables: AuthVariables;
+}>();
 
 // GET /api/git/credentials
 // Returns the GitHub access token for the authenticated user
 git.get("/credentials", async (c) => {
-  const session = await verifySession(c);
+  const user = c.get('user');
 
-  if (!session) {
+  if (!user) {
     return c.json({ error: "Unauthorized" }, 401);
   }
 
@@ -24,7 +27,7 @@ git.get("/credentials", async (c) => {
   const githubAccount = await db.select()
     .from(account)
     .where(and(
-      eq(account.userId, session.user.id),
+      eq(account.userId, user.id),
       eq(account.providerId, "github")
     ))
     .get();
@@ -47,9 +50,9 @@ git.get("/credentials", async (c) => {
 // POST /api/git/ensure-repo
 // Ensures the course repository exists on GitHub
 git.post("/ensure-repo", async (c) => {
-  const session = await verifySession(c);
+  const user = c.get('user');
 
-  if (!session) {
+  if (!user) {
     return c.json({ error: "Unauthorized" }, 401);
   }
 
@@ -60,7 +63,7 @@ git.post("/ensure-repo", async (c) => {
   const githubAccount = await db.select()
     .from(account)
     .where(and(
-      eq(account.userId, session.user.id),
+      eq(account.userId, user.id),
       eq(account.providerId, "github")
     ))
     .get();
@@ -97,7 +100,7 @@ git.post("/ensure-repo", async (c) => {
   }
 
   // 2. Create if not exists
-  console.log(`[GIT-API] Creating repo: ${repoName} for user ${session.user.id}`);
+  console.log(`[GIT-API] Creating repo: ${repoName} for user ${user.id}`);
   const createRes = await fetch(`https://api.github.com/user/repos`, {
     method: "POST",
     headers: {
