@@ -559,6 +559,7 @@ program
 
     const authClient = createAuthClient({
       baseURL: BACKEND_URL,
+      basePath: "/auth",
       plugins: [deviceAuthorizationClient()],
     });
 

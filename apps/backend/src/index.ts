@@ -4,14 +4,15 @@ import { cors } from 'hono/cors'
 import { drizzle } from 'drizzle-orm/d1'
 import * as schema from './db/schema'
 import { eq, and } from 'drizzle-orm'
-import { verifySession } from './auth-utils'
+import { authMiddleware, type AuthVariables } from './auth-utils'
 import { streamText, generateText } from "ai";
 import { getModel, constructSystemPrompt, constructExplanationPrompt, constructGeneratePrompt, type AIConfig, type AIContext } from "./ai/service";
 import billing from './endpoints/billing'
 import git from './endpoints/git'
 
 const app = new Hono<{
-  Bindings: CloudflareBindings
+  Bindings: CloudflareBindings;
+  Variables: AuthVariables;
 }>()
 
 app.use('*', cors({
@@ -20,6 +21,8 @@ app.use('*', cors({
   allowMethods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   credentials: true,
 }))
+
+app.use('*', authMiddleware);
 
 app.route('/billing', billing)
 app.route('/git', git)
@@ -30,11 +33,10 @@ app.use("/auth/*", async (c, next) => {
   if (c.req.path.includes("/stripe/upgrade") || c.req.path.includes("/subscription/upgrade")) {
     console.log(`[DEBUG] Stripe/Subscription Upgrade Request: ${c.req.method} ${c.req.url}`);
     console.log(`[DEBUG] Cookies: ${c.req.header("Cookie")}`);
-    const auth = authServer(c.env);
-    const session = await auth.api.getSession({ headers: c.req.raw.headers });
-    console.log(`[DEBUG] Session identified: ${session ? "YES" : "NO"}`);
-    if (session) {
-      console.log(`[DEBUG] User ID: ${session.user.id}`);
+    const user = c.get('user');
+    console.log(`[DEBUG] Session identified: ${user ? "YES" : "NO"}`);
+    if (user) {
+      console.log(`[DEBUG] User ID: ${user.id}`);
     }
   }
   await next();
@@ -44,32 +46,23 @@ app.get('/registry', (c) => {
   return c.json({ courses: c.env.COURSES })
 })
 
-// verifySession moved to auth-utils.ts
-
-app.get('/auth/get-session', async (c) => {
-  const session = await verifySession(c)
-  if (session) {
-    console.log(`[SESSION-CHECK] Success: ${session.user.email}`)
-    return c.json(session)
-  }
-  return c.json(null)
-})
+// verifySession moved to auth-utils.ts and converted to middleware
 
 app.post('/progress/sync', async (c) => {
   const db = drizzle(c.env.DB)
-  const session = await verifySession(c)
+  const user = c.get('user')
 
-  if (!session) return c.json({ error: 'Unauthorized' }, 401)
+  if (!user) return c.json({ error: 'Unauthorized' }, 401)
 
   const { courseId, data } = await c.req.json()
   if (!courseId || !data) return c.json({ error: 'Missing courseId or data' }, 400)
 
-  const syncId = `${session.user.id}:${courseId}`
+  const syncId = `${user.id}:${courseId}`
 
   await db.insert(schema.courseProgress)
     .values({
       id: syncId,
-      userId: session.user.id,
+      userId: user.id,
       courseId,
       data: typeof data === 'string' ? data : JSON.stringify(data),
       updatedAt: new Date()
@@ -87,9 +80,9 @@ app.post('/progress/sync', async (c) => {
 
 app.get('/progress/get', async (c) => {
   const db = drizzle(c.env.DB)
-  const session = await verifySession(c)
+  const user = c.get('user')
 
-  if (!session) return c.json({ error: 'Unauthorized' }, 401)
+  if (!user) return c.json({ error: 'Unauthorized' }, 401)
 
   const courseId = c.req.query('courseId')
   if (!courseId) return c.json({ error: 'Missing courseId' }, 400)
@@ -98,7 +91,7 @@ app.get('/progress/get', async (c) => {
     .from(schema.courseProgress)
     .where(
       and(
-        eq(schema.courseProgress.userId, session.user.id),
+        eq(schema.courseProgress.userId, user.id),
         eq(schema.courseProgress.courseId, courseId)
       )
     ).get()
@@ -106,7 +99,7 @@ app.get('/progress/get', async (c) => {
     try {
       return c.json(JSON.parse(progress.data))
     } catch (e) {
-      console.error(`[PROGRESS-PARSE-ERROR] Course: ${courseId}, User: ${session.user.id}`, e)
+      console.error(`[PROGRESS-PARSE-ERROR] Course: ${courseId}, User: ${user.id}`, e)
       // If corrupted, return null rather than 500
       return c.json(null)
     }
@@ -117,13 +110,13 @@ app.get('/progress/get', async (c) => {
 
 app.get('/progress/list', async (c) => {
   const db = drizzle(c.env.DB)
-  const session = await verifySession(c)
+  const user = c.get('user')
 
-  if (!session) return c.json({ error: 'Unauthorized' }, 401)
+  if (!user) return c.json({ error: 'Unauthorized' }, 401)
 
   const progressList = await db.select()
     .from(schema.courseProgress)
-    .where(eq(schema.courseProgress.userId, session.user.id))
+    .where(eq(schema.courseProgress.userId, user.id))
     .all()
 
   return c.json(progressList.map(p => {
@@ -131,7 +124,7 @@ app.get('/progress/list', async (c) => {
     try {
       data = JSON.parse(p.data)
     } catch (e) {
-      console.error(`[PROGRESS-LIST-PARSE-ERROR] Course: ${p.courseId}, User: ${session.user.id}`, e)
+      console.error(`[PROGRESS-LIST-PARSE-ERROR] Course: ${p.courseId}, User: ${user.id}`, e)
     }
     return {
       courseId: p.courseId,
@@ -146,8 +139,8 @@ app.post('/ai/generate', async (c) => {
     const { prompt, difficulty, config: clientConfig } = await c.req.json() as { prompt: string; difficulty: string; config: AIConfig };
 
     // 1. Verify Session & Subscription
-    const session = await verifySession(c);
-    if (!session) return c.json({ error: 'Unauthorized' }, 401);
+    const user = c.get('user')
+    if (!user) return c.json({ error: 'Unauthorized' }, 401);
 
     const db = drizzle(c.env.DB);
     let finalConfig = { ...clientConfig };
@@ -155,7 +148,7 @@ app.post('/ai/generate', async (c) => {
     // Check for Pro Plan (via better-auth subscription table or user metadata)
     const activePro = await db.select().from(schema.subscription)
       .where(and(
-        eq(schema.subscription.referenceId, session.user.id),
+        eq(schema.subscription.referenceId, user.id),
         eq(schema.subscription.status, 'active'),
         eq(schema.subscription.plan, 'pro')
       )).get();
@@ -163,15 +156,15 @@ app.post('/ai/generate', async (c) => {
     // Check for Lifetime Plan
     const activeLifetime = await db.select().from(schema.subscription)
       .where(and(
-        eq(schema.subscription.referenceId, session.user.id),
+        eq(schema.subscription.referenceId, user.id),
         eq(schema.subscription.status, 'active'),
         eq(schema.subscription.plan, 'lifetime')
       )).get();
 
     // @ts-ignore
-    const isPro = !!activePro || session.user.subscription === 'pro';
+    const isPro = !!activePro || user.subscription === 'pro';
     // @ts-ignore
-    const isLifetime = !!activeLifetime || session.user.subscription === 'lifetime';
+    const isLifetime = !!activeLifetime || user.subscription === 'lifetime';
 
     if (isPro) {
       // Pro users use backend key
@@ -215,8 +208,8 @@ app.post('/ai/hint', async (c) => {
     const { context, config: clientConfig } = await c.req.json() as { context: AIContext; config: AIConfig };
 
     // 1. Verify Session & Subscription
-    const session = await verifySession(c);
-    if (!session) return c.json({ error: 'Unauthorized' }, 401);
+    const user = c.get('user')
+    if (!user) return c.json({ error: 'Unauthorized' }, 401);
 
     const db = drizzle(c.env.DB);
     let finalConfig = { ...clientConfig };
@@ -224,7 +217,7 @@ app.post('/ai/hint', async (c) => {
     // Check for Pro Plan
     const activePro = await db.select().from(schema.subscription)
       .where(and(
-        eq(schema.subscription.referenceId, session.user.id),
+        eq(schema.subscription.referenceId, user.id),
         eq(schema.subscription.status, 'active'),
         eq(schema.subscription.plan, 'pro')
       )).get();
@@ -232,15 +225,15 @@ app.post('/ai/hint', async (c) => {
     // Check for Lifetime Plan
     const activeLifetime = await db.select().from(schema.subscription)
       .where(and(
-        eq(schema.subscription.referenceId, session.user.id),
+        eq(schema.subscription.referenceId, user.id),
         eq(schema.subscription.status, 'active'),
         eq(schema.subscription.plan, 'lifetime')
       )).get();
 
     // @ts-ignore
-    const isPro = !!activePro || session.user.subscription === 'pro';
+    const isPro = !!activePro || user.subscription === 'pro';
     // @ts-ignore
-    const isLifetime = !!activeLifetime || session.user.subscription === 'lifetime';
+    const isLifetime = !!activeLifetime || user.subscription === 'lifetime';
 
     if (isPro) {
       finalConfig.apiKey = c.env.OPENAI_API_KEY;
@@ -276,30 +269,30 @@ app.post('/ai/explain', async (c) => {
     const { context, config: clientConfig } = await c.req.json() as { context: AIContext; config: AIConfig };
 
     // 1. Verify Session & Subscription
-    const session = await verifySession(c);
-    if (!session) return c.json({ error: 'Unauthorized' }, 401);
+    const user = c.get('user')
+    if (!user) return c.json({ error: 'Unauthorized' }, 401);
 
     const db = drizzle(c.env.DB);
     let finalConfig = { ...clientConfig };
 
     const activePro = await db.select().from(schema.subscription)
       .where(and(
-        eq(schema.subscription.referenceId, session.user.id),
+        eq(schema.subscription.referenceId, user.id),
         eq(schema.subscription.status, 'active'),
         eq(schema.subscription.plan, 'pro')
       )).get();
 
     const activeLifetime = await db.select().from(schema.subscription)
       .where(and(
-        eq(schema.subscription.referenceId, session.user.id),
+        eq(schema.subscription.referenceId, user.id),
         eq(schema.subscription.status, 'active'),
         eq(schema.subscription.plan, 'lifetime')
       )).get();
 
     // @ts-ignore
-    const isPro = !!activePro || session.user.subscription === 'pro';
+    const isPro = !!activePro || user.subscription === 'pro';
     // @ts-ignore
-    const isLifetime = !!activeLifetime || session.user.subscription === 'lifetime';
+    const isLifetime = !!activeLifetime || user.subscription === 'lifetime';
 
     if (isPro) {
       finalConfig.apiKey = c.env.OPENAI_API_KEY;
@@ -335,30 +328,30 @@ app.post('/ai/chat', async (c) => {
     const { messages, context, config: clientConfig } = await c.req.json() as { messages: any[]; context: AIContext; config: AIConfig };
 
     // 1. Verify Session & Subscription
-    const session = await verifySession(c);
-    if (!session) return c.json({ error: 'Unauthorized' }, 401);
+    const user = c.get('user')
+    if (!user) return c.json({ error: 'Unauthorized' }, 401);
 
     const db = drizzle(c.env.DB);
     let finalConfig = { ...clientConfig };
 
     const activePro = await db.select().from(schema.subscription)
       .where(and(
-        eq(schema.subscription.referenceId, session.user.id),
+        eq(schema.subscription.referenceId, user.id),
         eq(schema.subscription.status, 'active'),
         eq(schema.subscription.plan, 'pro')
       )).get();
 
     const activeLifetime = await db.select().from(schema.subscription)
       .where(and(
-        eq(schema.subscription.referenceId, session.user.id),
+        eq(schema.subscription.referenceId, user.id),
         eq(schema.subscription.status, 'active'),
         eq(schema.subscription.plan, 'lifetime')
       )).get();
 
     // @ts-ignore
-    const isPro = !!activePro || session.user.subscription === 'pro';
+    const isPro = !!activePro || user.subscription === 'pro';
     // @ts-ignore
-    const isLifetime = !!activeLifetime || session.user.subscription === 'lifetime';
+    const isLifetime = !!activeLifetime || user.subscription === 'lifetime';
 
     if (isPro) {
       finalConfig.apiKey = c.env.OPENAI_API_KEY;
@@ -419,12 +412,11 @@ app.all('/auth/:path{.*}', async (c) => {
     console.error(`[AUTH-FATAL] ${err.message}`, err.stack)
     return c.json({ error: 'Internal Auth Error', message: err.message }, 500)
   }
-})
-
-// CLI Auth routes removed - handled by Better Auth deviceAuthorization plugin
+});
 
 // Device Verification UI
 app.get('/device', async (c) => {
+
   const userCode = c.req.query('user_code') || ''
 
   const html = `

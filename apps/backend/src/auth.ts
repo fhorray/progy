@@ -41,7 +41,7 @@ export const authServer = (env: CloudflareBindings) => {
       },
     },
     secret: env.BETTER_AUTH_SECRET,
-    baseURL: env.BETTER_AUTH_URL ? `${env.BETTER_AUTH_URL.replace(/\/$/, "")}/api/auth` : "https://api.progy.dev/api/auth",
+    baseURL: env.BETTER_AUTH_URL ? `${env.BETTER_AUTH_URL.replace(/\/$/, "")}/auth` : "https://api.progy.dev/auth",
     trustedOrigins: [
       "http://localhost:3001",
       "https://api.progy.dev",

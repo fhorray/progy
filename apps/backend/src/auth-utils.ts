@@ -1,11 +1,18 @@
+import { createMiddleware } from "hono/factory";
 import { authServer } from "./auth";
 import { drizzle } from "drizzle-orm/d1";
 import * as schema from "./db/schema";
 import { eq } from "drizzle-orm";
-import { Context } from "hono";
 
-// Helper for robust session verification
-export async function verifySession(c: Context<{ Bindings: CloudflareBindings }>) {
+export type AuthVariables = {
+  user: typeof schema.user.$inferSelect | null;
+  session: typeof schema.session.$inferSelect | null;
+};
+
+export const authMiddleware = createMiddleware<{
+  Variables: AuthVariables;
+  Bindings: CloudflareBindings;
+}>(async (c, next) => {
   const auth = authServer(c.env);
   const authHeader = c.req.header('Authorization');
   const db = drizzle(c.env.DB);
@@ -17,12 +24,16 @@ export async function verifySession(c: Context<{ Bindings: CloudflareBindings }>
 
   try {
     // 1. Better Auth check (Standard Cookie/Header)
-    const session = await auth.api.getSession({
+    const sessionData = await auth.api.getSession({
       headers: c.req.raw.headers
     });
 
-    if (session) {
-      return session;
+    if (sessionData) {
+      // Cast to any to avoid strict null/undefined mismatches between Better Auth types and Drizzle schema
+      c.set('user', sessionData.user as any);
+      c.set('session', sessionData.session as any);
+      await next();
+      return;
     }
 
     // 2. Manual Lookup (Fallback for CLI/Bearer if not handled by better-auth yet)
@@ -40,16 +51,14 @@ export async function verifySession(c: Context<{ Bindings: CloudflareBindings }>
           .get();
 
         if (userRow) {
-          // Return compatible session object
-          return {
-            user: userRow as typeof schema.user.$inferSelect,
-            session: sessionRow as typeof schema.session.$inferSelect
-          };
+          c.set('user', userRow);
+          c.set('session', sessionRow);
+          await next();
+          return;
         }
       }
 
-      // B. Check if token is actually a Session ID (some clients might send ID)
-      // (This was in original index.ts logic, keeping for compatibility)
+      // B. Check if token is actually a Session ID
       const sessionById = await db.select()
         .from(schema.session)
         .where(eq(schema.session.id, token))
@@ -60,16 +69,19 @@ export async function verifySession(c: Context<{ Bindings: CloudflareBindings }>
           .where(eq(schema.user.id, sessionById.userId))
           .get();
         if (userRow) {
-          return {
-            user: userRow as typeof schema.user.$inferSelect,
-            session: sessionById as typeof schema.session.$inferSelect
-          };
+          c.set('user', userRow);
+          c.set('session', sessionById);
+          await next();
+          return;
         }
       }
     }
-    return null;
   } catch (err: any) {
     console.error(`[AUTH-ERROR-CRITICAL] ${err.message}`, err.stack);
-    return null;
   }
-}
+
+  // No session found
+  c.set('user', null);
+  c.set('session', null);
+  await next();
+});
