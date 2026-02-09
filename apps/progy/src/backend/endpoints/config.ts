@@ -7,12 +7,12 @@ const checkOfficial = () => {
   if (currentConfig?.isOfficial === true) return true;
 
   // 1. Check currentConfig repo URL
-  if (currentConfig?.repo?.includes("fhorray/progy-courses")) return true;
+  if (currentConfig?.repo?.includes("github.com/progy-dev/")) return true;
 
   // 2. Check Git (for advanced users or linked repos)
   try {
     const remote = execSync("git remote get-url origin", { cwd: PROG_CWD, stdio: "pipe" }).toString().trim();
-    return remote.includes("fhorray/progy-courses");
+    return remote.includes("github.com/progy-dev/");
   } catch (e) {
     return false;
   }

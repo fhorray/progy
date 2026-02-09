@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { cp, mkdir, readFile, rm, stat } from "node:fs/promises";
+import { cp, mkdir, readFile, rm, stat, readdir } from "node:fs/promises";
 import { join, resolve } from "node:path";
 import { spawn } from "node:child_process";
 import { CONFIG_DIR, COURSE_CONFIG_NAME, BACKEND_URL as DEFAULT_BACKEND_URL } from "./paths";
@@ -57,19 +57,19 @@ export class CourseLoader {
     try {
       const url = `${getBackendUrl()}/registry`;
       const response = await fetch(url);
-      if (!response.ok) {
-        throw new Error(`Failed to fetch registry (Status: ${response.status})`);
+      if (response.ok) {
+        const data: any = await response.json();
+        const course = data.courses[courseInput];
+        if (course) {
+          return { url: course.repo, branch: course.branch, path: course.path };
+        }
       }
-      const data: any = await response.json();
-      const course = data.courses[courseInput];
-      if (course) {
-        return { url: course.repo, branch: course.branch, path: course.path };
-      }
-    } catch (e: any) {
-      console.warn(`[WARN] Registry lookup failed (${getBackendUrl()}/registry): ${e.message || e}`);
+    } catch (e) {
+      // Registry failed, fallback to default organization
     }
 
-    throw new Error(`Could not resolve course source for '${courseInput}'`);
+    // Default to progy-dev organization for official courses
+    return { url: `https://github.com/progy-dev/${courseInput}.git` };
   }
 
   static async validateCourse(path: string): Promise<CourseConfig> {
@@ -110,6 +110,27 @@ export class CourseLoader {
     const setupGuide = join(path, result.data.setup.guide);
     if (!(await exists(setupGuide))) {
       throw new Error(`Setup guide '${result.data.setup.guide}' not found.`);
+    }
+
+    // --- Content Naming Validation ---
+    const readdirWithTypes = async (dir: string) => {
+      const entries = await readdir(dir, { withFileTypes: true });
+      return entries.filter(e => e.isDirectory()).map(e => e.name);
+    };
+
+    const modules = await readdirWithTypes(exercisesDir);
+    for (const moduleName of modules) {
+      if (!/^\d{2}_/.test(moduleName)) {
+        throw new Error(`Invalid module name: "${moduleName}" at ${exercisesDir}. Modules must start with two digits followed by an underscore (e.g., 01_intro).`);
+      }
+
+      const modulePath = join(exercisesDir, moduleName);
+      const exercises = await readdirWithTypes(modulePath);
+      for (const exerciseName of exercises) {
+        if (!/^\d{2}_/.test(exerciseName)) {
+          throw new Error(`Invalid exercise name: "${exerciseName}" at ${modulePath}. Exercises must start with two digits followed by an underscore (e.g., 01_hello).`);
+        }
+      }
     }
 
     return result.data;

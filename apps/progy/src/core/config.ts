@@ -56,3 +56,9 @@ export async function loadToken(): Promise<string | null> {
 export async function saveToken(token: string): Promise<void> {
   await updateGlobalConfig({ token });
 }
+
+export async function clearToken(): Promise<void> {
+  const config = await getGlobalConfig();
+  delete config.token;
+  await saveGlobalConfig(config);
+}

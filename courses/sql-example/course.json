@@ -6,9 +6,16 @@
     "type": "docker-compose",
     "compose_file": "docker-compose.yml",
     "service_to_run": "tester",
-    "command": "python3 /app/runner.py {{exercise}}"
+    "command": "python3 /app/runner.py {{exercise}}",
+    "args": [],
+    "cwd": "."
   },
   "content": {
-    "exercises": "exercises"
+    "root": ".",
+    "exercises": "content"
+  },
+  "setup": {
+    "checks": [],
+    "guide": "SETUP.md"
   }
 }

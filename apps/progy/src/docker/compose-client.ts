@@ -43,11 +43,11 @@ export class DockerComposeClient {
 
     // 1. Prepare Arguments
     // docker compose -f docker-compose.yml run --rm service "cmd"
-    const args = [];
+    const args = [] as string[];
     if (this.isV2) args.push("compose");
 
     args.push("-f", composeFile);
-    args.push("run", "--rm"); // Clean up container after run
+    args.push("run", "--rm", "-T"); // -T: No TTY, --rm: Clean up container after run
 
     // Pass environment variables if needed
     if (env) {
@@ -60,6 +60,7 @@ export class DockerComposeClient {
     args.push("sh", "-c", command);
 
     console.log(`🐳 Starting Compose Service: ${serviceName}...`);
+    console.log(`   Command: ${this.executable} ${args.join(' ')}`);
 
     // 2. Execute
     let output = "";
@@ -68,20 +69,42 @@ export class DockerComposeClient {
     try {
       const result = await new Promise<{ exitCode: number, output: string }>((resolve) => {
         const child = spawn(this.executable, args, { stdio: ["ignore", "pipe", "pipe"] });
+        let closed = false;
+        let stdoutEnded = false;
+        let stderrEnded = false;
+
+        const tryResolve = (code?: number | null) => {
+          if (stdoutEnded && stderrEnded && !closed) {
+            closed = true;
+            resolve({ exitCode: code ?? 0, output });
+          }
+        };
 
         if (child.stdout) {
           child.stdout.on("data", d => { output += d.toString(); });
-        }
-        if (child.stderr) {
-          child.stderr.on("data", d => { output += d.toString(); });
+          child.stdout.on("end", () => { stdoutEnded = true; tryResolve(); });
+        } else {
+          stdoutEnded = true;
         }
 
-        child.on("close", async (code) => {
-          resolve({ exitCode: code || 0, output });
+        if (child.stderr) {
+          child.stderr.on("data", d => { output += d.toString(); });
+          child.stderr.on("end", () => { stderrEnded = true; tryResolve(); });
+        } else {
+          stderrEnded = true;
+        }
+
+        let exitCodeCaptured: number | null = null;
+        child.on("close", (code) => {
+          exitCodeCaptured = code;
+          tryResolve(code);
         });
 
         child.on("error", (err) => {
-          resolve({ exitCode: 1, output: `Failed to spawn ${this.executable}: ${err.message}` });
+          if (!closed) {
+            closed = true;
+            resolve({ exitCode: 1, output: `Failed to spawn ${this.executable}: ${err.message}` });
+          }
         });
       });
       exitCode = result.exitCode;
@@ -91,17 +114,19 @@ export class DockerComposeClient {
       await this.down(composeFile);
     }
 
+    console.log(`   [DEBUG] Captured output length: ${output.length}`);
+    console.log(`   [DEBUG] Output preview: ${output.substring(0, 500)}`);
     return { exitCode, output };
   }
 
   private async down(composeFile: string) {
-    const args = [];
+    const args = [] as string[];
     if (this.isV2) args.push("compose");
     args.push("-f", composeFile, "down");
 
     // We don't care about output, but we await completion
     await new Promise<void>((resolve) => {
-      const child = spawn(this.executable, args, { stdio: "ignore" });
+      const child = spawn(this.executable, args, { stdio: "ignore", shell: true });
       child.on("close", () => resolve());
       child.on("error", () => resolve()); // Ignore errors during cleanup
     });

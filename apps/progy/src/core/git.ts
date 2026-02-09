@@ -41,7 +41,7 @@ export class GitUtils {
     });
   }
 
-  static getAuthUrl(repoUrl: string, token: string): string {
+  static getAuthUrl(repoUrl: string, token?: string): string {
     if (!token) return repoUrl;
     try {
       const url = new URL(repoUrl);
@@ -53,7 +53,7 @@ export class GitUtils {
     }
   }
 
-  static async clone(repoUrl: string, cwd: string, token: string, branch = "main"): Promise<GitResult> {
+  static async clone(repoUrl: string, cwd: string, token?: string, branch = "main"): Promise<GitResult> {
     const authUrl = this.getAuthUrl(repoUrl, token);
     return this.exec(["clone", "-b", branch, authUrl, "."], cwd);
   }
@@ -67,7 +67,8 @@ export class GitUtils {
     return this.exec(["sparse-checkout", "set", ...paths], cwd);
   }
 
-  static async addRemote(cwd: string, token: string, repoUrl: string): Promise<GitResult> {
+  static async addRemote(cwd: string, token?: string, repoUrl?: string): Promise<GitResult> {
+    if (!repoUrl) return { success: false, stdout: "", stderr: "Missing repoUrl" };
     const authUrl = this.getAuthUrl(repoUrl, token);
     await this.exec(["remote", "remove", "origin"], cwd);
     return this.exec(["remote", "add", "origin", authUrl], cwd);

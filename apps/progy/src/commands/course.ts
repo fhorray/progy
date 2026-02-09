@@ -1,6 +1,7 @@
 import { join, resolve, basename } from "node:path";
-import { mkdir, writeFile, readFile, readdir, stat } from "node:fs/promises";
+import { mkdir, writeFile, readFile, readdir, stat, rm } from "node:fs/promises";
 import { spawn } from "node:child_process";
+import { tmpdir } from "node:os";
 import { GitUtils } from "../core/git";
 import { SyncManager } from "../core/sync";
 import { CourseLoader } from "../core/loader";
@@ -199,11 +200,35 @@ export async function pack(options: { out?: string }) {
   }
 }
 
+/**
+ * Detect if we're in a student or instructor environment
+ * Student: Only has .progy file
+ * Instructor: Has course.json + content/ folder
+ */
+async function detectEnvironment(cwd: string): Promise<"student" | "instructor"> {
+  const hasCourseJson = await exists(join(cwd, "course.json"));
+  const hasContentDir = await exists(join(cwd, "content"));
+
+  if (hasCourseJson && hasContentDir) return "instructor";
+  return "student";
+}
+
 export async function dev(options: { offline?: boolean }) {
   const cwd = process.cwd();
+
+  // Check environment - dev is only for instructors
+  const env = await detectEnvironment(cwd);
+  if (env === "student") {
+    console.error("❌ 'progy dev' is for course development only.");
+    console.error("   Use 'progy start' to learn the course.");
+    process.exit(1);
+  }
+
   try {
     await CourseLoader.validateCourse(cwd);
-    await runServer(cwd, !!options.offline, null);
+    console.log("[DEV] Running as GUEST - progress will NOT be saved.");
+    // Always run as offline/guest in dev mode
+    await runServer(cwd, true, null);
   } catch (e: any) {
     console.error(`[ERROR] Not a valid course: ${e.message}`);
     process.exit(1);
@@ -214,11 +239,49 @@ export async function start(file: string | undefined, options: { offline?: boole
   const cwd = process.cwd();
   let runtimeCwd = cwd;
   let containerFile: string | null = null;
+  let isOffline = !!options.offline;
+
+  // Check if running in instructor environment (course.json + content/)
+  const env = await detectEnvironment(cwd);
 
   if (file && file.endsWith(".progy") && await exists(file)) {
+    // Loading a .progy file - student mode
     containerFile = resolve(file);
     runtimeCwd = await CourseContainer.unpack(containerFile);
+  } else if (file && !file.endsWith(".progy") && !await exists(file)) {
+    // Treat as an alias -> Clone, Validate, Pack, Run
+    console.log(`[INFO] Resolving course alias '${file}'...`);
+    try {
+      const source = await CourseLoader.resolveSource(file);
+      const tempDir = join(tmpdir(), `progy-${file}-${Date.now()}`);
+
+      console.log(`[INFO] Cloning from ${source.url}...`);
+      await GitUtils.clone(source.url, tempDir);
+
+      console.log(`[INFO] Validating course structure...`);
+      await CourseLoader.validateCourse(tempDir);
+
+      const progyFilename = `${file}.progy`;
+      const progyPath = join(cwd, progyFilename);
+      console.log(`[INFO] Packaging into ${progyFilename}...`);
+      await CourseContainer.pack(tempDir, progyPath);
+
+      // Cleanup temp directory
+      await rm(tempDir, { recursive: true, force: true });
+
+      containerFile = progyPath;
+      runtimeCwd = await CourseContainer.unpack(containerFile);
+      console.log(`[SUCCESS] Course ready: ${progyFilename}`);
+    } catch (e: any) {
+      console.error(`❌ Failed to fetch course '${file}': ${e.message}`);
+      process.exit(1);
+    }
+  } else if (env === "instructor") {
+    // Instructor environment detected - run as GUEST
+    console.log("[INFO] Detected instructor environment - running as GUEST.");
+    isOffline = true;
   } else {
+    // Check for .progy file in current directory
     const files = await readdir(cwd);
     const progyFile = files.find(f => f.endsWith(".progy") && f !== ".progy");
     if (progyFile) {
@@ -227,5 +290,48 @@ export async function start(file: string | undefined, options: { offline?: boole
     }
   }
 
-  await runServer(runtimeCwd, !!options.offline, containerFile);
+  await runServer(runtimeCwd, isOffline, containerFile);
+}
+
+export async function testExercise(path: string) {
+  const cwd = process.cwd();
+
+  const env = await detectEnvironment(cwd);
+  if (env === "student") {
+    console.error("❌ 'progy test' is for course development only.");
+    console.error("   Use the UI to run exercises.");
+    process.exit(1);
+  }
+
+  try {
+    const config = await CourseLoader.validateCourse(cwd);
+
+    // Import and run the exercise handler
+    console.log(`[TEST] Running exercise: ${path}`);
+    console.log("---");
+
+    // For now, just validate the path exists
+    const exercisePath = join(cwd, path);
+    if (!await exists(exercisePath)) {
+      console.error(`❌ Exercise not found: ${path}`);
+      process.exit(1);
+    }
+
+    console.log(`✅ Exercise path exists: ${path}`);
+    console.log("   (Full test execution coming soon - use 'progy dev' for now)");
+  } catch (e: any) {
+    console.error(`[ERROR] ${e.message}`);
+    process.exit(1);
+  }
+}
+
+export async function publish() {
+  console.log("🚧 This feature is coming soon!");
+  console.log("");
+  console.log("   Publishing will allow you to:");
+  console.log("   • Upload your course to the Progy registry");
+  console.log("   • Share with students via 'progy start <course-id>'");
+  console.log("   • Track student progress and analytics");
+  console.log("");
+  console.log("   Follow updates at: https://progy.dev/roadmap");
 }

@@ -5,9 +5,16 @@
   "runner": {
     "type": "docker-local",
     "dockerfile": "Dockerfile",
-    "command": "python3 /workspace/runner.py exercises/{{id}}"
+    "command": "python3 /workspace/runner.py exercises/{{id}}",
+    "args": [],
+    "cwd": "."
   },
   "content": {
-    "exercises": "exercises"
+    "root": ".",
+    "exercises": "content"
+  },
+  "setup": {
+    "checks": [],
+    "guide": "SETUP.md"
   }
 }

@@ -211,7 +211,7 @@ export async function scanAndGenerateManifest(config: CourseConfig) {
 
     let entryPath = join(modPath, entry.name);
     if (entry.isDirectory()) {
-      const candidates = ["exercise.rs", "main.rs", "index.ts", "main.go", "index.js"];
+      const candidates = ["exercise.rs", "exercise.sql", "exercise.py", "exercise.ts", "exercise.js", "main.rs", "index.ts", "main.go", "index.js", "main.py"];
       for (const c of candidates) {
         const p = join(entryPath, c);
         if (await exists(p)) {
@@ -249,7 +249,20 @@ export async function scanAndGenerateManifest(config: CourseConfig) {
       });
     } else if (entry.isFile()) {
       if (entry.name.endsWith('.test.ts') || entry.name === 'package.json') return;
-      manifest[mod].push({ ...commonObj, markdownPath: null, type: "file" });
+      const moduleReadmePath = join(modPath, "README.md");
+      const moduleQuizPath = join(modPath, "quiz.json");
+      const exerciseReadmePath = join(modPath, `${entry.name.split('.')[0]}.md`);
+
+      let markdownPath = null;
+      if (await exists(exerciseReadmePath)) markdownPath = exerciseReadmePath;
+      else if (await exists(moduleReadmePath)) markdownPath = moduleReadmePath;
+
+      manifest[mod].push({
+        ...commonObj,
+        markdownPath: markdownPath,
+        hasQuiz: await exists(moduleQuizPath),
+        type: "file"
+      });
     }
   }
 
@@ -287,7 +300,7 @@ export async function scanAndGenerateManifest(config: CourseConfig) {
 
       const entryMap = new Map<string, any>();
       for (const entry of entries) {
-        if (entry.name.startsWith(".") || entry.name === "README.md" || entry.name === "mod.rs" || entry.name === "info.toml") continue;
+        if (entry.name.startsWith(".") || entry.name === "README.md" || entry.name === "mod.rs" || entry.name === "info.toml" || entry.name === "quiz.json") continue;
         entryMap.set(entry.name.split('.')[0] || "", entry);
       }
 
@@ -304,7 +317,7 @@ export async function scanAndGenerateManifest(config: CourseConfig) {
 
       const remainingEntries = entries.filter(e => {
         const key = e.name.split('.')[0] || "";
-        return !processedKeys.has(key) && !e.name.startsWith(".") && e.name !== "README.md" && e.name !== "mod.rs" && e.name !== "info.toml";
+        return !processedKeys.has(key) && !e.name.startsWith(".") && e.name !== "README.md" && e.name !== "mod.rs" && e.name !== "info.toml" && e.name !== "quiz.json";
       });
 
       remainingEntries.sort((a, b) => {
@@ -409,6 +422,10 @@ export function parseRunnerOutput(rawOutput: string, exitCode: number): { succes
         if (srp.tests?.length) {
           friendly += `### 🧪 Tests\n\n`;
           for (const t of srp.tests) friendly += `- ${t.status === 'pass' ? '✅' : '❌'} **${t.name}**\n${t.message ? `  > ${t.message.replace(/\n/g, '\n  > ')}\n\n` : ''}`;
+        }
+        // Include raw output (e.g., SQL query results) in friendly view
+        if (srp.raw && srp.raw.trim()) {
+          friendly += `### 📋 Output\n\n\`\`\`\n${srp.raw.trim()}\n\`\`\`\n`;
         }
         return { success: srp.success, output: srp.raw.trim(), friendlyOutput: friendly };
       }

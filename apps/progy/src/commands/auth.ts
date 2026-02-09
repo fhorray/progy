@@ -1,5 +1,5 @@
 import { BACKEND_URL, FRONTEND_URL } from "../core/paths";
-import { saveToken } from "../core/config";
+import { saveToken, clearToken } from "../core/config";
 import { spawn } from "node:child_process";
 
 function openBrowser(url: string) {
@@ -75,4 +75,9 @@ export async function login() {
     console.error(`[ERROR] Login failed: ${e.message || e}`);
     process.exit(1);
   }
+}
+
+export async function logout() {
+  await clearToken();
+  console.log("[SUCCESS] Logged out successfully.");
 }

@@ -1,4 +1,4 @@
-import { readFile, exists } from "node:fs/promises";
+import { readFile, stat } from "node:fs/promises";
 import { join } from "node:path";
 import { spawn } from "node:child_process";
 import type { ServerType } from "../types";
@@ -15,6 +15,10 @@ import {
 import { DockerClient } from "../../docker/client";
 import { DockerComposeClient } from "../../docker/compose-client";
 import { ImageManager } from "../../docker/image-manager";
+
+async function exists(path: string): Promise<boolean> {
+  return await Bun.file(path).exists();
+}
 
 /**
  * Returns the exercises manifest.
@@ -64,7 +68,7 @@ const codeHandler: ServerType<"/exercises/code"> = async (req) => {
     let code = "";
     const s = await Bun.file(filePath).stat();
     if (s.isDirectory()) {
-      const candidates = ["exercise.rs", "main.rs", "index.ts", "main.go", "index.js"];
+      const candidates = ["exercise.rs", "exercise.sql", "exercise.py", "exercise.ts", "exercise.js", "main.rs", "index.ts", "main.go", "index.js", "main.py"];
       for (const c of candidates) {
         const p = join(filePath, c);
         if (await exists(p)) {
@@ -155,7 +159,11 @@ async function handleDockerComposeRunner(body: { exerciseName: string, id: strin
 
   const composeFile = join(PROG_CWD, config.runner.compose_file || "docker-compose.yml");
   const service = config.runner.service_to_run || "app";
-  const command = (config.runner.command || "echo 'No command'").replace("{{exercise}}", body.exerciseName).replace("{{id}}", body.id || "");
+  // body.id is like "01_select/exercise.sql", we need to prefix with content folder
+  const exercisePath = `${config.content.exercises}/${body.id}`;
+  const command = (config.runner.command || "echo 'No command'")
+    .replace("{{exercise}}", exercisePath)
+    .replace("{{id}}", body.id || "");
 
   try {
     const result = await client.runService(composeFile, service, command);
@@ -174,10 +182,6 @@ async function handleProcessRunner(body: { exerciseName: string, id: string }) {
   const idParts = id?.split('/') || [];
   const module = idParts[0] || "";
 
-  const runnerCmd = currentConfig!.runner.command;
-  const runnerArgs = currentConfig!.runner.args.map((a: string) =>
-    a.replace("{{exercise}}", exerciseName).replace("{{id}}", id || "").replace("{{module}}", module)
-  );
   const runnerCmd = currentConfig!.runner.command;
   const runnerArgs = currentConfig!.runner.args.map((a: string) =>
     a.replace("{{exercise}}", exerciseName).replace("{{id}}", id || "").replace("{{module}}", module)
