@@ -48,11 +48,12 @@ export default function Home() {
   const router = useRouter();
   const { data: session, isPending: isSessionLoading } =
     authClient.useSession();
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const checkoutState = useStore($checkoutMutation as any);
 
   const userPlan = session?.user?.subscription || 'free';
   const isPro = userPlan === 'pro';
-  // @ts-ignore
+  // @ts-expect-error - Custom field might be missing in types
   const isLifetime = session?.user?.hasLifetime || userPlan === 'lifetime';
 
   const handleLifetimeCheckout = async () => {
@@ -486,7 +487,7 @@ export default function Home() {
                         3. Real-time Verify
                       </h4>
                       <p className="text-xs text-muted-foreground leading-relaxed italic">
-                        Start coding. Save your progress and click 'Run tests'
+                        Start coding. Save your progress and click &apos;Run tests&apos;
                         to verify your solution instantly.
                       </p>
                     </div>

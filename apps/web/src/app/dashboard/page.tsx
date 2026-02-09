@@ -57,7 +57,7 @@ function PaymentStatusHandler() {
 
 type CourseProgress = {
   courseId: string;
-  data: any;
+  data: unknown;
   updatedAt: string;
 };
 
@@ -172,7 +172,7 @@ export default function Dashboard() {
   }
 
   const plan = session.user.subscription || 'free';
-  // @ts-ignore - Check for custom fields if better-auth types aren't updated yet
+  // @ts-expect-error - Check for custom fields if better-auth types aren't updated yet
   const hasLifetime = session.user.hasLifetime || plan === 'lifetime';
   const isPro = plan === 'pro';
 
