@@ -1,6 +1,8 @@
 import { readFile, exists } from "node:fs/promises";
 import { join } from "node:path";
 import { spawn } from "node:child_process";
+import { DockerClient } from "../../docker/client";
+import { ImageManager } from "../../docker/image-manager";
 import type { ServerType } from "../types";
 import {
   ensureConfig,
@@ -93,6 +95,66 @@ const runHandler: ServerType<"/exercises/run"> = async (req) => {
     const { exerciseName, id } = body;
     const idParts = id?.split('/') || [];
     const module = idParts[0] || "";
+
+    if (currentConfig?.runner.type === "docker-local") {
+      const docker = new DockerClient();
+      if (!(await docker.checkAvailability())) {
+         return Response.json({
+           success: false,
+           output: "❌ Docker is not running.\n\nPlease start Docker Desktop and try again."
+         });
+      }
+
+      const imageManager = new ImageManager();
+      const imageTag = currentConfig.runner.image_tag || imageManager.generateTag(currentConfig.id);
+      const dockerfileRel = currentConfig.runner.dockerfile || "Dockerfile";
+
+      try {
+        await imageManager.ensureImage(imageTag, PROG_CWD, dockerfileRel);
+      } catch (e: any) {
+        return Response.json({ success: false, output: `❌ Failed to build Docker environment:\n${e.message}` });
+      }
+
+      const command = currentConfig.runner.command.replace("{{exercise}}", exerciseName)
+                                                  .replace("{{id}}", id || "")
+                                                  .replace("{{module}}", module);
+
+      // We mount PROG_CWD, so the exercise path is relative to /workspace
+      // If the command assumes local paths, it should be fine as /workspace maps to PROG_CWD
+      const result = await docker.runContainer(imageTag, {
+        cwd: PROG_CWD,
+        command: command,
+        network: currentConfig.runner.network_access ? "bridge" : "none"
+      });
+
+      const parsed = parseRunnerOutput(result.output, result.exitCode);
+      let currentProgress = null;
+      let saveError = null;
+
+      if (parsed.success && body.id) {
+        try {
+          const progress = await getProgress();
+          if (!progress.exercises[body.id]) {
+            progress.exercises[body.id] = { status: 'pass', xpEarned: 20, completedAt: new Date().toISOString() };
+            progress.stats.totalXp += 20;
+            progress.stats = updateStreak(progress.stats);
+            await saveProgress(progress);
+          }
+          currentProgress = progress;
+        } catch (e) {
+          console.error(`[WARN] Could not update progress: ${e}`);
+          saveError = "Failed to save progress (Auth/Network error)";
+        }
+      }
+
+      return Response.json({
+        success: parsed.success,
+        output: parsed.output,
+        friendlyOutput: parsed.friendlyOutput,
+        progress: currentProgress,
+        error: saveError
+      });
+    }
 
     const runnerCmd = currentConfig!.runner.command;
     const runnerArgs = currentConfig!.runner.args.map((a: string) =>

@@ -1,7 +1,13 @@
 export interface RunnerConfig {
+  type?: 'local' | 'docker-local' | 'docker-compose';
   command: string;
   args: string[];
   cwd?: string;
+  dockerfile?: string;
+  image_tag?: string;
+  network_access?: boolean;
+  compose_file?: string;
+  service_to_run?: string;
 }
 
 export interface ContentConfig {
