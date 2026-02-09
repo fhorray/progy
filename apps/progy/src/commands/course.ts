@@ -1,12 +1,12 @@
-import { join, resolve, basename } from "node:path";
-import { mkdir, writeFile, readFile, readdir, stat } from "node:fs/promises";
+import { join, resolve } from "node:path";
+import { mkdir, writeFile, readdir, stat } from "node:fs/promises";
 import { spawn } from "node:child_process";
 import { GitUtils } from "../core/git";
 import { SyncManager } from "../core/sync";
 import { CourseLoader } from "../core/loader";
 import { CourseContainer } from "../core/container";
 import { loadToken } from "../core/config";
-import { BACKEND_URL, COURSE_CONFIG_NAME } from "../core/paths";
+import { BACKEND_URL } from "../core/paths";
 import { TEMPLATES, RUNNER_README } from "../templates";
 
 async function exists(path: string): Promise<boolean> {
@@ -21,11 +21,36 @@ async function exists(path: string): Promise<boolean> {
 async function runServer(runtimeCwd: string, isOffline: boolean, containerFile: string | null) {
   console.log(`[INFO] Starting UI in ${isOffline ? 'OFFLINE' : 'ONLINE'} mode...`);
 
+  // Try to locate the server file robustly
+  // In dev (ts): ../backend/server.ts
+  // In prod (js): ../backend/server.js (relative to compiled commands dir)
+
   const isTs = import.meta.file.endsWith(".ts");
-  const serverExt = isTs ? "ts" : "js";
-  const serverPath = isTs
-    ? join(import.meta.dir, "..", "backend", `server.${serverExt}`)
-    : join(import.meta.dir, "backend", `server.${serverExt}`);
+  const ext = isTs ? "ts" : "js";
+
+  // Try resolving relative to 'commands' folder (parent of current file)
+  // If this file is in src/commands, then ../backend is src/backend.
+  let serverPath = resolve(import.meta.dir, "..", "backend", `server.${ext}`);
+
+  if (!(await exists(serverPath))) {
+      // Fallback: maybe structure is different in dist?
+      // Try just "backend/server.js" if we are in root of dist? Unlikely but safe fallback.
+      const altPath = resolve(import.meta.dir, "backend", `server.${ext}`);
+      if (await exists(altPath)) {
+          serverPath = altPath;
+      } else {
+          // One more try: maybe flattened?
+          const flatPath = resolve(import.meta.dir, `server.${ext}`);
+          if (await exists(flatPath)) {
+              serverPath = flatPath;
+          }
+      }
+  }
+
+  if (!(await exists(serverPath))) {
+      console.error(`[CRITICAL] Server file not found at ${serverPath}`);
+      process.exit(1);
+  }
 
   const child = spawn("bun", ["run", serverPath], {
     stdio: "inherit",
@@ -41,22 +66,27 @@ async function runServer(runtimeCwd: string, isOffline: boolean, containerFile: 
     const { watch } = await import("node:fs");
     let debounceTimer: any = null;
 
-    const watcher = watch(runtimeCwd, { recursive: true }, (event, filename) => {
-      if (!filename || filename.includes(".git") || filename.includes("node_modules")) return;
-      if (debounceTimer) clearTimeout(debounceTimer);
-      debounceTimer = setTimeout(async () => {
-        try {
-          await CourseContainer.sync(runtimeCwd, containerFile);
-        } catch (e) {
-          console.error(`[SYNC] Failed to save: ${e}`);
-        }
-      }, 1000);
-    });
+    try {
+        const watcher = watch(runtimeCwd, { recursive: true }, (event, filename) => {
+        if (!filename || filename.includes(".git") || filename.includes("node_modules")) return;
+        if (debounceTimer) clearTimeout(debounceTimer);
+        debounceTimer = setTimeout(async () => {
+            try {
+            await CourseContainer.sync(runtimeCwd, containerFile);
+            } catch (e) {
+            console.error(`[SYNC] Failed to save: ${e}`);
+            }
+        }, 1000);
+        });
 
-    child.on("close", () => {
-      watcher.close();
-      CourseContainer.sync(runtimeCwd, containerFile).then(() => process.exit(0));
-    });
+        child.on("close", () => {
+        watcher.close();
+        CourseContainer.sync(runtimeCwd, containerFile).then(() => process.exit(0));
+        });
+    } catch (e) {
+        console.warn(`[WARN] Watcher failed to start: ${e}. Auto-save might be limited.`);
+        child.on("close", (code) => process.exit(code ?? 0));
+    }
   } else {
     child.on("close", (code) => process.exit(code ?? 0));
   }
@@ -88,29 +118,40 @@ export async function init(options: { course?: string; offline?: boolean }) {
   }
 
   try {
+    console.log("[INIT] Fetching credentials...");
     const credRes = await fetch(`${BACKEND_URL}/git/credentials`, {
       headers: { "Authorization": `Bearer ${token}` }
     });
+
+    if (!credRes.ok) throw new Error(`Failed to fetch credentials (${credRes.status})`);
     const gitCreds = await credRes.json() as any;
 
     const officialSource = await CourseLoader.resolveSource(courseId!);
 
+    console.log("[INIT] Ensuring repository...");
     const ensureRes = await fetch(`${BACKEND_URL}/git/ensure-repo`, {
       method: "POST",
       headers: { "Authorization": `Bearer ${token}`, "Content-Type": "application/json" },
       body: JSON.stringify({ courseId })
     });
+
+    if (!ensureRes.ok) throw new Error(`Failed to ensure repo (${ensureRes.status})`);
     const userRepoInfo = await ensureRes.json() as { repoUrl: string, isNew: boolean };
 
     if (await exists(join(cwd, ".git"))) {
       await GitUtils.pull(cwd);
     } else {
       const files = await readdir(cwd);
+      // Check if directory is effectively empty (ignoring .git or config if they existed but check above says no git)
+      // Actually we checked .git exists above.
+
       if (files.length > 0 && !existingConfig) {
+        // Directory has files but no config -> Initialize git and add remote
         await GitUtils.init(cwd);
         await GitUtils.addRemote(cwd, gitCreds.token, userRepoInfo.repoUrl);
         await GitUtils.pull(cwd);
       } else {
+        // Directory empty or existing config -> Clone
         await GitUtils.clone(userRepoInfo.repoUrl, cwd, gitCreds.token);
       }
     }
@@ -156,6 +197,7 @@ export async function createCourse(options: { name: string; course: string }) {
   const template = TEMPLATES[lang];
   if (!template) {
     console.error(`[ERROR] Unsupported language '${lang}'.`);
+    console.log("Supported languages: " + Object.keys(TEMPLATES).join(", "));
     process.exit(1);
   }
 

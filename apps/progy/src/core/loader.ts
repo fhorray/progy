@@ -1,8 +1,7 @@
 import { z } from "zod";
-import { cp, mkdir, readFile, rm, stat } from "node:fs/promises";
+import { readFile, stat } from "node:fs/promises";
 import { join, resolve } from "node:path";
-import { spawn } from "node:child_process";
-import { CONFIG_DIR, COURSE_CONFIG_NAME, BACKEND_URL as DEFAULT_BACKEND_URL } from "./paths";
+import { COURSE_CONFIG_NAME, BACKEND_URL as DEFAULT_BACKEND_URL } from "./paths";
 
 const getBackendUrl = () => process.env.PROGY_API_URL || DEFAULT_BACKEND_URL;
 
@@ -30,6 +29,15 @@ const CourseConfigSchema = z.object({
 
 export type CourseConfig = z.infer<typeof CourseConfigSchema>;
 
+async function isDirectory(path: string): Promise<boolean> {
+  try {
+    const s = await stat(path);
+    return s.isDirectory();
+  } catch {
+    return false;
+  }
+}
+
 async function exists(path: string): Promise<boolean> {
   try {
     await stat(path);
@@ -41,35 +49,43 @@ async function exists(path: string): Promise<boolean> {
 
 export class CourseLoader {
   static async resolveSource(courseInput: string): Promise<{ url: string; branch?: string; path?: string }> {
-    if (courseInput.startsWith("http://") || courseInput.startsWith("https://") || courseInput.startsWith("git@")) {
+    // 1. Check if it's a local directory first
+    const resolvedLocal = resolve(courseInput);
+    if (await isDirectory(resolvedLocal)) {
+      return { url: resolvedLocal };
+    }
+
+    // 2. Check if it looks like a URL (HTTP/HTTPS/SSH)
+    const isUrl = /^(https?:\/\/|git@)/.test(courseInput);
+    if (isUrl) {
       const parts = courseInput.split("#");
       const url = parts[0] as string;
       const branch = parts[1];
       return { url, branch };
     }
 
-    const resolvedLocal = resolve(courseInput);
-    if (await exists(resolvedLocal)) {
-      return { url: resolvedLocal };
-    }
-
+    // 3. Try to resolve from registry
     console.log(`[INFO] Resolving alias '${courseInput}'...`);
     try {
       const url = `${getBackendUrl()}/registry`;
       const response = await fetch(url);
+
       if (!response.ok) {
         throw new Error(`Failed to fetch registry (Status: ${response.status})`);
       }
+
       const data: any = await response.json();
-      const course = data.courses[courseInput];
+      const course = data.courses?.[courseInput];
+
       if (course) {
         return { url: course.repo, branch: course.branch, path: course.path };
       }
     } catch (e: any) {
       console.warn(`[WARN] Registry lookup failed (${getBackendUrl()}/registry): ${e.message || e}`);
+      // Fallthrough to error if registry fails and it's not a known alias
     }
 
-    throw new Error(`Could not resolve course source for '${courseInput}'`);
+    throw new Error(`Could not resolve course source for '${courseInput}'. Ensure it is a valid directory, URL, or registered alias.`);
   }
 
   static async validateCourse(path: string): Promise<CourseConfig> {
@@ -80,6 +96,10 @@ export class CourseLoader {
     }
 
     const configStr = await readFile(configPath, "utf-8");
+    if (!configStr.trim()) {
+       throw new Error(`Empty configuration file: ${COURSE_CONFIG_NAME}`);
+    }
+
     let configJson;
     try {
       configJson = JSON.parse(configStr);
@@ -114,14 +134,4 @@ export class CourseLoader {
 
     return result.data;
   }
-}
-
-function spawnPromise(command: string, args: string[], cwd: string): Promise<void> {
-  return new Promise((resolve, reject) => {
-    const proc = spawn(command, args, { cwd, stdio: "inherit" });
-    proc.on("close", (code) => {
-      if (code === 0) resolve();
-      else reject(new Error(`${command} exited with code ${code}`));
-    });
-  });
 }
