@@ -49,6 +49,7 @@ program
 program
   .command("dev")
   .description("Test course locally as GUEST (no progress saved)")
+  .option("--bypass", "Unlock all lessons for testing")
   .action(dev);
 
 program

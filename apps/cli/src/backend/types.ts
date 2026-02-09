@@ -26,6 +26,12 @@ export interface SetupConfig {
   guide?: string;
 }
 
+export interface ProgressionConfig {
+  mode?: 'sequential' | 'open';
+  strict_module_order?: boolean;
+  bypass_code?: string;
+}
+
 export interface CourseConfig {
   id: string;
   name: string;
@@ -35,6 +41,7 @@ export interface CourseConfig {
   setup?: SetupConfig;
   repo?: string;
   isOfficial?: boolean;
+  progression?: ProgressionConfig;
 }
 
 export interface ProgressStats {
@@ -53,6 +60,8 @@ export interface ExerciseProgress {
 
 export interface QuizProgress {
   passed: boolean;
+  score: number; // 0-100 percentage
+  totalQuestions: number;
   xpEarned: number;
   completedAt: string;
 }
@@ -62,6 +71,22 @@ export interface Progress {
   exercises: Record<string, ExerciseProgress>;
   quizzes: Record<string, QuizProgress>;
   achievements: string[];
+}
+
+export interface ManifestEntry {
+  id: string;
+  module: string;
+  moduleTitle: string;
+  name: string;
+  exerciseName: string;
+  friendlyName: string;
+  path: string;
+  entryPoint?: string; // e.g. "exercise.sql"
+  markdownPath: string | null;
+  hasQuiz: boolean;
+  type: "file" | "directory";
+  isLocked: boolean;
+  lockReason?: string;
 }
 
 export interface SRPDiagnostic {

@@ -13,6 +13,9 @@
     "root": ".",
     "exercises": "content"
   },
+  "progression": {
+    "mode": "sequential"
+  },
   "setup": {
     "checks": [
       {

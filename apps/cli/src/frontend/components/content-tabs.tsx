@@ -15,6 +15,7 @@ import {
   $selectedExercise,
   $showFriendly,
   explainExercise,
+  fetchExercises,
   fetchProgress,
   getAiHint,
   setShowFriendly,
@@ -68,6 +69,7 @@ export function ContentTabs() {
           }),
         });
         fetchProgress();
+        fetchExercises();
       } catch (err) {
         console.error('Failed to update quiz progress:', err);
       }

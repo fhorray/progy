@@ -1,6 +1,7 @@
 [module]
-title = "Advanced"
+title = "Advanced Queries"
+message = "Learn about Joins, Agregations and subqueries."
+prerequisites = ["module:01_select"]
 
 [exercises]
-# Add exercises here below in order
-# exercise_folder_name = "Exercise Display Name"
+"01_joins" = "Combining Tables"

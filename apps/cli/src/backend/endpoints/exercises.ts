@@ -120,7 +120,7 @@ async function updateProgressForSuccess(exerciseId: string) {
   return { currentProgress, saveError };
 }
 
-async function handleDockerLocalRunner(body: { exerciseName: string, id: string }) {
+async function handleDockerLocalRunner(body: { exerciseName: string, id: string, entryPoint?: string }) {
   const docker = new DockerClient();
   const imgMgr = new ImageManager();
 
@@ -148,11 +148,9 @@ async function handleDockerLocalRunner(body: { exerciseName: string, id: string 
   }
 
   const command = config.runner.command || "echo 'No command'";
-  // Replace placeholders in command if needed? Usually command is fixed in course.json or exercise specific?
-  // For simplicity, we assume command is static or handled by args substitution in process runner.
-  // But docker run uses 'sh -c command'.
-  // If we want exercise-specific args, we might need to substitute {{exercise}} in config.runner.command.
-  const finalCommand = command.replace("{{exercise}}", body.exerciseName).replace("{{id}}", body.id || "");
+  // Replace placeholders in command
+  const exerciseLabel = body.entryPoint ? `${body.id}/${body.entryPoint}` : body.exerciseName;
+  const finalCommand = command.replace("{{exercise}}", exerciseLabel).replace("{{id}}", body.id || "");
 
   const result = await docker.runContainer(imageTag, {
     cwd: contextPath,
@@ -163,14 +161,14 @@ async function handleDockerLocalRunner(body: { exerciseName: string, id: string 
   return parseRunnerOutput(result.output, result.exitCode);
 }
 
-async function handleDockerComposeRunner(body: { exerciseName: string, id: string }) {
+async function handleDockerComposeRunner(body: { exerciseName: string, id: string, entryPoint?: string }) {
   const client = new DockerComposeClient();
   const config = currentConfig!;
 
   const composeFile = join(PROG_CWD, config.runner.compose_file || "docker-compose.yml");
   const service = config.runner.service_to_run || "app";
-  // body.id is like "01_select/exercise.sql", we need to prefix with content folder
-  const exercisePath = `${config.content.exercises}/${body.id}`;
+  // body.id is like "01_select/01_simple-query", we need to append entryPoint if folder
+  const exercisePath = body.entryPoint ? `${config.content.exercises}/${body.id}/${body.entryPoint}` : `${config.content.exercises}/${body.id}`;
   const command = (config.runner.command || "echo 'No command'")
     .replace("{{exercise}}", exercisePath)
     .replace("{{id}}", body.id || "");
@@ -196,14 +194,16 @@ async function handleDockerComposeRunner(body: { exerciseName: string, id: strin
   }
 }
 
-async function handleProcessRunner(body: { exerciseName: string, id: string }) {
+async function handleProcessRunner(body: { exerciseName: string, id: string, entryPoint?: string }) {
   const { exerciseName, id } = body;
   const idParts = id?.split('/') || [];
   const module = idParts[0] || "";
 
   const runnerCmd = currentConfig!.runner.command;
   const runnerArgs = currentConfig!.runner.args.map((a: string) =>
-    a.replace("{{exercise}}", exerciseName).replace("{{id}}", id || "").replace("{{module}}", module)
+    a.replace("{{exercise}}", body.entryPoint ? join(id, body.entryPoint) : exerciseName)
+      .replace("{{id}}", id || "")
+      .replace("{{module}}", module)
   );
 
   const cwdLink = currentConfig!.runner.cwd ? join(PROG_CWD, currentConfig!.runner.cwd) : PROG_CWD;
@@ -233,7 +233,7 @@ async function handleProcessRunner(body: { exerciseName: string, id: string }) {
 const runHandler: ServerType<"/exercises/run"> = async (req) => {
   try {
     await ensureConfig();
-    const body = await req.json() as { exerciseName: string, id: string };
+    const body = await req.json() as { exerciseName: string, id: string, entryPoint?: string };
 
     let result: { success: boolean, output: string, friendlyOutput?: string } | null = null;
     const runnerType = currentConfig!.runner.type || 'process';

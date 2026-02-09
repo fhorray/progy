@@ -593,3 +593,65 @@ bunx progy pack --out my-course-v1.progy
 - **Metadata**: Update `course.json` with a clear `name` and `runner` configuration.
 - **Hidden Files**: The packer automatically ignores `node_modules`, `.git`, `.next`, and `target` directories to keep the archive small.
 - **Testing**: Always run `progy dev` and solve `01_intro` yourself to ensure the runner configuration (`Cargo.toml`, `go.mod`, etc.) is correct.
+- **Bypass for Development**: Set the environment variable `PROGY_BYPASS_MODE=true` to view and run all exercises regardless of lock status while you are building your course.
+
+---
+
+## 9. Course Progression & Gating
+
+Progy allows you to control how students move through your course. You can enforce a specific order, require quizzes to be passed before moving on, or lock modules behind prerequisites.
+
+### 9.1 Global Progression (`course.json`)
+
+You can set the default behavior for the entire course in the `progression` object:
+
+```json
+{
+  "progression": {
+    "mode": "sequential",
+    "strict_module_order": true
+  }
+}
+```
+
+- **`mode`**:
+    - `"open"` (Default): Students can pick any exercise in any order.
+    - `"sequential"`: Students must pass each exercise to unlock the next one within a module.
+- **`strict_module_order`**: If `true`, students must complete all exercises in Module 1 before Module 2 unlocks.
+
+### 9.2 Custom Prerequisites (`info.toml`)
+
+For more granular control, you can define specific prerequisites for an exercise in its module's `info.toml`.
+
+```toml
+[exercises]
+advanced_query = { 
+    title = "Advanced Joining", 
+    prerequisites = ["module:01_basics", "exercise:02_joins/simple_join"] 
+}
+
+final_boss = {
+    title = "Final Challenge",
+    prerequisites = ["quiz:03_logic/conditional_logic:80"]
+}
+```
+
+#### Prerequisite Formats
+
+- **`module:<module_id>`**: Requires all exercises in the specified module to be completed.
+- **`exercise:<module_id>/<exercise_name>`**: Requires a specific exercise to be passed.
+- **`quiz:<module_id>/<exercise_name>:<min_score>`**: Requires a specific quiz to be passed with at least the given score (0-100).
+
+### 9.3 Module Settings
+
+You can also customize the module's appearance and behavior in `info.toml`:
+
+```toml
+[module]
+title = "The Great Beyond" # Overrides the directory name in the UI
+message = "Congratulations on reaching the final module!"
+prerequisites = ["module:previous_one"] # Lock the entire module
+```
+
+> [!TIP]
+> Use `title` for professional-looking names and keep folder names alphanumeric (e.g., `01_intro`) for easy sorting.

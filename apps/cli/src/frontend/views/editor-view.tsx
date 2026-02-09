@@ -180,6 +180,7 @@ export function EditorView() {
                         const isModuleComplete =
                           modulePassCount === exercises.length &&
                           exercises.length > 0;
+                        const isModuleLocked = exercises.length > 0 && exercises.every(ex => ex.isLocked);
 
                         return (
                           <AccordionItem
@@ -189,7 +190,11 @@ export function EditorView() {
                           >
                             <AccordionTrigger className="hover:no-underline py-3 px-3 rounded-xl hover:bg-zinc-800/30 text-zinc-300 text-sm transition-colors [&[data-state=open]]:bg-zinc-800/50">
                               <div className="flex items-center gap-3 truncate">
-                                {isModuleComplete ? (
+                                {isModuleLocked ? (
+                                  <div className="w-5 h-5 rounded-full bg-zinc-800 flex items-center justify-center">
+                                    <LockIcon className="w-3 h-3 text-zinc-600" />
+                                  </div>
+                                ) : isModuleComplete ? (
                                   <div className="w-5 h-5 rounded-full bg-emerald-500/20 flex items-center justify-center">
                                     <CheckCircleIcon className="w-3 h-3 text-emerald-400" />
                                   </div>
@@ -220,29 +225,41 @@ export function EditorView() {
                               {exercises.map((ex) => {
                                 const status = results[ex.id];
                                 const isSelected = selectedExercise?.id === ex.id;
+                                const locked = ex.isLocked;
                                 return (
                                   <button
                                     key={ex.id}
                                     onClick={() => {
+                                      if (locked) return;
                                       $router.open(`/editor/${ex.id}`);
                                       setSelectedExercise(ex);
                                     }}
-                                    className={`cursor-pointer w-full text-left pl-10 pr-3 py-2.5 text-xs rounded-lg transition-all flex items-center gap-2 group
-                                ${isSelected
-                                        ? 'bg-gradient-to-r from-rust/20 to-transparent text-rust font-bold border-l-2 border-rust'
-                                        : 'text-zinc-500 hover:text-zinc-300 hover:bg-zinc-800/30 border-l-2 border-transparent'
+                                    title={locked ? ex.lockReason : undefined}
+                                    className={`w-full text-left pl-10 pr-3 py-2.5 text-xs rounded-lg transition-all flex items-center gap-2 group
+                                ${locked
+                                        ? 'opacity-50 cursor-not-allowed text-zinc-600 border-l-2 border-transparent'
+                                        : isSelected
+                                          ? 'bg-gradient-to-r from-rust/20 to-transparent text-rust font-bold border-l-2 border-rust'
+                                          : 'cursor-pointer text-zinc-500 hover:text-zinc-300 hover:bg-zinc-800/30 border-l-2 border-transparent'
                                       }`}
                                   >
-                                    <FileCodeIcon
-                                      className={`w-3 h-3 ${isSelected ? 'text-rust' : 'text-zinc-600 group-hover:text-zinc-400'}`}
-                                    />
+                                    {locked ? (
+                                      <LockIcon className="w-3 h-3 text-zinc-600" />
+                                    ) : (
+                                      <FileCodeIcon
+                                        className={`w-3 h-3 ${isSelected ? 'text-rust' : 'text-zinc-600 group-hover:text-zinc-400'}`}
+                                      />
+                                    )}
                                     <span className="truncate flex-1">
                                       {ex.friendlyName || ex.exerciseName}
                                     </span>
-                                    {status === 'pass' && (
+                                    {locked && (
+                                      <span className="text-[9px] text-zinc-600 truncate max-w-[80px]">{ex.lockReason}</span>
+                                    )}
+                                    {!locked && status === 'pass' && (
                                       <CheckCircle2Icon className="w-3.5 h-3.5 text-emerald-400" />
                                     )}
-                                    {status === 'fail' && (
+                                    {!locked && status === 'fail' && (
                                       <XCircleIcon className="w-3.5 h-3.5 text-red-400" />
                                     )}
                                   </button>
@@ -371,16 +388,17 @@ export function EditorView() {
               <div className="flex items-center gap-2">
                 <Button
                   size="lg"
-                  disabled={isRunning}
+                  disabled={isRunning || selectedExercise?.isLocked}
                   onClick={runTests}
-                  className="font-bold shadow-xl shadow-rust/20 bg-gradient-to-r from-rust to-orange-500 hover:from-rust/90 hover:to-orange-500/90"
+                  className={`font-bold shadow-xl ${selectedExercise?.isLocked ? 'bg-zinc-700 shadow-none cursor-not-allowed' : 'shadow-rust/20 bg-gradient-to-r from-rust to-orange-500 hover:from-rust/90 hover:to-orange-500/90'}`}
                 >
-                  {isRunning ? (
-                    <Loader2Icon className="mr-2 h-4 w-4 animate-spin" />
+                  {selectedExercise?.isLocked ? (
+                    <><LockIcon className="mr-2 h-4 w-4" /> Locked</>
+                  ) : isRunning ? (
+                    <><Loader2Icon className="mr-2 h-4 w-4 animate-spin" /> Compiling...</>
                   ) : (
-                    <PlayIcon className="mr-2 h-4 w-4 fill-white" />
+                    <><PlayIcon className="mr-2 h-4 w-4 fill-white" /> Run Tests</>
                   )}
-                  {isRunning ? 'Compiling...' : 'Run Tests'}
                 </Button>
 
                 <PremiumGateModal>

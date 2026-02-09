@@ -20,7 +20,7 @@ async function exists(path: string): Promise<boolean> {
   }
 }
 
-async function runServer(runtimeCwd: string, isOffline: boolean, containerFile: string | null) {
+async function runServer(runtimeCwd: string, isOffline: boolean, containerFile: string | null, bypass: boolean = false) {
   const isTs = import.meta.file.endsWith(".ts");
   const serverExt = isTs ? "ts" : "js";
   const serverPath = isTs
@@ -32,7 +32,8 @@ async function runServer(runtimeCwd: string, isOffline: boolean, containerFile: 
     env: {
       ...process.env,
       PROG_CWD: runtimeCwd,
-      PROGY_OFFLINE: isOffline ? "true" : "false"
+      PROGY_OFFLINE: isOffline ? "true" : "false",
+      PROGY_BYPASS_MODE: bypass ? "true" : "false"
     },
   });
 
@@ -219,7 +220,8 @@ export async function dev(options: { offline?: boolean }) {
     await CourseLoader.validateCourse(cwd);
     logger.banner("0.15.0", "instructor", "offline");
     logger.brand("✨ Development Mode: Running as GUEST (progress will not be persistent).");
-    await runServer(cwd, true, null);
+    if ((options as any).bypass) logger.info("🔓 Progression Bypass Mode active.");
+    await runServer(cwd, true, null, (options as any).bypass);
   } catch (e: any) {
     logger.error(`Not a valid course`, e.message);
     process.exit(1);

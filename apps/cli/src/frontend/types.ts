@@ -6,8 +6,11 @@ export interface Exercise {
   exerciseName: string;
   friendlyName?: string;
   path: string;
+  entryPoint?: string;
   markdownPath?: string;
   hasQuiz?: boolean;
+  isLocked?: boolean;
+  lockReason?: string;
 }
 
 export type GroupedExercises = Record<string, Exercise[]>;

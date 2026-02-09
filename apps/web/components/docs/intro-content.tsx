@@ -21,9 +21,10 @@ export function IntroContent({ setActiveId }: IntroContentProps) {
       </div>
 
       <div className="grid gap-6 md:grid-cols-2 pt-4">
+        {/* Student Path */}
         <button
           onClick={() => setActiveId('student-tutorial')}
-          className="group relative overflow-hidden rounded-2xl border border-border bg-card p-8 text-left transition-all hover:border-primary/30 hover:shadow-2xl hover:-translate-y-1 active:scale-[0.98]"
+          className="cursor-pointer group relative overflow-hidden rounded-2xl border border-border bg-card p-8 text-left transition-all hover:border-primary/30 hover:shadow-2xl hover:-translate-y-1 active:scale-[0.98]"
         >
           <div className="absolute top-0 right-0 p-4 opacity-5 group-hover:opacity-10 transition-opacity">
             <GraduationCap size={100} />
@@ -44,9 +45,10 @@ export function IntroContent({ setActiveId }: IntroContentProps) {
           </div>
         </button>
 
+        {/* Instructor Path */}
         <button
           onClick={() => setActiveId('instructor-create')}
-          className="group relative overflow-hidden rounded-2xl border border-border bg-card p-8 text-left transition-all hover:border-primary/30 hover:shadow-2xl hover:-translate-y-1 active:scale-[0.98]"
+          className="cursor-pointer group relative overflow-hidden rounded-2xl border border-border bg-card p-8 text-left transition-all hover:border-primary/30 hover:shadow-2xl hover:-translate-y-1 active:scale-[0.98]"
         >
           <div className="absolute top-0 right-0 p-4 opacity-5 group-hover:opacity-10 transition-opacity">
             <Code2 size={100} />

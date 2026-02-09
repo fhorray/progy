@@ -1,0 +1,6 @@
+[module]
+title = "Basic SELECT"
+message = "Master the fundamentals of data retrieval."
+
+[exercises]
+"01_simple-query" = "Your First Query"

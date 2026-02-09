@@ -9,6 +9,8 @@ interface Exercise {
   exerciseName: string;
   friendlyName?: string;
   hasQuiz?: boolean;
+  isLocked?: boolean;
+  lockReason?: string;
 }
 
 interface SkillTreeProps {
@@ -36,12 +38,9 @@ export function SkillTree({
               (ex) => results[ex.id] === 'pass',
             ).length;
             const isComplete = modPassCount === exercises.length;
-            const isUnlocked =
-              modIdx === 0 ||
-              (modules[modIdx - 1] &&
-                (exerciseGroups[modules[modIdx - 1] as string] || []).every(
-                  (ex: Exercise) => results[ex.id] === 'pass',
-                ));
+            // Use backend lock state: module is locked if ALL its exercises are locked
+            const isModuleLocked = exercises.length > 0 && exercises.every(ex => ex.isLocked);
+            const isUnlocked = !isModuleLocked;
 
             return (
               <div
@@ -57,13 +56,12 @@ export function SkillTree({
                 <div className="relative group cursor-default">
                   <div
                     className={`w-24 h-24 flex items-center justify-center rounded-2xl rotate-45 border-4 transition-all duration-500
-                    ${
-                      isUnlocked
+                    ${isUnlocked
                         ? isComplete
                           ? 'border-emerald-500 bg-emerald-500/10 shadow-[0_0_30px_-10px_rgba(16,185,129,0.4)] rotate-[225deg]'
                           : 'border-rust bg-rust/10 shadow-[0_0_30px_-10px_rgba(234,88,12,0.4)]'
                         : 'border-zinc-800 bg-zinc-900'
-                    }`}
+                      }`}
                   >
                     <div className="-rotate-45 flex flex-col items-center">
                       {isUnlocked ? (
@@ -85,32 +83,40 @@ export function SkillTree({
                       {moduleName.split('_').slice(1).join(' ') || moduleName}
                     </h3>
                     <p className="text-[10px] text-zinc-500 font-bold">
-                      {modPassCount} / {exercises.length} COMPLETED
+                      {isModuleLocked ? (
+                        <span className="text-zinc-600">{exercises[0]?.lockReason || 'Locked'}</span>
+                      ) : (
+                        <>{modPassCount} / {exercises.length} COMPLETED</>
+                      )}
                     </p>
                   </div>
                 </div>
 
-                {/* Exercise Nodes (Floating around or below) */}
+                {/* Exercise Nodes */}
                 <div className="mt-24 grid grid-cols-2 md:grid-cols-3 gap-6 w-full max-w-2xl">
                   {exercises.map((ex) => {
                     const status = results[ex.id];
                     const isSelected = selectedExerciseId === ex.id;
+                    const locked = ex.isLocked;
 
                     return (
                       <button
                         key={ex.id}
-                        onClick={() => isUnlocked && onSelectExercise(ex)}
+                        onClick={() => !locked && onSelectExercise(ex)}
+                        title={locked ? ex.lockReason : undefined}
                         className={`relative flex flex-col items-center p-4 rounded-xl border-2 transition-all group
-                           ${!isUnlocked ? 'opacity-50 grayscale cursor-not-allowed' : 'cursor-pointer hover:scale-105 active:scale-95'}
+                           ${locked ? 'opacity-50 grayscale cursor-not-allowed' : 'cursor-pointer hover:scale-105 active:scale-95'}
                            ${isSelected ? 'border-rust bg-rust/5' : 'border-zinc-800 bg-zinc-900/40 hover:border-zinc-700'}
                          `}
                       >
                         <div
                           className={`w-10 h-10 rounded-full flex items-center justify-center mb-2
-                           ${status === 'pass' ? 'bg-emerald-500/20 text-emerald-400' : 'bg-zinc-800 text-zinc-500'}
+                           ${locked ? 'bg-zinc-800/50 text-zinc-600' : status === 'pass' ? 'bg-emerald-500/20 text-emerald-400' : 'bg-zinc-800 text-zinc-500'}
                          `}
                         >
-                          {status === 'pass' ? (
+                          {locked ? (
+                            <Lock className="w-5 h-5" />
+                          ) : status === 'pass' ? (
                             <CheckCircle2 className="w-5 h-5" />
                           ) : (
                             <Circle className="w-5 h-5" />
@@ -119,6 +125,11 @@ export function SkillTree({
                         <span className="text-[10px] font-bold text-center leading-tight uppercase tracking-tight">
                           {ex.friendlyName || ex.exerciseName}
                         </span>
+                        {locked && (
+                          <span className="text-[8px] text-zinc-600 mt-1 text-center leading-tight">
+                            {ex.lockReason}
+                          </span>
+                        )}
                       </button>
                     );
                   })}

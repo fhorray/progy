@@ -1,0 +1,4 @@
+[module]
+title = "Docker Math"
+message = "Running calculations in isolation."
+prerequisites = ["quiz:01_hello/quiz.json:100"]

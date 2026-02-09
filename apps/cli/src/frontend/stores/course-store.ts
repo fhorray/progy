@@ -425,6 +425,7 @@ export const runTests = async () => {
         exerciseName: selected.exerciseName,
         id: selected.id,
         module: selected.module,
+        entryPoint: selected.entryPoint,
       }),
     });
     const data = await res.json();
@@ -439,6 +440,7 @@ export const runTests = async () => {
       } else {
         fetchProgress();
       }
+      fetchExercises();
     }
   } catch (err) {
     $output.set('Failed to run tests.');

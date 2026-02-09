@@ -1,6 +1,7 @@
 [module]
-title = "Testing"
+title = "Database Testing"
+message = "Learn how to write tests for your schema."
+prerequisites = ["module:02_advanced"]
 
 [exercises]
-# Add exercises here below in order
-# exercise_folder_name = "Exercise Display Name"
+"01_schema-test" = "Checking Constraints"
