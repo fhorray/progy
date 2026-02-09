@@ -40,7 +40,9 @@ We choose Go for its minimal memory footprint, fast startup, and strong standard
 package main
 
 import (
+	"archive/zip"
 	"context"
+	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -49,6 +51,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"strings"
 	"time"
 )
 
@@ -62,9 +65,11 @@ const (
 
 // RequestPayload represents the incoming execution request
 type RequestPayload struct {
-	Code     string `json:"code"`
+	Code     string `json:"code"`     // Deprecated: Use 'Content'
+	Content  string `json:"content"`  // Base64 encoded ZIP file content
+	IsZip    bool   `json:"isZip"`    // Flag to indicate if content is a zip file
 	Language string `json:"language"`
-	FileName string `json:"fileName"` // e.g., "main.rs"
+	FileName string `json:"fileName"` // e.g., "main.rs" (used if not zip)
 	TestCmd  string `json:"testCmd"`  // e.g., "cargo test"
 }
 
@@ -111,22 +116,36 @@ func handleExecute(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Validate inputs to prevent command injection
-	if payload.FileName == "" || payload.Code == "" {
-		http.Error(w, "Missing code or filename", http.StatusBadRequest)
+	if payload.TestCmd == "" {
+		http.Error(w, "Missing test command", http.StatusBadRequest)
 		return
 	}
 
 	// 2. Prepare Workspace
 	// We clean the workspace before every run to ensure isolation between requests
-	// (Note: In a high-security environment, we might restart the container, but for performance, we reuse it)
 	if err := cleanWorkspace(); err != nil {
 		jsonResponse(w, ResponsePayload{Success: false, Error: "Failed to clean workspace"})
 		return
 	}
 
-	filePath := filepath.Join(WorkspaceDir, filepath.Clean(payload.FileName))
-	if err := os.WriteFile(filePath, []byte(payload.Code), 0644); err != nil {
-		jsonResponse(w, ResponsePayload{Success: false, Error: "Failed to write code file"})
+	// Handle Payload: Zip (Project) or Single File (Simple Script)
+	if payload.IsZip && payload.Content != "" {
+		if err := extractZip(payload.Content, WorkspaceDir); err != nil {
+			jsonResponse(w, ResponsePayload{Success: false, Error: fmt.Sprintf("Failed to extract zip: %v", err)})
+			return
+		}
+	} else if payload.FileName != "" && (payload.Content != "" || payload.Code != "") {
+		content := payload.Content
+		if content == "" {
+			content = payload.Code // Fallback for legacy clients
+		}
+		filePath := filepath.Join(WorkspaceDir, filepath.Clean(payload.FileName))
+		if err := os.WriteFile(filePath, []byte(content), 0644); err != nil {
+			jsonResponse(w, ResponsePayload{Success: false, Error: "Failed to write code file"})
+			return
+		}
+	} else {
+		http.Error(w, "Missing code content or zip payload", http.StatusBadRequest)
 		return
 	}
 
@@ -194,124 +213,75 @@ func cleanWorkspace() error {
 	return nil
 }
 
+func extractZip(base64Content, dest string) error {
+	// Decode base64
+	data, err := base64.StdEncoding.DecodeString(base64Content)
+	if err != nil {
+		return err
+	}
+
+	// Create temporary zip file
+	tmpFile, err := os.CreateTemp("", "payload.zip")
+	if err != nil {
+		return err
+	}
+	defer os.Remove(tmpFile.Name())
+	if _, err := tmpFile.Write(data); err != nil {
+		return err
+	}
+	tmpFile.Close()
+
+	// Open zip
+	r, err := zip.OpenReader(tmpFile.Name())
+	if err != nil {
+		return err
+	}
+	defer r.Close()
+
+	// Extract files
+	for _, f := range r.File {
+		fpath := filepath.Join(dest, f.Name)
+
+		// Basic Zip Slip protection
+		if !strings.HasPrefix(fpath, filepath.Clean(dest)+string(os.PathSeparator)) {
+			return fmt.Errorf("illegal file path: %s", fpath)
+		}
+
+		if f.FileInfo().IsDir() {
+			os.MkdirAll(fpath, os.ModePerm)
+			continue
+		}
+
+		if err := os.MkdirAll(filepath.Dir(fpath), os.ModePerm); err != nil {
+			return err
+		}
+
+		outFile, err := os.OpenFile(fpath, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, f.Mode())
+		if err != nil {
+			return err
+		}
+
+		rc, err := f.Open()
+		if err != nil {
+			outFile.Close()
+			return err
+		}
+
+		_, err = io.Copy(outFile, rc)
+
+		outFile.Close()
+		rc.Close()
+
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
 func jsonResponse(w http.ResponseWriter, resp ResponsePayload) {
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(resp)
-}
-```
-
-### 2.1.1 Alternative: Rust Server Implementation (`runner-server-rs/src/main.rs`)
-
-For teams preferring a full Rust stack, we can use `axum` for a lightweight, async runner.
-
-**`Cargo.toml`:**
-```toml
-[package]
-name = "runner-server-rs"
-version = "0.1.0"
-edition = "2021"
-
-[dependencies]
-axum = "0.7"
-tokio = { version = "1", features = ["full"] }
-serde = { version = "1", features = ["derive"] }
-serde_json = "1"
-tempfile = "3" # Useful for temporary directories
-```
-
-**`src/main.rs`:**
-```rust
-use axum::{
-    extract::Json,
-    routing::{get, post},
-    Router,
-    response::IntoResponse,
-    http::StatusCode,
-};
-use serde::{Deserialize, Serialize};
-use std::process::Stdio;
-use tokio::process::Command;
-use std::time::Duration;
-use tokio::time::timeout;
-
-#[tokio::main]
-async fn main() {
-    let app = Router::new()
-        .route("/health", get(|| async { "OK" }))
-        .route("/execute", post(execute_handler));
-
-    let listener = tokio::net::TcpListener::bind("0.0.0.0:8080").await.unwrap();
-    println!("Listening on {}", listener.local_addr().unwrap());
-    axum::serve(listener, app).await.unwrap();
-}
-
-#[derive(Deserialize)]
-struct ExecuteRequest {
-    code: String,
-    file_name: String,
-    test_cmd: String,
-}
-
-#[derive(Serialize)]
-struct ExecuteResponse {
-    success: bool,
-    output: String,
-    exit_code: i32,
-    error: Option<String>,
-}
-
-async fn execute_handler(Json(payload): Json<ExecuteRequest>) -> impl IntoResponse {
-    // 1. Setup Workspace (Using tempfile for isolation per request)
-    let temp_dir = match tempfile::tempdir() {
-        Ok(dir) => dir,
-        Err(e) => return (StatusCode::INTERNAL_SERVER_ERROR, Json(ExecuteResponse {
-            success: false, output: "".to_string(), exit_code: -1, error: Some(format!("Failed to create temp dir: {}", e))
-        })),
-    };
-
-    let file_path = temp_dir.path().join(&payload.file_name);
-    if let Err(e) = tokio::fs::write(&file_path, &payload.code).await {
-        return (StatusCode::INTERNAL_SERVER_ERROR, Json(ExecuteResponse {
-            success: false, output: "".to_string(), exit_code: -1, error: Some(format!("Failed to write file: {}", e))
-        }));
-    }
-
-    // 2. Execute Command
-    // Split command string simply (for demo) - use sh -c for complex args
-    let mut cmd = Command::new("sh");
-    cmd.arg("-c").arg(&payload.test_cmd);
-    cmd.current_dir(temp_dir.path());
-    cmd.stdout(Stdio::piped());
-    cmd.stderr(Stdio::piped());
-
-    // 3. Timeout Logic
-    let result = timeout(Duration::from_secs(10), cmd.spawn().expect("failed to spawn").wait_with_output()).await;
-
-    match result {
-        Ok(Ok(output)) => {
-            let stdout = String::from_utf8_lossy(&output.stdout);
-            let stderr = String::from_utf8_lossy(&output.stderr);
-            let combined = format!("{}\n{}", stdout, stderr);
-            let success = output.status.success();
-            let exit_code = output.status.code().unwrap_or(-1);
-
-            (StatusCode::OK, Json(ExecuteResponse {
-                success,
-                output: combined,
-                exit_code,
-                error: None,
-            }))
-        }
-        Ok(Err(e)) => (StatusCode::INTERNAL_SERVER_ERROR, Json(ExecuteResponse {
-            success: false, output: "".to_string(), exit_code: -1, error: Some(format!("Execution error: {}", e))
-        })),
-        Err(_) => (StatusCode::OK, Json(ExecuteResponse { // Timeout
-            success: false,
-            output: "Execution timed out (10s)".to_string(),
-            exit_code: 124,
-            error: Some("Timeout".to_string())
-        })),
-    }
 }
 ```
 
@@ -531,10 +501,11 @@ const app = new Hono<{ Bindings: CloudflareBindings }>();
 app.post('/runner/execute', async (c) => {
   // 1. Validation
   const body = await c.req.json();
-  const { code, language, exerciseId } = body;
+  const { code, content, isZip, language, exerciseId } = body;
 
-  if (!code || !language) {
-    return c.json({ error: "Missing code or language" }, 400);
+  // Accept either a single 'code' string OR a 'content' zip
+  if ((!code && !content) || !language) {
+    return c.json({ error: "Missing code/content or language" }, 400);
   }
 
   // 2. Container Selection Strategy
@@ -576,7 +547,9 @@ app.post('/runner/execute', async (c) => {
   // 4. Execution
   try {
     const result = await stub.execute({
-      code,
+      code: code || "", // Optional fallback
+      content: content || "", // Zip content
+      isZip: !!isZip,
       language,
       fileName,
       testCmd
@@ -609,8 +582,9 @@ We modify the existing `runHandler` to support the remote path.
 // apps/progy/src/backend/endpoints/exercises.ts
 import { spawn } from "node:child_process";
 import { join } from "node:path";
-import { readFile } from "node:fs/promises";
+import { readFile, readdir, stat } from "node:fs/promises";
 import { BACKEND_URL, currentConfig, ensureConfig, loadToken } from "../helpers";
+import AdmZip from "adm-zip"; // Assuming this is installed
 
 // ... existing imports ...
 
@@ -637,15 +611,30 @@ const runHandler: ServerType<"/exercises/run"> = async (req) => {
  * Handles offloading the execution to the Cloudflare Worker.
  */
 async function handleRemoteExecution(exerciseId: string, config: any) {
-  // 1. Load Exercise Code
-  // We need to read the file content from disk to send it to the cloud.
-  const exercisePath = join(config.runner.cwd || process.cwd(), exerciseId, "main.rs"); // Simplified path resolution
-  let code = "";
-  try {
-    code = await readFile(exercisePath, "utf-8");
-  } catch (e) {
-    return Response.json({ success: false, output: "Failed to read exercise file locally." });
-  }
+  // 1. Load Exercise Content (Multi-file Support)
+  // We bundle the entire exercise directory into a zip file.
+  const exercisePath = join(config.runner.cwd || process.cwd(), exerciseId);
+  const zip = new AdmZip();
+
+  // Recursively add files, respecting .gitignore logic (simplified here)
+  const addFilesToZip = async (dir: string, base: string) => {
+     const entries = await readdir(dir);
+     for (const entry of entries) {
+         if (entry.startsWith('.') || entry === 'node_modules' || entry === 'target') continue;
+         const fullPath = join(dir, entry);
+         const s = await stat(fullPath);
+         if (s.isDirectory()) {
+             await addFilesToZip(fullPath, join(base, entry));
+         } else {
+             const content = await readFile(fullPath);
+             zip.addFile(join(base, entry), content);
+         }
+     }
+  };
+  await addFilesToZip(exercisePath, "");
+
+  const zipBuffer = zip.toBuffer();
+  const base64Content = zipBuffer.toString('base64');
 
   // 2. Prepare Authenticated Request
   const token = await loadToken();
@@ -667,7 +656,8 @@ async function handleRemoteExecution(exerciseId: string, config: any) {
           "Content-Type": "application/json"
         },
         body: JSON.stringify({
-          code,
+          content: base64Content,
+          isZip: true,
           language: "rust", // Derived from config
           exerciseId
         })
