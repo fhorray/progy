@@ -853,6 +853,212 @@ Transitioning from "Local Only" to "Hybrid Remote" requires careful steps.
     *   Enable remote execution by default for "Verified" courses.
     *   Keep local execution as a fallback for offline usage.
 
-## 9. Conclusion
+---
 
-This detailed implementation plan provides a concrete roadmap for building a secure, scalable runner service. By leveraging **Cloudflare Containers** and **Durable Objects**, we minimize infrastructure management overhead while gaining the security of isolated environments. The use of a custom **Go-based internal server** ensures fast, controlled execution of student code, while the **CLI integration** maintains the developer-friendly "local first" experience Progy is known for.
+## 10. Supporting Multiple Languages (Polyglot Architecture)
+
+A common concern is whether we need to rewrite the "runner server" for every language (Python, Node.js, Lua, C#, etc.). The answer is **NO**.
+
+We can reuse the exact same Go (or Rust) binary as an infrastructure agent across all language containers. The Go server is language-agnostic: it just writes a file to disk and runs a shell command.
+
+### 10.1 The "Base Runner" Strategy
+
+We treat the `runner-server` binary as a build artifact that can be copied into any Docker image.
+
+**Step 1: Create a Base Image**
+This image only contains the compiled Go binary.
+
+```dockerfile
+# docker/base/Dockerfile
+FROM golang:1.21-alpine AS builder
+WORKDIR /src
+COPY runner-server/main.go .
+RUN CGO_ENABLED=0 go build -o runner-server main.go
+
+FROM scratch
+COPY --from=builder /src/runner-server /runner-server
+```
+
+**Step 2: Create Language-Specific Images**
+Each language image inherits from its official runtime but copies the runner binary.
+
+#### Example: Node.js / TypeScript Runner
+```dockerfile
+# docker/node/Dockerfile
+FROM oven/bun:1.0-slim
+
+# 1. Setup User
+RUN useradd -m -u 1000 runner
+RUN mkdir -p /app/workspace && chown -R runner:runner /app
+
+# 2. Copy the shared runner binary (from local build context or base image)
+COPY --from=progy-runner-base /runner-server /app/runner-server
+
+# 3. Configure
+WORKDIR /app
+USER runner
+ENV PORT=8080
+EXPOSE 8080
+
+CMD ["/app/runner-server"]
+```
+
+#### Example: Lua Runner
+```dockerfile
+# docker/lua/Dockerfile
+FROM alpine:3.18
+RUN apk add --no-cache lua5.4
+
+# 1. Setup User
+RUN adduser -D -u 1000 runner
+RUN mkdir -p /app/workspace && chown -R runner:runner /app
+
+# 2. Copy the shared runner binary
+COPY --from=progy-runner-base /runner-server /app/runner-server
+
+# 3. Configure
+WORKDIR /app
+USER runner
+ENV PORT=8080
+EXPOSE 8080
+
+CMD ["/app/runner-server"]
+```
+
+### 10.2 Backend Routing Logic
+
+In `apps/backend/src/index.ts`, we simply route the request to the correct container binding based on the language.
+
+```typescript
+// apps/backend/src/index.ts
+
+app.post('/runner/execute', async (c) => {
+  const { code, language } = await c.req.json();
+
+  let binding;
+  let defaultCmd = "";
+  let defaultFile = "";
+
+  switch (language) {
+    case 'rust':
+      binding = c.env.RUST_RUNNER; // Configured in wrangler.jsonc
+      defaultCmd = "cargo test";
+      defaultFile = "main.rs";
+      break;
+    case 'lua':
+      binding = c.env.LUA_RUNNER;
+      defaultCmd = "lua script.lua";
+      defaultFile = "script.lua";
+      break;
+    case 'typescript':
+      binding = c.env.NODE_RUNNER;
+      defaultCmd = "bun test";
+      defaultFile = "index.test.ts";
+      break;
+    default:
+      return c.json({ error: "Unsupported language" }, 400);
+  }
+
+  // Consistent Hashing for warm starts
+  const id = binding.idFromName(`runner-${c.get('user').id}`);
+  const stub = binding.get(id);
+
+  return c.json(await stub.execute({
+    code,
+    language,
+    fileName: defaultFile,
+    testCmd: defaultCmd
+  }));
+});
+```
+
+---
+
+## 11. Instructor & Course Configuration
+
+The goal is a **"Zero Config"** experience for instructors. They should not need to know about Docker, Workers, or Cloudflare.
+
+### 11.1 The `course.json` Schema
+
+Instructors define the runner requirements in the `runner` object of their `course.json` file.
+
+#### Scenario A: Standard Rust Course
+```json
+{
+  "id": "rust-101",
+  "title": "Rust Fundamentals",
+  "runner": {
+    "type": "remote",
+    "language": "rust",
+    "entrypoint": "src/main.rs"
+  }
+}
+```
+*   **Result**: Progy CLI bundles the current directory and sends it to the backend. The backend uses the `RustRunner` container.
+
+#### Scenario B: Lua Game Scripting
+```json
+{
+  "id": "lua-games",
+  "title": "Scripting with Lua",
+  "runner": {
+    "type": "remote",
+    "language": "lua",
+    "entrypoint": "script.lua",
+    // Override the default command if needed
+    "test_command": "lua tests/run_all.lua"
+  }
+}
+```
+*   **Result**: Progy CLI sends `script.lua` (and peers). Backend uses `LuaRunner`.
+
+#### Scenario C: Python Data Science (Complex Dependencies)
+For languages with heavy dependencies (numpy, pandas), we might use a "fat" container.
+
+```json
+{
+  "id": "python-ds",
+  "runner": {
+    "type": "remote",
+    "language": "python-datascience", // Maps to a specific large container
+    "entrypoint": "analysis.py"
+  }
+}
+```
+
+### 11.2 "Transparent" Experience
+
+The CLI handles all complexity:
+1.  **Reads `course.json`**: "Okay, this is a remote Lua exercise."
+2.  **Packages Files**: Zips the relevant source files.
+3.  **Authenticates**: Ensures the user is logged in.
+4.  **Executes**: POSTs to the API.
+5.  **Displays**: Shows the output exactly as if it ran locally.
+
+The instructor never touches infrastructure. They just write code and config.
+
+---
+
+## 12. Advanced: Custom Environments
+
+What if an instructor needs a language or library that Progy doesn't support yet? (e.g., "Fortran" or "Ocaml").
+
+### 12.1 The Pull Request Workflow
+Since the architecture is modular, adding a new language is a standard engineering task, not a platform rewrite.
+
+1.  **Instructor/Contributor** forks `apps/backend`.
+2.  Adds `docker/fortran/Dockerfile` (copying the standard Go runner binary).
+3.  Adds the binding to `wrangler.jsonc`.
+4.  Adds the case to the `switch` statement in `index.ts`.
+5.  **Progy Team** reviews and merges.
+6.  The new runner is deployed and available to everyone via `"language": "fortran"`.
+
+### 12.2 Generic "Fallback" Container
+We can also maintain a "Kitchen Sink" container (e.g., based on Ubuntu) with many common tools (gcc, make, python, perl) pre-installed.
+*   **Pros**: Instant support for random scripts.
+*   **Cons**: Large image size (~1GB+), slower cold starts.
+*   **Usage**: Instructors set `"language": "generic"` in `course.json`.
+
+## 13. Conclusion (Final)
+
+This expanded proposal demonstrates that the Cloudflare Container architecture is not only secure but highly extensible. By decoupling the **Runner Agent** (Go/Rust binary) from the **Runtime Environment** (Docker image), we can support any programming language with minimal effort. Instructors remain focused on content creation through simple JSON configuration, while the platform handles the complexity of sandboxed execution, routing, and scaling.
