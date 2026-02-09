@@ -1,7 +1,7 @@
 "use client"
 
 import * as React from "react"
-import { BookOpen, Terminal, GraduationCap, Code2, Settings, FileJson, Play, Zap, BrainCircuit, CheckCircle, ChevronRight, X } from "lucide-react"
+import { BookOpen, Terminal, GraduationCap, Code2, Settings, FileJson, Play, Zap, BrainCircuit, CheckCircle, ChevronRight, X, AlertTriangle, Lightbulb } from "lucide-react"
 
 import {
   Sidebar,
@@ -242,40 +242,66 @@ function StudentCLIContent() {
 
 function InstructorCreateContent() {
   return (
-    <div className="space-y-6 py-6 animate-in fade-in duration-500">
+    <div className="space-y-6 py-6 animate-in fade-in duration-500 max-w-4xl">
       <h1 className="text-3xl font-bold tracking-tight">Creating a Course</h1>
       <p className="text-lg text-muted-foreground">
-        Progy makes it easy to author interactive courses.
+        Progy provides a streamlined workflow for authors. Instead of manually creating files, you start with a proven template.
       </p>
 
-      <section className="space-y-4">
-        <h2 className="text-xl font-semibold">1. Scaffold</h2>
+      <section className="space-y-6">
+        <h2 className="text-xl font-semibold">1. Scaffold a New Project</h2>
         <p className="text-muted-foreground">
-          Use the CLI to create a new course structure:
+          Use the CLI to generate a new directory with the necessary configuration. You can choose from supported templates like <code>rust</code>, <code>go</code>, or <code>typescript</code>.
         </p>
-        <div className="bg-muted p-4 rounded-lg font-mono text-sm border overflow-x-auto">
-          progy create-course --name my-course --course rust
+        <div className="rounded-lg border bg-black/50 overflow-hidden">
+            <div className="flex items-center gap-2 px-4 py-2 border-b bg-white/5">
+                <Terminal className="w-4 h-4 text-muted-foreground" />
+                <span className="text-xs text-muted-foreground font-mono">Terminal</span>
+            </div>
+            <div className="p-4 font-mono text-sm space-y-2">
+                <div className="flex gap-2">
+                    <span className="text-green-500">$</span>
+                    <span>progy create-course --name <span className="text-yellow-400">rustlings-remix</span> --course <span className="text-blue-400">rust</span></span>
+                </div>
+                <div className="text-muted-foreground">
+                    [INFO] Creating course in rustlings-remix...<br/>
+                    [INFO] Template: rust<br/>
+                    [SUCCESS] Created course.json<br/>
+                    [SUCCESS] Created runner/README.md<br/>
+                    [SUCCESS] Created content/01_intro/main.rs<br/>
+                    <br/>
+                    <span className="text-foreground">Done! To start developing:</span><br/>
+                    cd rustlings-remix<br/>
+                    progy dev
+                </div>
+            </div>
         </div>
       </section>
 
-      <section className="space-y-4">
-        <h2 className="text-xl font-semibold">2. Develop</h2>
+      <section className="space-y-6">
+        <h2 className="text-xl font-semibold">2. Live Development</h2>
         <p className="text-muted-foreground">
-          Start the development server to see your course in action:
+          The <code>dev</code> command starts a local instance of the Progy UI that watches your files. This allows you to verify exercises as you write them.
         </p>
         <div className="bg-muted p-4 rounded-lg font-mono text-sm border overflow-x-auto">
           progy dev
         </div>
       </section>
 
-      <section className="space-y-4">
+      <section className="space-y-6">
         <h2 className="text-xl font-semibold">3. Validate & Pack</h2>
         <p className="text-muted-foreground">
-          Before distributing, ensure your course is valid:
+          Before publishing to GitHub or distributing, run the validator to catch common errors (like missing descriptions or broken JSON).
+        </p>
+        <div className="bg-muted p-4 rounded-lg font-mono text-sm border overflow-x-auto space-y-2">
+          <div>progy validate</div>
+          <div className="text-green-500">✅ Course is Valid: Rust Mastery (rustlings-remix)</div>
+        </div>
+        <p className="text-muted-foreground text-sm mt-2">
+            Then pack it into a portable file if you aren&apos;t using Git distribution:
         </p>
         <div className="bg-muted p-4 rounded-lg font-mono text-sm border overflow-x-auto">
-          progy validate<br />
-          progy pack --out my-course-v1.progy
+          progy pack --out my-course.progy
         </div>
       </section>
     </div>
@@ -284,49 +310,93 @@ function InstructorCreateContent() {
 
 function InstructorStructureContent() {
   return (
-    <div className="space-y-6 py-6 animate-in fade-in duration-500">
-      <h1 className="text-3xl font-bold tracking-tight">Course Structure</h1>
+    <div className="space-y-8 py-6 animate-in fade-in duration-500 max-w-4xl">
+      <h1 className="text-3xl font-bold tracking-tight">Course Structure &amp; Schema</h1>
       <p className="text-lg text-muted-foreground">
-        Understanding the anatomy of a Progy course.
+        A deep dive into how Progy courses are organized and configured.
       </p>
 
-      <div className="grid gap-4">
-        <div className="p-4 border rounded-lg">
-          <h3 className="font-mono font-bold text-primary">course.json</h3>
-          <p className="text-sm text-muted-foreground mt-1">
-            The configuration file defining the course ID, name, and runner command.
-          </p>
-        </div>
-        <div className="p-4 border rounded-lg">
-          <h3 className="font-mono font-bold text-primary">content/</h3>
-          <p className="text-sm text-muted-foreground mt-1">
-            Contains subdirectories for each lesson (e.g., <code>01_intro</code>, <code>02_variables</code>).
-          </p>
-        </div>
-        <div className="p-4 border rounded-lg">
-          <h3 className="font-mono font-bold text-primary">runner/</h3>
-          <p className="text-sm text-muted-foreground mt-1">
-            (Optional) Custom scripts to compile/test student code.
-          </p>
-        </div>
-      </div>
-
-      <section className="space-y-4 mt-6">
-        <h2 className="text-xl font-semibold">Example Layout</h2>
-        <pre className="bg-muted p-4 rounded-lg font-mono text-xs overflow-x-auto">
+      <section className="space-y-4">
+        <h2 className="text-xl font-semibold">Directory Layout</h2>
+        <p className="text-muted-foreground">
+            Progy expects a specific folder hierarchy. The <code>content</code> directory is where your modules live.
+        </p>
+        <pre className="bg-muted p-6 rounded-xl font-mono text-sm overflow-x-auto border">
 {`my-course/
-├── course.json
-├── SETUP.md
-├── runner/
-│   └── index.js
-└── content/
-    ├── 01_intro/
-    │   ├── README.md
-    │   └── main.rs
-    └── 02_variables/
+├── course.json          # ⚙️ Global Configuration
+├── SETUP.md             # 📄 Installation guide for students
+├── .gitignore           # 🙈 Should ignore node_modules, target/, etc.
+├── runner/              # 🏃 Custom Runner Logic (Optional)
+│   ├── Dockerfile
+│   └── index.ts
+└── content/             # 📚 The Curriculum
+    ├── 01_intro/        # Module 1 (Folder Name = ID)
+    │   ├── README.md    # The instructions shown in the UI
+    │   └── main.rs      # The broken code file
+    └── 02_variables/    # Module 2
         ├── README.md
         └── main.rs`}
         </pre>
+      </section>
+
+      <section className="space-y-4">
+        <h2 className="text-xl font-semibold">Configuration: course.json</h2>
+        <p className="text-muted-foreground">
+            This file controls how Progy executes code and displays metadata.
+        </p>
+        <div className="rounded-xl border bg-black/50 overflow-hidden font-mono text-sm">
+            <div className="p-4 overflow-x-auto">
+                <span className="text-yellow-500">{"{"}</span><br/>
+                &nbsp;&nbsp;<span className="text-blue-400">&quot;id&quot;</span>: <span className="text-green-400">&quot;rust-101&quot;</span>,<br/>
+                &nbsp;&nbsp;<span className="text-blue-400">&quot;name&quot;</span>: <span className="text-green-400">&quot;Rust Fundamentals&quot;</span>,<br/>
+                &nbsp;&nbsp;<span className="text-blue-400">&quot;description&quot;</span>: <span className="text-green-400">&quot;Zero to Hero in Rust.&quot;</span>,<br/>
+                &nbsp;&nbsp;<span className="text-gray-500">{`// The command Progy runs when the user clicks "Run Tests"`}</span><br/>
+                &nbsp;&nbsp;<span className="text-blue-400">&quot;runner&quot;</span>: <span className="text-yellow-500">{"{"}</span><br/>
+                &nbsp;&nbsp;&nbsp;&nbsp;<span className="text-blue-400">&quot;command&quot;</span>: <span className="text-green-400">&quot;cargo&quot;</span>,<br/>
+                &nbsp;&nbsp;&nbsp;&nbsp;<span className="text-gray-500">{`// {{id}} is replaced by the current lesson path (e.g. content/01_intro)`}</span><br/>
+                &nbsp;&nbsp;&nbsp;&nbsp;<span className="text-blue-400">&quot;args&quot;</span>: [<span className="text-green-400">&quot;test&quot;</span>, <span className="text-green-400">&quot;--manifest-path&quot;</span>, <span className="text-green-400">&quot;./{"{{id}}"}/Cargo.toml&quot;</span>],<br/>
+                &nbsp;&nbsp;&nbsp;&nbsp;<span className="text-blue-400">&quot;cwd&quot;</span>: <span className="text-green-400">&quot;.&quot;</span><br/>
+                &nbsp;&nbsp;<span className="text-yellow-500">{"}"}</span>,<br/>
+                &nbsp;&nbsp;<span className="text-blue-400">&quot;content&quot;</span>: <span className="text-green-400">&quot;content&quot;</span> <span className="text-gray-500">{`// Directory containing lessons`}</span><br/>
+                <span className="text-yellow-500">{"}"}</span>
+            </div>
+        </div>
+      </section>
+
+      <section className="space-y-4">
+        <h2 className="text-xl font-semibold">Exercise Metadata</h2>
+        <p className="text-muted-foreground">
+            Every exercise code file (e.g., <code>main.rs</code>, <code>index.js</code>) <strong>must</strong> start with a metadata header. Progy uses this to show difficulty, topic tags, and hints in the UI.
+        </p>
+
+        <div className="grid md:grid-cols-2 gap-6">
+            <div className="space-y-2">
+                <h4 className="text-sm font-bold text-foreground">Rust Example</h4>
+                <div className="bg-muted p-4 rounded-lg font-mono text-xs border">
+                    <span className="text-gray-500">{'// Difficulty: Easy'}</span><br/>
+                    <span className="text-gray-500">{'// Topic: Variables'}</span><br/>
+                    <span className="text-gray-500">{'// Description: Fix the immutability error.'}</span><br/>
+                    <span className="text-gray-500">{'// Hints: Use the &apos;mut&apos; keyword.'}</span><br/>
+                    <br/>
+                    <span className="text-blue-500">fn</span> <span className="text-yellow-500">main</span>() {'{'}<br/>
+                    &nbsp;&nbsp;<span className="text-gray-500">{'// ...'}</span><br/>
+                    {'}'}
+                </div>
+            </div>
+            <div className="space-y-2">
+                <h4 className="text-sm font-bold text-foreground">JavaScript Example</h4>
+                <div className="bg-muted p-4 rounded-lg font-mono text-xs border">
+                    <span className="text-gray-500">{'// Difficulty: Medium'}</span><br/>
+                    <span className="text-gray-500">{'// Topic: Async/Await'}</span><br/>
+                    <span className="text-gray-500">{'// Description: Fetch data from the API.'}</span><br/>
+                    <span className="text-gray-500">{'// Hints: Remember to await the fetch call.'}</span><br/>
+                    <br/>
+                    <span className="text-blue-500">async function</span> <span className="text-yellow-500">getData</span>() {'{'}<br/>
+                    &nbsp;&nbsp;<span className="text-gray-500">{'// ...'}</span><br/>
+                    {'}'}
+                </div>
+            </div>
+        </div>
       </section>
     </div>
   )
@@ -334,37 +404,149 @@ function InstructorStructureContent() {
 
 function InstructorRunnersContent() {
   return (
-    <div className="space-y-6 py-6 animate-in fade-in duration-500">
-      <h1 className="text-3xl font-bold tracking-tight">Runners</h1>
+    <div className="space-y-8 py-6 animate-in fade-in duration-500 max-w-4xl">
+      <h1 className="text-3xl font-bold tracking-tight">Custom Runners</h1>
       <p className="text-lg text-muted-foreground">
-        Runners are the bridge between the student&apos;s code and Progy&apos;s feedback system.
+        Runners connect student code to the Progy UI. They can be written in any language (Node.js, Python, Rust, Bash).
       </p>
 
       <section className="space-y-4">
-        <h2 className="text-xl font-semibold">How it Works</h2>
+        <h2 className="text-xl font-semibold">The Protocol (SRP)</h2>
         <p className="text-muted-foreground">
-          When a student runs code, Progy executes the command defined in <code>course.json</code>.
-          The runner receives the path to the exercise, runs tests, and prints a JSON result to stdout.
+          Progy executes your runner command and captures <code>stdout</code>. Your runner <strong>must</strong> print a JSON object wrapped in specific markers.
         </p>
+        <div className="grid md:grid-cols-2 gap-4">
+            <div className="p-4 bg-muted/50 rounded-lg border">
+                <h4 className="font-bold text-sm mb-2">Input (from Progy)</h4>
+                <ul className="text-xs text-muted-foreground space-y-2 list-disc pl-4">
+                    <li><strong>Command:</strong> Defined in <code>course.json</code></li>
+                    <li><strong>Arguments:</strong> <code>{"{{id}}"}</code> is replaced with the exercise path.</li>
+                    <li><strong>Environment:</strong> Inherits user&apos;s shell env.</li>
+                </ul>
+            </div>
+            <div className="p-4 bg-muted/50 rounded-lg border">
+                <h4 className="font-bold text-sm mb-2">Output (to stdout)</h4>
+                <div className="font-mono text-xs text-muted-foreground">
+                    ...arbitrary logs...<br/>
+                    <span className="text-primary font-bold">__SRP_BEGIN__</span><br/>
+                    {`{ "success": true, "summary": "Passed", "tests": [...] }`}<br/>
+                    <span className="text-primary font-bold">__SRP_END__</span><br/>
+                    ...arbitrary logs...
+                </div>
+            </div>
+        </div>
       </section>
 
       <section className="space-y-4">
-        <h2 className="text-xl font-semibold">The Contract (SRP)</h2>
+        <h2 className="text-xl font-semibold">Example: Node.js Runner</h2>
         <p className="text-muted-foreground">
-          Your runner must output a JSON object wrapped in <code>__SRP_BEGIN__</code> and <code>__SRP_END__</code> markers.
+            A simple script that runs a student&apos;s file and checks the output.
         </p>
-        <pre className="bg-muted p-4 rounded-lg font-mono text-xs overflow-x-auto text-muted-foreground">
-{`{
-  "success": true,
-  "summary": "All tests passed",
-  "tests": [
-    { "name": "Test 1", "status": "pass" }
-  ]
-}`}
+        <pre className="bg-muted p-6 rounded-xl font-mono text-xs overflow-x-auto border text-foreground">
+{`const { spawn } = require("child_process");
+const { join } = require("path");
+
+// 1. Get the exercise path from arguments
+const exerciseDir = process.argv[2];
+const targetFile = join(exerciseDir, "index.js");
+
+// 2. Prepare the result object
+const result = {
+    success: false,
+    summary: "Running...",
+    tests: []
+};
+
+// 3. Run the student's code
+const child = spawn("node", [targetFile]);
+
+let output = "";
+child.stdout.on("data", (d) => output += d.toString());
+
+child.on("close", (code) => {
+    // 4. Validate Logic (Did it print "Hello"?)
+    if (output.trim() === "Hello") {
+        result.success = true;
+        result.summary = "Great job!";
+        result.tests.push({ name: "Output Check", status: "pass" });
+    } else {
+        result.success = false;
+        result.summary = "Output mismatch";
+        result.tests.push({
+            name: "Output Check",
+            status: "fail",
+            message: \`Expected "Hello", got "\${output.trim()}"\`
+        });
+    }
+
+    // 5. Print Result for Progy
+    console.log("__SRP_BEGIN__");
+    console.log(JSON.stringify(result));
+    console.log("__SRP_END__");
+});`}
         </pre>
       </section>
     </div>
   )
+}
+
+function InstructorBestPracticesContent() {
+    return (
+        <div className="space-y-8 py-6 animate-in fade-in duration-500 max-w-4xl">
+            <h1 className="text-3xl font-bold tracking-tight">Best Practices</h1>
+            <p className="text-lg text-muted-foreground">
+                Creating a frustration-free learning experience requires attention to detail.
+            </p>
+
+            <section className="space-y-6">
+                <div className="flex gap-4 items-start">
+                    <div className="p-2 bg-yellow-500/10 text-yellow-500 rounded-lg shrink-0">
+                        <AlertTriangle className="w-5 h-5" />
+                    </div>
+                    <div>
+                        <h3 className="text-lg font-bold mb-2">Error Messages Matter</h3>
+                        <p className="text-muted-foreground text-sm leading-relaxed mb-3">
+                            The student&apos;s first interaction with your code is usually a compilation error. Make sure it&apos;s a <em>helpful</em> error.
+                        </p>
+                        <div className="grid md:grid-cols-2 gap-4">
+                            <div className="p-4 border border-red-500/20 bg-red-500/5 rounded-lg">
+                                <span className="text-xs font-bold text-red-500 uppercase tracking-wider mb-2 block">Bad</span>
+                                <code className="text-xs text-muted-foreground">
+                                    Error: panic at line 5.
+                                </code>
+                            </div>
+                            <div className="p-4 border border-green-500/20 bg-green-500/5 rounded-lg">
+                                <span className="text-xs font-bold text-green-500 uppercase tracking-wider mb-2 block">Good</span>
+                                <code className="text-xs text-muted-foreground">
+                                    {'// TODO: I am missing a semicolon here!'}<br/>
+                                    let x = 5
+                                </code>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <Separator />
+
+                <div className="flex gap-4 items-start">
+                    <div className="p-2 bg-blue-500/10 text-blue-500 rounded-lg shrink-0">
+                        <Lightbulb className="w-5 h-5" />
+                    </div>
+                    <div>
+                        <h3 className="text-lg font-bold mb-2">The &quot;Split State&quot; Mindset</h3>
+                        <p className="text-muted-foreground text-sm leading-relaxed">
+                            Progy manages user progress separately from your course content.
+                        </p>
+                        <ul className="list-disc pl-4 text-sm text-muted-foreground space-y-2 mt-2">
+                            <li><strong>Do not</strong> assume the student&apos;s file system is clean. They might have created random files.</li>
+                            <li><strong>Do</strong> keep your runner logic in the <code>runner/</code> folder or hidden from the student.</li>
+                            <li><strong>Do</strong> use <code>gitignore</code> to prevent students from committing <code>node_modules</code> or <code>target</code> binaries to their progress repo.</li>
+                        </ul>
+                    </div>
+                </div>
+            </section>
+        </div>
+    )
 }
 
 
@@ -423,6 +605,11 @@ const navData = {
           id: "instructor-runners",
           icon: Settings,
         },
+        {
+          title: "Best Practices",
+          id: "instructor-practices",
+          icon: CheckCircle,
+        },
       ],
     },
   ],
@@ -442,6 +629,7 @@ export default function DocsPage() {
       case "instructor-create": return <InstructorCreateContent />;
       case "instructor-structure": return <InstructorStructureContent />;
       case "instructor-runners": return <InstructorRunnersContent />;
+      case "instructor-practices": return <InstructorBestPracticesContent />;
       default: return (
         <div className="space-y-4 py-6">
           <h1 className="text-3xl font-bold">
