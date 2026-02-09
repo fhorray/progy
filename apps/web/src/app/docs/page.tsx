@@ -1,3 +1,5 @@
+import Link from "next/link";
+
 export default function DocsPage() {
   return (
     <div className="flex flex-col items-center justify-center min-h-screen bg-background text-foreground p-8 text-center">
@@ -10,9 +12,9 @@ export default function DocsPage() {
           TODO: Render Documentation Content
         </p>
       </div>
-      <a href="/" className="mt-12 text-sm hover:text-primary transition-colors underline underline-offset-4">
+      <Link href="/" className="mt-12 text-sm hover:text-primary transition-colors underline underline-offset-4">
         Back to Home
-      </a>
+      </Link>
     </div>
   );
 }

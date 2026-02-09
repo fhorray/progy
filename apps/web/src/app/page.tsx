@@ -8,7 +8,6 @@ import {
   Card,
   CardHeader,
   CardTitle,
-  CardDescription,
   CardContent,
   CardFooter,
 } from '@/components/ui/card';
@@ -45,8 +44,9 @@ import { $checkoutMutation } from '@/stores/billing-store';
 export default function Home() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isLoadingPro, setIsLoadingPro] = useState(false);
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const router = useRouter();
-  const { data: session, isPending: isSessionLoading } =
+  const { data: session } =
     authClient.useSession();
   const checkoutState = useStore($checkoutMutation as any);
 
