@@ -14,6 +14,7 @@ import {
   updateGlobalConfig,
   loadToken
 } from "../core/config";
+import { logger } from "../core/logger";
 
 export { PROG_CWD, PROG_DIR, PROGRESS_PATH, COURSE_CONFIG_PATH, MANIFEST_PATH };
 
@@ -55,7 +56,7 @@ export async function getCourseConfig(): Promise<CourseConfig | null> {
     }
     return null;
   } catch (e) {
-    console.warn(`[WARN] Failed to read course.json: ${e}`);
+    logger.warn(`Failed to read course.json: ${e}`);
     return null;
   }
 }
@@ -73,11 +74,11 @@ export async function getProgress(): Promise<Progress> {
       if (await exists(PROGRESS_PATH)) {
         const text = await readFile(PROGRESS_PATH, "utf-8");
         const localProgress = JSON.parse(text);
-        console.log(`[OFFLINE] Loaded local progress. XP: ${localProgress?.stats.totalXp}`);
+        logger.info(`📊 Progress Synced: Local XP: ${localProgress?.stats.totalXp}`, "OFFLINE");
         return localProgress;
       }
     } catch (e) {
-      console.warn(`[WARN] Failed to read ${PROGRESS_PATH}: ${e}`);
+      logger.warn(`Failed to read ${PROGRESS_PATH}: ${e}`);
     }
     return JSON.parse(JSON.stringify(DEFAULT_PROGRESS));
   }
@@ -87,18 +88,18 @@ export async function getProgress(): Promise<Progress> {
   const token = await loadToken();
 
   if (token && currentConfig?.id) {
-    console.log(`[ONLINE] Fetching progress for ${currentConfig.id}...`);
+    logger.info(`Fetching progress for ${currentConfig.id}...`, "ONLINE");
     try {
       const cloudProgress = await fetchProgressFromCloud(currentConfig.id, token);
       if (cloudProgress) {
-        console.log(`[ONLINE] Loaded cloud progress. XP: ${cloudProgress.stats.totalXp}`);
+        logger.info(`Loaded cloud progress. XP: ${cloudProgress.stats.totalXp}`, "ONLINE");
         return cloudProgress;
       } else {
-        console.log(`[ONLINE] No existing cloud progress found. Returning default.`);
+        logger.info(`No existing cloud progress found. Returning default.`, "ONLINE");
         return JSON.parse(JSON.stringify(DEFAULT_PROGRESS));
       }
     } catch (e) {
-      console.error(`[CRITICAL] Failed to fetch cloud progress: ${e}`);
+      logger.error(`Failed to fetch cloud progress`, String(e));
       throw e;
     }
   }
@@ -431,6 +432,8 @@ export function parseRunnerOutput(rawOutput: string, exitCode: number): { succes
       }
     }
   } catch { }
-  const success = exitCode === 0 && !rawOutput.includes("❌");
+  const errorKeywords = ["error during connect:", "permission denied", "unable to get image", "failed to solve", "The system cannot find the file specified"];
+  const hasError = errorKeywords.some(k => rawOutput.toLowerCase().includes(k.toLowerCase()));
+  const success = exitCode === 0 && !rawOutput.includes("❌") && !hasError;
   return { success, output: rawOutput, friendlyOutput: (success ? "✅ Success\n\n" : "❌ Failed\n\n") + rawOutput };
 }

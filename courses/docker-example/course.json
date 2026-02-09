@@ -14,7 +14,13 @@
     "exercises": "content"
   },
   "setup": {
-    "checks": [],
+    "checks": [
+      {
+        "name": "Docker Daemon",
+        "type": "command",
+        "command": "docker info"
+      }
+    ],
     "guide": "SETUP.md"
   }
 }

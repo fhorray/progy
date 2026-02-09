@@ -1,6 +1,7 @@
 import { BACKEND_URL, FRONTEND_URL } from "../core/paths";
 import { saveToken, clearToken } from "../core/config";
 import { spawn } from "node:child_process";
+import { logger } from "../core/logger";
 
 function openBrowser(url: string) {
   const start = process.platform === "win32" ? "start" : process.platform === "darwin" ? "open" : "xdg-open";
@@ -20,7 +21,7 @@ export async function login() {
   });
 
   try {
-    console.log("[INFO] Requesting login session...");
+    logger.info("Requesting login session...", "AUTH");
 
     const { data, error } = await authClient.device.code({
       client_id: "progy-cli",
@@ -35,13 +36,13 @@ export async function login() {
       ? verification_uri
       : `${FRONTEND_URL}${verification_uri}`;
 
-    console.log(`\nPlease authenticate in your browser:`);
-    console.log(`\x1b[36m${verificationUrl}\x1b[0m`);
-    console.log(`Code: \x1b[33m${user_code}\x1b[0m\n`);
+    console.log(`\n  ${"\x1b[1m"}Please authenticate in your browser:${"\x1b[0m"}`);
+    console.log(`  URL:  \x1b[36m\x1b[4m${verificationUrl}\x1b[0m`);
+    console.log(`  Code: \x1b[38;5;208m\x1b[1m${user_code}\x1b[0m\n`);
 
     openBrowser(verificationUrl);
 
-    console.log("[WAIT] Waiting for authorization...");
+    logger.info("Waiting for authorization (polling)...", "WAIT");
 
     const poll = async (): Promise<string | null> => {
       while (true) {
@@ -69,15 +70,15 @@ export async function login() {
     const token = await poll();
     if (token) {
       await saveToken(token);
-      console.log("[SUCCESS] Logged in successfully!");
+      logger.success("Authentication successful! Welcome back.");
     }
   } catch (e: any) {
-    console.error(`[ERROR] Login failed: ${e.message || e}`);
+    logger.error(`Login failed`, e.message || String(e));
     process.exit(1);
   }
 }
 
 export async function logout() {
   await clearToken();
-  console.log("[SUCCESS] Logged out successfully.");
+  logger.success("Logged out successfully. Your session has been ended.");
 }

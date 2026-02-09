@@ -2,43 +2,54 @@
 
 Based on your feedback, I've focused these ideas on enhancing the **Course Description rendering** and optimizing the **CLI flow** for both students and instructors.
 
-## 🎨 README Rendering Enhancements
+## 🎨 Markdown Renderer Improvements
 
-To make the learning experience more interactive and professional, we can extend the [MarkdownRenderer](file:///Users/fhorray/Desktop/dev/JS/progy/apps/progy/src/frontend/components/markdown-renderer.tsx#32-117) with the following features:
+The current renderer (implemented in `apps/cli/src/frontend/components/markdown-renderer.tsx`) uses `react-markdown` with basic regex preprocessing. Here is how we can take it to the next level:
 
-### 1. Interactive Learning Components
-- **Collapsible "Deep Dive" Sections**: Use `<details>`/`<summary>` or a custom component for optional hints or deep explanations, keeping the main instructions concise.
-- **Embedded Quizzes**: Instead of only having quizzes in a separate tab, allow instructors to embed mini-quizzes directly in the README flow using a custom syntax like `::quiz[quiz-id]`.
-- **Progress-Aware Checklists**: Interactive checkboxes `[ ]` that sync their state, allowing students to track their progress through a long lesson.
+### 1. Robust Custom Directives (Native Support)
 
-### 2. Advanced Visuals
-- **Mermaid.js Support**: Render architecture and flow diagrams directly from markdown blocks.
-- **Math LaTeX (KaTeX)**: Essential for courses involving algorithms or data science.
-- **Multi-Tab Code Blocks**: Allow showing "Starter Code" vs "Solution" or "Alternative Approach" in a tabbed interface within the README.
+Instead of using regex for `::note` and `::video`, we should integrate `remark-directives`.
+
+- **Implementation**: Add `remark-directive` and a custom transformer to the `remarkPlugins` chain.
+- **Benefit**: Allows complex nesting and attributes, e.g., `:::note{title="Pro Tip"}`.
+
+### 2. Premium Syntax Highlighting
+
+Switch from `rehype-highlight` (Highlight.js) to **Shiki**.
+
+- **Implementation**: Use `@shikijs/rehype`.
+- **Benefit**: VS Code-level highlighting accuracy and beautiful themes (e.g., `data-theme="github-dark"`).
+
+### 3. Interactive Code Blocks
+
+Add "Copy to Clipboard" and "Run in Container" buttons directly on code blocks.
+
+- **Implementation**: Wrap the `pre` component in a custom container that holds the logic for copying and triggering the `progy run` command via RPC.
+
+### 4. Mathematical Expressions (LaTeX)
+
+Essential for math-heavy courses.
+
+- **Implementation**: Add `remark-math` and `rehype-katex`.
+- **Benefit**: Render formulas like $E=mc^2$ beautifully using TeX syntax.
+
+### 5. Diagrams as Code (Mermaid.js)
+
+Visualize architectures.
+
+- **Implementation**: Use a custom `code` component handler that detects the `mermaid` language and renders it using the `mermaid` package.
+
+### 6. GitHub Flavored Markdown (GFM)
+
+Support for tables, task lists, and autolinks.
+
+- **Implementation**: Add `remark-gfm` plugin.
+- **Benefit**: Students can use task lists `[ ]` to check off steps in a README manually.
+
+### 7. Obsidian-style Callouts
+
+Support `> [!INFO]` syntax which is common in modern technical documentation.
+
+- **Implementation**: Use `remark-callouts`.
 
 ---
-
-## 🛠️ CLI Flow & Redundancy Reduction
-
-The current CLI has some overlapping logic with the local backend. These changes would make the system more robust and easier to maintain.
-
-### 1. Consolidated Architecture
-- **Centralized Core Utility**: Move configuration management ([config.json](file:///Users/fhorray/Desktop/dev/JS/progy/apps/progy/tsconfig.json)), progress tracking, and path resolution to a shared internal library. Currently, [cli.ts](file:///Users/fhorray/Desktop/dev/JS/progy/apps/progy/src/cli.ts) and [helpers.ts](file:///Users/fhorray/Desktop/dev/JS/progy/apps/progy/src/backend/helpers.ts) duplicate logic for reading/writing global and local configs.
-- **unified `ProjectPaths`**: A single source of truth for all paths (`~/.progy`, `.progy/`, `course.json`), reducing the risk of path mismatches between the CLI and the local UI.
-
-### 2. Streamlined Course Creation
-- **Runner Contract Template**: Since instructors write their own runners, `progy create-course` should include a `RUNNER_CONTRACT.md` and a clean boilerplate that clearly explains the **SRP (Simple Runner Protocol)**.
-- **Enhanced `progy validate`**: This command should be the instructor's best friend. It should check for:
-    - Missing [README.md](file:///Users/fhorray/Desktop/dev/JS/progy/README.md) in modules.
-    - Broken internal links/images.
-    - Structural errors in `info.toml` vs. the actual filesystem.
-
-### 3. Local Development (DX)
-- **Zero-Config Env Check**: When running `progy dev`, the CLI can automatically check the `setup.checks` from `course.json` and warn the instructor/student immediately if tools (like `rustc` or `go`) are missing.
-
----
-
-## 🚀 Technical Optimizations
-
-- **SQLite for Local Progress**: Replace `progress.json` with a small SQLite database. This prevents race conditions during concurrent writes and allows for more complex progress queries in the future.
-- **Atomic Sync**: Improve the `progy save` logic to use atomic git operations and better lock management to prevent corruption if the process is interrupted.

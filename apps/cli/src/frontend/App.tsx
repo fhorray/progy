@@ -1,8 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useStore } from '@nanostores/react';
 import { Loader2 } from 'lucide-react';
-import 'highlight.js/styles/github-dark.css';
-
 
 // Views
 import { MapView } from './views/map-view';
@@ -34,9 +32,6 @@ export function App() {
   const error = useStore($error);
   const router = useStore($router);
 
-
-
-
   // Router-based rendering
   console.log('[App] Current Route:', router?.route);
   if (router?.route === 'editor') {
@@ -45,22 +40,22 @@ export function App() {
 
   let content;
   if (!router) {
-    return <span>404 - Not found!</span>
+    return <span>404 - Not found!</span>;
   } else if (router.route === 'home' || router.route === 'editor') {
-    content = <EditorView />
+    content = <EditorView />;
   } else if (router.route === 'editorModule') {
-    content = <EditorView moduleId={router.params.moduleId} />
+    content = <EditorView moduleId={router.params.moduleId} />;
   } else if (router.route === 'editorExercise') {
     content = (
       <EditorView
         exerciseId={router.params.exerciseId}
         moduleId={router.params.moduleId}
       />
-    )
+    );
   } else if (router.route === 'git') {
-    content = <GitView />
+    content = <GitView />;
   } else if (router.route === 'map') {
-    content = <MapView />
+    content = <MapView />;
   }
 
   return (
@@ -82,8 +77,6 @@ export function App() {
       >
         {content}
       </main>
-
-
-    </div >
+    </div>
   );
 }

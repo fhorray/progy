@@ -476,11 +476,69 @@ _Note_: `answer` is the zero-based index of the correct option.
 
 ### Markdown Features (`README.md`)
 
-You can use standard Markdown. Progy also supports:
+Progy uses a high-fidelity Markdown renderer with premium features to create an immersive learning experience. Beyond standard Markdown, you have access to:
 
-- **Code Blocks**: Syntax highlighted.
-- **Images**: `![Alt](image.png)` (place images in `content/` and reference relatively or absolutely).
-- **Links**: Links to other exercises? (Planned feature).
+#### 1. Premium Callouts
+
+Support for Obsidian-style callouts to highlight important information.
+
+> [!INFO]
+> This is an informative callout.
+
+> [!WARNING]
+> This is a warning callout.
+
+**Alternative Syntax (Directives):**
+
+```markdown
+::note{title="Pro-Tip"}
+You can also use directives for cleaner structured notes.
+::
+```
+
+#### 2. Diagrams as Code (Mermaid)
+
+Render complex diagrams directly from text.
+
+```mermaid
+graph TD
+    A[Start] --> B{Is it SQL?}
+    B -- Yes --> C[Run Query]
+    B -- No --> D[Edit Code]
+```
+
+#### 3. Mathematical Expressions (LaTeX)
+
+Perfect for AI, Data Science, or Algorithms courses.
+
+- **Inline**: Use `$e = mc^2$` for $e = mc^2$.
+- **Block**:
+  $$
+  \int_{a}^{b} x^2 \,dx = \frac{b^3 - a^3}{3}
+  $$
+
+#### 4. Interactive Code Blocks
+
+All code blocks (` ``` `) in Progy are enhanced with:
+
+- **Copy to Clipboard**: One-click copy for students.
+- **Run in Workspace**: A "Run" button appears on code blocks, which automatically triggers the exercise's test runner, providing immediate feedback loop.
+
+#### 5. Video Embeds
+
+Easily integrate video lessons.
+
+```markdown
+::video{src="https://example.com/video.mp4"}
+```
+
+#### 6. GitHub Flavored Markdown (GFM)
+
+Full support for advanced structures:
+
+- **Tables**: Organise data effectively.
+- **Task Lists**: Checkable lists for student progress.
+- **Auto-links**: Automatic link detection for URLs.
 
 ---
 

@@ -41,7 +41,17 @@ const quizHandler: ServerType<"/exercises/quiz"> = async (req) => {
   const filePath = url.searchParams.get('path');
   if (!filePath) return new Response('Missing path', { status: 400 });
 
-  const quizPath = join(filePath, "quiz.json");
+  let dirPath = filePath;
+  try {
+    const s = await Bun.file(filePath).stat();
+    if (!s.isDirectory()) {
+      dirPath = join(filePath, "..");
+    }
+  } catch (e) {
+    // Path might not exist or be invalid, fallback to previous behavior
+  }
+
+  const quizPath = join(dirPath, "quiz.json");
   try {
     if (await exists(quizPath)) {
       const content = await readFile(quizPath, "utf-8");
@@ -164,6 +174,15 @@ async function handleDockerComposeRunner(body: { exerciseName: string, id: strin
   const command = (config.runner.command || "echo 'No command'")
     .replace("{{exercise}}", exercisePath)
     .replace("{{id}}", body.id || "");
+
+  const docker = new DockerClient();
+  if (!(await docker.checkAvailability())) {
+    return {
+      success: false,
+      output: "Docker is not running. Please install Docker Desktop and try again.",
+      friendlyOutput: "## ❌ Docker Error\n\nDocker is not running. Please start Docker."
+    };
+  }
 
   try {
     const result = await client.runService(composeFile, service, command);

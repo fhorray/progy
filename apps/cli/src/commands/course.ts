@@ -9,6 +9,7 @@ import { CourseContainer } from "../core/container";
 import { loadToken } from "../core/config";
 import { BACKEND_URL, COURSE_CONFIG_NAME } from "../core/paths";
 import { TEMPLATES, RUNNER_README } from "../templates";
+import { logger } from "../core/logger";
 
 async function exists(path: string): Promise<boolean> {
   try {
@@ -20,8 +21,6 @@ async function exists(path: string): Promise<boolean> {
 }
 
 async function runServer(runtimeCwd: string, isOffline: boolean, containerFile: string | null) {
-  console.log(`[INFO] Starting UI in ${isOffline ? 'OFFLINE' : 'ONLINE'} mode...`);
-
   const isTs = import.meta.file.endsWith(".ts");
   const serverExt = isTs ? "ts" : "js";
   const serverPath = isTs
@@ -38,7 +37,7 @@ async function runServer(runtimeCwd: string, isOffline: boolean, containerFile: 
   });
 
   if (containerFile) {
-    console.log(`[SYNC] Auto-save enabled.`);
+    logger.info("💾 Auto-save: Monitoring changes in the background...", "SYNC");
     const { watch } = await import("node:fs");
     let debounceTimer: any = null;
 
@@ -49,7 +48,7 @@ async function runServer(runtimeCwd: string, isOffline: boolean, containerFile: 
         try {
           await CourseContainer.sync(runtimeCwd, containerFile);
         } catch (e) {
-          console.error(`[SYNC] Failed to save: ${e}`);
+          logger.error(`Failed to save progress`, String(e));
         }
       }, 1000);
     });
@@ -78,13 +77,13 @@ export async function init(options: { course?: string; offline?: boolean }) {
   }
 
   if (isOffline) {
-    console.warn("⚠️  Offline init not fully supported yet.");
+    logger.warn("Offline init not fully supported yet.");
     return;
   }
 
   const token = await loadToken();
   if (!token) {
-    console.error("❌ Authentication required. Run 'progy login' first.");
+    logger.error("Authentication required.", "Run 'progy login' first.");
     process.exit(1);
   }
 
@@ -137,9 +136,9 @@ export async function init(options: { course?: string; offline?: boolean }) {
       await SyncManager.generateGitIgnore(cwd, courseId!);
     }
 
-    console.log("[SUCCESS] Course initialized!");
+    logger.success("Course initialized!");
   } catch (e: any) {
-    console.error(`[ERROR] Init failed: ${e.message}`);
+    logger.error(`Init failed`, e.message);
     process.exit(1);
   }
 }
@@ -150,13 +149,13 @@ export async function createCourse(options: { name: string; course: string }) {
   const lang = options.course.toLowerCase();
 
   if (options.name !== "." && await exists(courseDir)) {
-    console.error(`[ERROR] Directory '${options.name}' already exists.`);
+    logger.error(`Directory '${options.name}' already exists.`);
     process.exit(1);
   }
 
-  const template = TEMPLATES[lang];
+  const template = TEMPLATES[lang as keyof typeof TEMPLATES];
   if (!template) {
-    console.error(`[ERROR] Unsupported language '${lang}'.`);
+    logger.error(`Unsupported language '${lang}'.`);
     process.exit(1);
   }
 
@@ -173,16 +172,16 @@ export async function createCourse(options: { name: string; course: string }) {
   await writeFile(join(courseDir, "content", "01_intro", "README.md"), template.introReadme);
   await writeFile(join(courseDir, "content", "01_intro", template.introFilename), template.introCode);
 
-  console.log(`[SUCCESS] Course created in ${options.name}`);
+  logger.success(`Course created in ${options.name}`);
 }
 
 export async function validate(path: string) {
   const target = resolve(path);
   try {
     const config = await CourseLoader.validateCourse(target);
-    console.log(`✅ Course is Valid: ${config.name} (${config.id})`);
+    logger.success(`Course Valid: ${config.name} (${config.id})`);
   } catch (e: any) {
-    console.error(`❌ Validation Failed: ${e.message}`);
+    logger.error(`Validation Failed`, e.message);
     process.exit(1);
   }
 }
@@ -193,18 +192,13 @@ export async function pack(options: { out?: string }) {
     const config = await CourseLoader.validateCourse(cwd);
     const filename = options.out || `${config.id}.progy`;
     await CourseContainer.pack(cwd, resolve(filename));
-    console.log(`[SUCCESS] Created: ${filename}`);
+    logger.success(`Created: ${filename}`);
   } catch (e: any) {
-    console.error(`❌ Packaging Failed: ${e.message}`);
+    logger.error(`Packaging Failed`, e.message);
     process.exit(1);
   }
 }
 
-/**
- * Detect if we're in a student or instructor environment
- * Student: Only has .progy file
- * Instructor: Has course.json + content/ folder
- */
 async function detectEnvironment(cwd: string): Promise<"student" | "instructor"> {
   const hasCourseJson = await exists(join(cwd, "course.json"));
   const hasContentDir = await exists(join(cwd, "content"));
@@ -215,22 +209,19 @@ async function detectEnvironment(cwd: string): Promise<"student" | "instructor">
 
 export async function dev(options: { offline?: boolean }) {
   const cwd = process.cwd();
-
-  // Check environment - dev is only for instructors
   const env = await detectEnvironment(cwd);
   if (env === "student") {
-    console.error("❌ 'progy dev' is for course development only.");
-    console.error("   Use 'progy start' to learn the course.");
+    logger.error("'progy dev' is for course development only.", "Use 'progy start' to learn.");
     process.exit(1);
   }
 
   try {
     await CourseLoader.validateCourse(cwd);
-    console.log("[DEV] Running as GUEST - progress will NOT be saved.");
-    // Always run as offline/guest in dev mode
+    logger.banner("0.15.0", "instructor", "offline");
+    logger.brand("✨ Development Mode: Running as GUEST (progress will not be persistent).");
     await runServer(cwd, true, null);
   } catch (e: any) {
-    console.error(`[ERROR] Not a valid course: ${e.message}`);
+    logger.error(`Not a valid course`, e.message);
     process.exit(1);
   }
 }
@@ -241,47 +232,40 @@ export async function start(file: string | undefined, options: { offline?: boole
   let containerFile: string | null = null;
   let isOffline = !!options.offline;
 
-  // Check if running in instructor environment (course.json + content/)
   const env = await detectEnvironment(cwd);
 
   if (file && file.endsWith(".progy") && await exists(file)) {
-    // Loading a .progy file - student mode
     containerFile = resolve(file);
     runtimeCwd = await CourseContainer.unpack(containerFile);
   } else if (file && !file.endsWith(".progy") && !await exists(file)) {
-    // Treat as an alias -> Clone, Validate, Pack, Run
-    console.log(`[INFO] Resolving course alias '${file}'...`);
+    logger.info(`Resolving course alias '${file}'...`);
     try {
       const source = await CourseLoader.resolveSource(file);
       const tempDir = join(tmpdir(), `progy-${file}-${Date.now()}`);
 
-      console.log(`[INFO] Cloning from ${source.url}...`);
+      logger.info(`Cloning from ${source.url}...`);
       await GitUtils.clone(source.url, tempDir);
 
-      console.log(`[INFO] Validating course structure...`);
+      logger.info(`Validating course structure...`);
       await CourseLoader.validateCourse(tempDir);
 
       const progyFilename = `${file}.progy`;
       const progyPath = join(cwd, progyFilename);
-      console.log(`[INFO] Packaging into ${progyFilename}...`);
+      logger.info(`Packaging into ${progyFilename}...`);
       await CourseContainer.pack(tempDir, progyPath);
 
-      // Cleanup temp directory
       await rm(tempDir, { recursive: true, force: true });
 
       containerFile = progyPath;
       runtimeCwd = await CourseContainer.unpack(containerFile);
-      console.log(`[SUCCESS] Course ready: ${progyFilename}`);
+      logger.success(`Course ready: ${progyFilename}`);
     } catch (e: any) {
-      console.error(`❌ Failed to fetch course '${file}': ${e.message}`);
+      logger.error(`Failed to fetch course '${file}'`, e.message);
       process.exit(1);
     }
   } else if (env === "instructor") {
-    // Instructor environment detected - run as GUEST
-    console.log("[INFO] Detected instructor environment - running as GUEST.");
     isOffline = true;
   } else {
-    // Check for .progy file in current directory
     const files = await readdir(cwd);
     const progyFile = files.find(f => f.endsWith(".progy") && f !== ".progy");
     if (progyFile) {
@@ -290,48 +274,43 @@ export async function start(file: string | undefined, options: { offline?: boole
     }
   }
 
+  logger.banner("0.15.0", env, isOffline ? "offline" : "online");
+  if (env === "instructor") {
+    logger.brand("✨ Instructor Environment: Running in persistent GUEST mode.");
+  }
+
   await runServer(runtimeCwd, isOffline, containerFile);
 }
 
 export async function testExercise(path: string) {
   const cwd = process.cwd();
-
   const env = await detectEnvironment(cwd);
   if (env === "student") {
-    console.error("❌ 'progy test' is for course development only.");
-    console.error("   Use the UI to run exercises.");
+    logger.error("'progy test' is for course development only.");
     process.exit(1);
   }
 
   try {
-    const config = await CourseLoader.validateCourse(cwd);
-
-    // Import and run the exercise handler
-    console.log(`[TEST] Running exercise: ${path}`);
-    console.log("---");
-
-    // For now, just validate the path exists
+    await CourseLoader.validateCourse(cwd);
+    logger.info(`Running exercise: ${path}`, "TEST");
     const exercisePath = join(cwd, path);
     if (!await exists(exercisePath)) {
-      console.error(`❌ Exercise not found: ${path}`);
+      logger.error(`Exercise not found: ${path}`);
       process.exit(1);
     }
-
-    console.log(`✅ Exercise path exists: ${path}`);
-    console.log("   (Full test execution coming soon - use 'progy dev' for now)");
+    logger.success(`Exercise path exists: ${path}`);
   } catch (e: any) {
-    console.error(`[ERROR] ${e.message}`);
+    logger.error(e.message);
     process.exit(1);
   }
 }
 
 export async function publish() {
-  console.log("🚧 This feature is coming soon!");
+  logger.brand("🚧 This feature is coming soon!");
   console.log("");
   console.log("   Publishing will allow you to:");
   console.log("   • Upload your course to the Progy registry");
   console.log("   • Share with students via 'progy start <course-id>'");
-  console.log("   • Track student progress and analytics");
   console.log("");
   console.log("   Follow updates at: https://progy.dev/roadmap");
 }

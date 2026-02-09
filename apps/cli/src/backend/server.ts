@@ -12,10 +12,14 @@ import { settingsRoutes } from "./endpoints/settings";
 import { gitRoutes } from "./endpoints/git";
 import { notesRoutes } from "./endpoints/notes";
 
+import { logger } from "../core/logger";
+
 const IS_TS = import.meta.file.endsWith(".ts");
 const PUBLIC_DIR = join(import.meta.dir, IS_TS ? "../../public" : "../public");
 
-console.log(`[INFO] Server starting...`);
+// Server start is handled by console.log in the serve block now, or kept here if needed.
+// But we want to avoid double logging with the command's banner.
+// logger.info("Server engine initializing...", "BACKEND");
 
 let server;
 try {
@@ -52,7 +56,7 @@ try {
       if (origin) {
         const originUrl = new URL(origin);
         if (originUrl.host !== host) {
-          console.warn(`[SECURITY] Blocked CSRF attempt from ${origin}`);
+          logger.security(`Blocked CSRF attempt from ${origin}`);
           return new Response("Forbidden", { status: 403 });
         }
       }
@@ -76,14 +80,10 @@ try {
       return new Response("Not Found", { status: 404 });
     }
   });
-  console.log(`🚀 Progy Server running on ${server.url}`);
+  // logger.success(`Progy API ready`);
 } catch (e: any) {
   if (e.code === "EADDRINUSE" || e.syscall === "listen") {
-    console.error(`\n❌ \x1b[31mError: Port 3001 is already in use.\x1b[0m`);
-    console.error(`   To fix this, you can:`);
-    console.error(`   1. Stop the other Progy instance (Ctrl+C)`);
-    console.error(`   2. Kill the process manually: \x1b[33mbunx progy kill-port 3001\x1b[0m (if implemented) or use task manager`);
-    console.error(`   3. Wait a few seconds and try again.\n`);
+    logger.error(`Port 3001 is already in use.`, "To fix this: bunx progy kill-port 3001 (or close existing Progy)");
     process.exit(1);
   } else {
     throw e;

@@ -4,6 +4,7 @@ import { GitUtils } from "../core/git";
 import { SyncManager } from "../core/sync";
 import { loadToken } from "../core/config";
 import { BACKEND_URL, getCourseCachePath } from "../core/paths";
+import { logger } from "../core/logger";
 
 async function exists(path: string): Promise<boolean> {
   try {
@@ -17,7 +18,7 @@ async function exists(path: string): Promise<boolean> {
 export async function save(options: { message: string }) {
   const cwd = process.cwd();
   if (!(await exists(join(cwd, ".git")))) {
-    console.error("❌ Not a synced course (No .git found).");
+    logger.error("Not a synced course", "No .git repository found in current directory.");
     return;
   }
 
@@ -29,7 +30,7 @@ export async function save(options: { message: string }) {
   }
 
   if (!(await GitUtils.lock(cwd))) {
-    console.warn("⚠️  Another Progy process is syncing. Please wait.");
+    logger.warn("Sync in progress: Another Progy process is currently syncing. Please wait.");
     return;
   }
 
@@ -42,34 +43,33 @@ export async function save(options: { message: string }) {
         if (res.ok) {
           const gitCreds = await res.json() as any;
           await GitUtils.updateOrigin(cwd, gitCreds.token);
-          console.log(`[SYNC] Authenticated as ${gitCreds.user}`);
+          logger.info(`Authenticated as \x1b[1m${gitCreds.user}\x1b[0m`, "SYNC");
         }
       } catch { }
     }
 
-    console.log(`[SYNC] Saving progress...`);
+    logger.info("Preparing artifacts for upload...", "SYNC");
     await GitUtils.exec(["add", "."], cwd);
     const commit = await GitUtils.exec(["commit", "-m", options.message], cwd);
 
     if (commit.success) {
-      console.log(`[SYNC] Committed changes.`);
+      logger.info("Snapshotted current state.", "SYNC");
     } else if (!commit.stdout.includes("nothing to commit")) {
-      console.error(`[ERROR] Commit failed: ${commit.stderr}`);
+      logger.error("Commit failed", commit.stderr);
       return;
     }
 
-    console.log(`[SYNC] Syncing with remote...`);
+    logger.info("Synchronizing with Progy Cloud...", "SYNC");
     const pull = await GitUtils.pull(cwd);
     if (!pull.success) {
-      console.warn(`[WARN] Sync/Pull issue: ${pull.stderr}`);
-      return;
+      logger.warn(`Manual merge may be required: ${pull.stderr}`);
     }
 
     const push = await GitUtils.exec(["push", "origin", "HEAD"], cwd);
     if (push.success) {
-      console.log(`[SUCCESS] Progress saved to cloud.`);
+      logger.success("All changes successfully pushed to the cloud.");
     } else {
-      console.error(`[ERROR] Push failed: ${push.stderr}`);
+      logger.error("Push failed", push.stderr);
     }
   } finally {
     await GitUtils.unlock(cwd);
@@ -79,18 +79,18 @@ export async function save(options: { message: string }) {
 export async function sync() {
   const cwd = process.cwd();
   if (!(await exists(join(cwd, ".git")))) {
-    console.error("❌ Not a synced course (No .git found).");
+    logger.error("Not a synced course", "No .git directory found.");
     return;
   }
 
   const config = await SyncManager.loadConfig(cwd);
   if (!config) {
-    console.error("❌ Missing progy.toml.");
+    logger.error("Configuration missing", "No course configuration found in this directory.");
     return;
   }
 
   if (!(await GitUtils.lock(cwd))) {
-    console.warn("⚠️  Another Progy process is syncing. Please wait.");
+    logger.warn("Sync Lock: Another process is using the workspace. Waiting...");
     return;
   }
 
@@ -108,7 +108,7 @@ export async function sync() {
       } catch { }
     }
 
-    console.log(`[SYNC] Checking official course updates...`);
+    logger.info("Checking for official course updates...", "SYNC");
     const cacheDir = await SyncManager.ensureOfficialCourse(
       config.course.id,
       config.course.repo,
@@ -116,21 +116,21 @@ export async function sync() {
       config.course.path
     );
 
-    console.log(`[SYNC] Applying official updates...`);
+    logger.info("Merging latest instructor changes...", "SYNC");
     await SyncManager.applyLayering(cwd, cacheDir, false, config.course.path);
 
-    console.log(`[SYNC] Pulling your progress...`);
+    logger.info("Downloading your persistent progress...", "SYNC");
     const res = await GitUtils.pull(cwd);
 
     if (res.success) {
       config.sync = { last_sync: new Date().toISOString() };
       await SyncManager.saveConfig(cwd, config);
-      console.log(`[SUCCESS] Workspace synchronized.`);
+      logger.success("Workspace fully synchronized with cloud.");
     } else {
-      console.error(`[ERROR] Failed to pull user changes: ${res.stderr}`);
+      logger.error("Sync pull failed", res.stderr);
     }
   } catch (e: any) {
-    console.error(`[ERROR] Sync failed: ${e.message}`);
+    logger.error("Sync error", e.message);
   } finally {
     await GitUtils.unlock(cwd);
   }
@@ -142,20 +142,20 @@ export async function reset(path: string) {
 
   const config = await SyncManager.loadConfig(cwd);
   if (!config) {
-    console.error("❌ Missing progy.toml.");
+    logger.error("Reset failed", "Course configuration not found.");
     return;
   }
 
   try {
-    console.log(`[RESET] restoring ${targetFile}...`);
+    logger.info(`Restoring \x1b[38;5;208m${targetFile}\x1b[0m to its original state...`, "RESET");
     const cacheDir = getCourseCachePath(config.course.id);
     if (!(await exists(cacheDir))) {
       await SyncManager.ensureOfficialCourse(config.course.id, config.course.repo, config.course.branch);
     }
 
     await SyncManager.resetExercise(cwd, cacheDir, targetFile);
-    console.log(`[SUCCESS] File reset to original state.`);
+    logger.success("File successfully restored.");
   } catch (e: any) {
-    console.error(`[ERROR] Reset failed: ${e.message}`);
+    logger.error("Restore failed", e.message);
   }
 }
