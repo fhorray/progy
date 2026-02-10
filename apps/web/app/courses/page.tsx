@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { authClient } from 'lib/auth-client';
 import {
   Card,
   CardHeader,
@@ -20,6 +21,7 @@ import {
   Loader2,
   Globe,
   Ghost,
+  ShieldCheck,
 } from 'lucide-react';
 import Link from 'next/link';
 import { toast } from 'sonner';
@@ -34,6 +36,7 @@ interface Course {
 }
 
 export default function CoursesPage() {
+  const { data: session } = authClient.useSession();
   const [courses, setCourses] = useState<Course[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
@@ -41,25 +44,6 @@ export default function CoursesPage() {
   useEffect(() => {
     fetchCourses();
   }, []);
-
-  // Scroll Reveal Logic
-  useEffect(() => {
-    if (loading) return;
-    const reveals = document.querySelectorAll('.reveal');
-    const observer = new IntersectionObserver(
-      (entries) => {
-        entries.forEach((entry) => {
-          if (entry.isIntersecting) {
-            entry.target.classList.add('active');
-          }
-        });
-      },
-      { threshold: 0.1 },
-    );
-
-    reveals.forEach((reveal) => observer.observe(reveal));
-    return () => reveals.forEach((reveal) => observer.unobserve(reveal));
-  }, [loading, courses]);
 
   const fetchCourses = async () => {
     try {
@@ -85,51 +69,78 @@ export default function CoursesPage() {
   );
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-background font-sans selection:bg-primary/20 overflow-x-hidden">
       {/* Navigation */}
-      <nav className="fixed top-0 w-full z-50 bg-background/60 backdrop-blur-xl border-b border-white/5">
-        <div className="max-w-6xl mx-auto px-4 md:px-6 h-14 flex items-center justify-between">
-          <Link href="/" className="flex items-center gap-2.5 cursor-pointer">
-            <div className="w-6 h-6 rounded bg-primary flex items-center justify-center">
-              <Terminal className="w-3.5 h-3.5 text-primary-foreground" />
-            </div>
-            <span className="font-bold text-base tracking-tight">progy</span>
+      <nav className="fixed top-4 left-1/2 -translate-x-1/2 w-[calc(100%-2rem)] max-w-7xl z-50 bg-background/60 backdrop-blur-xl border border-white/5 px-6 h-16 rounded-full flex items-center justify-between shadow-2xl">
+        <Link
+          href="/"
+          className="flex items-center gap-2.5 cursor-pointer group"
+        >
+          <div className="w-7 h-7 rounded-lg bg-primary flex items-center justify-center group-hover:scale-110 transition-transform shadow-lg shadow-primary/20">
+            <Terminal className="w-4 h-4 text-primary-foreground" />
+          </div>
+          <span className="font-bold text-lg tracking-tight">progy</span>
+        </Link>
+
+        <div className="flex items-center gap-6">
+          <Link
+            href="/dashboard"
+            className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground hover:text-primary transition-colors italic"
+          >
+            Dashboard
           </Link>
 
-          <div className="flex items-center gap-4">
+          {session?.user ? (
             <Link
               href="/dashboard"
-              className="text-[11px] font-black uppercase tracking-widest text-muted-foreground hover:text-foreground"
+              className="flex items-center gap-3 p-1 pr-4 bg-white/5 border border-white/5 rounded-full hover:bg-white/10 transition-all group"
             >
-              Dashboard
+              <div className="w-8 h-8 rounded-full bg-primary/20 border border-primary/20 flex items-center justify-center text-primary font-black text-xs">
+                {session.user.name?.charAt(0).toUpperCase()}
+              </div>
+              <span className="text-[10px] font-black uppercase italic tracking-widest text-foreground group-hover:text-primary transition-colors">
+                {session.user.name?.split(' ')[0]}
+              </span>
             </Link>
-          </div>
+          ) : (
+            <Link href="/dashboard">
+              <Button
+                size="sm"
+                className="h-8 rounded-full bg-primary text-primary-foreground text-[10px] font-black uppercase tracking-widest px-6 shadow-lg shadow-primary/20"
+              >
+                Sign In
+              </Button>
+            </Link>
+          )}
         </div>
       </nav>
 
-      <main className="pt-24 pb-20 px-4 md:px-6 max-w-6xl mx-auto">
-        <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-12">
-          <div className="reveal">
+      <main className="max-w-7xl mx-auto pt-32 pb-20 px-4 md:px-6">
+        <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-8 mb-16 px-2">
+          <div className="max-w-2xl">
             <Badge
               variant="outline"
               className="mb-4 border-primary/20 text-primary py-1 px-4 backdrop-blur-md bg-primary/5 rounded-full text-[9px] font-black tracking-[0.3em] uppercase"
             >
               COMMUNITY REGISTRY
             </Badge>
-            <h1 className="text-4xl md:text-6xl font-black tracking-tighter italic uppercase">
-              Explore <span className="text-primary">Courses.</span>
+            <h1 className="text-5xl md:text-7xl font-black tracking-tighter italic uppercase leading-[0.9]">
+              Explore{' '}
+              <span className="text-primary drop-shadow-[0_0_15px_rgba(251,146,60,0.3)]">
+                Courses.
+              </span>
             </h1>
-            <p className="mt-4 text-muted-foreground max-w-xl text-sm italic">
+            <p className="mt-6 text-muted-foreground text-base italic leading-relaxed opacity-70">
               Discover high-intensity courses built by the community. Zero
               setup, local-first, native performance.
             </p>
           </div>
 
-          <div className="relative w-full md:w-80 group">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground group-focus-within:text-primary transition-colors" />
+          <div className="relative w-full lg:w-96 group">
+            <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground group-focus-within:text-primary transition-colors" />
             <Input
-              placeholder="Search courses..."
-              className="pl-10 h-11 bg-white/5 border-white/10 rounded-xl focus:ring-primary/20"
+              placeholder="Search registry courses..."
+              className="pl-12 h-14 bg-white/5 border-white/10 rounded-2xl focus:ring-primary/20 text-sm font-bold italic transition-all placeholder:opacity-30"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
             />
@@ -138,59 +149,57 @@ export default function CoursesPage() {
 
         {loading ? (
           <div className="flex flex-col items-center justify-center py-32 space-y-4">
-            <Loader2 className="w-10 h-10 text-primary animate-spin" />
-            <p className="text-[10px] font-black uppercase tracking-[0.3em] text-muted-foreground">
-              Loading Registry...
+            <Loader2 className="w-12 h-12 text-primary animate-spin" />
+            <p className="text-[10px] font-black uppercase tracking-[0.4em] text-muted-foreground animate-pulse">
+              SYNCING REGISTRY...
             </p>
           </div>
         ) : filteredCourses.length > 0 ? (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
             {filteredCourses.map((course) => (
               <Card
                 key={course.id}
-                className="group border-white/5 bg-black/40 hover:bg-black/60 transition-all hover:border-primary/20 shadow-2xl overflow-hidden flex flex-col"
+                className="group border-white/5 bg-black/40 hover:bg-black/80 transition-all hover:-translate-y-1 hover:border-primary/30 shadow-2xl rounded-3xl overflow-hidden flex flex-col p-1"
               >
-                <CardHeader className="p-6">
-                  <div className="flex items-start justify-between mb-4">
-                    <div className="w-10 h-10 rounded-xl bg-primary/10 border border-primary/20 flex items-center justify-center text-primary">
-                      <BookOpen className="w-5 h-5" />
+                <div className="absolute top-0 right-0 w-24 h-24 bg-primary/5 blur-3xl opacity-0 group-hover:opacity-100 transition-opacity"></div>
+                <CardHeader className="p-7 relative z-10">
+                  <div className="flex items-start justify-between mb-6">
+                    <div className="w-12 h-12 rounded-2xl bg-primary/10 border border-primary/20 flex items-center justify-center text-primary group-hover:scale-110 transition-transform">
+                      <BookOpen className="w-6 h-6 shadow-[0_0_15px_rgba(251,146,60,0.2)]" />
                     </div>
                     {course.name.startsWith('@progy/') && (
-                      <Badge className="bg-primary/20 text-primary border-primary/20 text-[8px] font-black tracking-widest uppercase">
+                      <Badge className="bg-primary/20 text-primary border-primary/20 text-[8px] font-black tracking-[0.2em] uppercase px-3 py-1 rounded-full backdrop-blur-md">
                         OFFICIAL
                       </Badge>
                     )}
                   </div>
-                  <CardTitle className="text-xl font-black italic tracking-tight group-hover:text-primary transition-colors">
+                  <CardTitle className="text-2xl font-black italic tracking-tighter group-hover:text-primary transition-colors uppercase">
                     {course.name}
                   </CardTitle>
-                  <CardDescription className="text-xs italic leading-relaxed line-clamp-2 mt-2">
-                    {course.description || 'No description provided.'}
+                  <CardDescription className="text-xs italic leading-relaxed line-clamp-2 mt-4 text-muted-foreground/60 group-hover:text-muted-foreground/80 transition-colors">
+                    {course.description ||
+                      'No description provided for this high-intensity course.'}
                   </CardDescription>
                 </CardHeader>
-                <CardContent className="px-6 pb-6 flex-grow">
-                  <div className="flex items-center gap-4 text-[9px] font-black uppercase tracking-widest text-muted-foreground/60">
-                    <div className="flex items-center gap-1.5">
-                      <Globe className="w-3 h-3" /> PUBLIC
+                <CardContent className="px-7 pb-8 flex-grow relative z-10">
+                  <div className="flex items-center gap-5 text-[9px] font-black uppercase tracking-[0.2em] text-muted-foreground opacity-50">
+                    <div className="flex items-center gap-2">
+                      <Globe className="w-3.5 h-3.5 text-primary/60" /> PUBLIC
                     </div>
-                    <div className="flex items-center gap-1.5">
-                      <Badge
-                        variant="outline"
-                        className="border-white/10 text-[8px] h-4 leading-none"
-                      >
-                        {course.latestVersion}
-                      </Badge>
+                    <div className="flex items-center gap-2">
+                      <ShieldCheck className="w-3.5 h-3.5 text-primary/60" />{' '}
+                      VERIFIED
                     </div>
                   </div>
                 </CardContent>
-                <CardFooter className="p-6 pt-0">
+                <CardFooter className="p-7 pt-0 relative z-10">
                   <Link
                     href={`/courses/${course.name.substring(1)}`}
                     className="w-full"
                   >
-                    <Button className="w-full bg-white/5 hover:bg-primary hover:text-primary-foreground border-white/10 font-black text-[10px] tracking-[0.2em] uppercase rounded-lg h-10 group/btn">
-                      VIEW DETAILS{' '}
-                      <ChevronRight className="w-3 h-3 ml-2 group-hover/btn:translate-x-1 transition-transform" />
+                    <Button className="w-full bg-white/5 hover:bg-primary hover:text-primary-foreground border-white/10 font-black text-[10px] tracking-[0.2em] uppercase rounded-xl h-12 group/btn transition-all shadow-lg hover:shadow-primary/30">
+                      INITIALIZE ENGINE
+                      <ChevronRight className="w-4 h-4 ml-2 group-hover/btn:translate-x-1 transition-transform" />
                     </Button>
                   </Link>
                 </CardFooter>
@@ -198,13 +207,14 @@ export default function CoursesPage() {
             ))}
           </div>
         ) : (
-          <div className="flex flex-col items-center justify-center py-32 text-center reveal">
-            <Ghost className="w-16 h-16 text-muted-foreground/20 mb-6" />
-            <h3 className="text-xl font-black uppercase tracking-tighter italic mb-2">
-              No Courses Found
+          <div className="flex flex-col items-center justify-center py-32 text-center bg-white/2 border border-dashed border-white/5 rounded-[3rem]">
+            <Ghost className="w-20 h-20 text-muted-foreground/10 mb-8" />
+            <h3 className="text-2xl font-black uppercase tracking-tighter italic mb-3 opacity-60">
+              Zero results found
             </h3>
-            <p className="text-muted-foreground text-sm italic max-w-xs">
-              We couldn't find any courses matching "{search}".
+            <p className="text-muted-foreground text-sm italic max-w-sm mx-auto opacity-40">
+              We couldn't locate any high-intensity engines matching "{search}"
+              in the registry.
             </p>
           </div>
         )}

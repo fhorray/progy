@@ -131,6 +131,11 @@ export default function Dashboard() {
   const [progressList, setProgressList] = useState<CourseProgress[]>([]);
   const [loadingProgress, setLoadingProgress] = useState(true);
   const router = useRouter();
+  const [activeTab, setActiveTab] = useState<
+    'overview' | 'settings' | 'registry'
+  >('overview');
+  const [newUsername, setNewUsername] = useState('');
+  const [isUpdatingUsername, setIsUpdatingUsername] = useState(false);
 
   useEffect(() => {
     if (session?.user) {
@@ -138,40 +143,11 @@ export default function Dashboard() {
     }
   }, [session]);
 
-  // Scroll Reveal Logic
   useEffect(() => {
-    if (isPending) return;
-    const reveals = document.querySelectorAll('.reveal');
-    const observer = new IntersectionObserver(
-      (entries) => {
-        entries.forEach((entry) => {
-          if (entry.isIntersecting) {
-            entry.target.classList.add('active');
-          }
-        });
-      },
-      { threshold: 0.1 },
-    );
-
-    reveals.forEach((reveal) => observer.observe(reveal));
-    return () => reveals.forEach((reveal) => observer.unobserve(reveal));
-  }, [isPending, session]);
-
-  if (isPending) {
-    return (
-      <div className="min-h-screen bg-background flex flex-col items-center justify-center p-6">
-        <Loader2 className="w-10 h-10 text-primary animate-spin mb-4" />
-        <p className="text-[10px] font-black uppercase tracking-[0.3em] text-muted-foreground animate-pulse">
-          Authenticating...
-        </p>
-      </div>
-    );
-  }
-
-  if (!session) {
-    router.push('/');
-    return null;
-  }
+    if (session?.user?.username) {
+      setNewUsername(session.user.username);
+    }
+  }, [session]);
 
   const fetchProgress = async () => {
     try {
@@ -229,18 +205,6 @@ export default function Dashboard() {
       },
     });
   };
-
-  const [activeTab, setActiveTab] = useState<
-    'overview' | 'settings' | 'registry'
-  >('overview');
-  const [newUsername, setNewUsername] = useState('');
-  const [isUpdatingUsername, setIsUpdatingUsername] = useState(false);
-
-  useEffect(() => {
-    if (session?.user?.username) {
-      setNewUsername(session.user.username);
-    }
-  }, [session]);
 
   const handleUpdateUsername = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -303,10 +267,43 @@ export default function Dashboard() {
     }
   };
 
+  const handleCheckout = async (planType: 'pro' | 'lifetime') => {
+    setIsLoadingBilling(true);
+    try {
+      const res = await fetch(
+        `${process.env.NEXT_PUBLIC_API_URL || 'https://api.progy.dev'}/billing/checkout?plan=${planType}`,
+        {
+          method: 'POST',
+          credentials: 'include',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${session?.session.token}`,
+          },
+        },
+      );
+
+      const data = (await res.json()) as { url: string };
+      if (data.url) {
+        window.location.href = data.url;
+      } else {
+        toast.error('Failed to start checkout');
+      }
+    } catch (error) {
+      toast.error('Failed to start checkout');
+    } finally {
+      setIsLoadingBilling(false);
+    }
+  };
+
+  const handleMasterAIUpgrade = () => handleCheckout('pro');
+
   if (isPending) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-background">
-        <Loader2 className="w-8 h-8 animate-spin text-primary" />
+      <div className="min-h-screen bg-background flex flex-col items-center justify-center p-6">
+        <Loader2 className="w-10 h-10 text-primary mb-4" />
+        <p className="text-[10px] font-black uppercase tracking-[0.3em] text-muted-foreground">
+          Authenticating...
+        </p>
       </div>
     );
   }
@@ -336,36 +333,6 @@ export default function Dashboard() {
       ? 'bg-gradient-to-r from-primary/20 to-purple-500/20 text-white border-primary/30'
       : 'bg-zinc-500/10 text-zinc-400 border-zinc-500/20';
 
-  const handleCheckout = async (plan: 'pro' | 'lifetime') => {
-    setIsLoadingBilling(true);
-    try {
-      const res = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL || 'https://api.progy.dev'}/billing/checkout?plan=${plan}`,
-        {
-          method: 'POST',
-          credentials: 'include',
-          headers: {
-            'Content-Type': 'application/json',
-            Authorization: `Bearer ${session?.session.token}`,
-          },
-        },
-      );
-
-      const data = (await res.json()) as { url: string };
-      if (data.url) {
-        window.location.href = data.url;
-      } else {
-        toast.error('Failed to start checkout');
-      }
-    } catch (error) {
-      toast.error('Failed to start checkout');
-    } finally {
-      setIsLoadingBilling(false);
-    }
-  };
-
-  const handleMasterAIUpgrade = () => handleCheckout('pro');
-
   return (
     <div className="min-h-screen bg-background font-sans selection:bg-primary/20 overflow-x-hidden">
       <Suspense fallback={null}>
@@ -377,7 +344,7 @@ export default function Dashboard() {
           {/* Sidebar */}
           <aside className="w-full md:w-64 flex flex-col shrink-0">
             <div
-              className="flex items-center gap-2.5 cursor-pointer mb-10 reveal"
+              className="flex items-center gap-2.5 cursor-pointer mb-10"
               onClick={() => router.push('/')}
             >
               <div className="w-6 h-6 rounded bg-primary flex items-center justify-center">
@@ -386,10 +353,7 @@ export default function Dashboard() {
               <span className="font-bold text-base tracking-tight">progy</span>
             </div>
 
-            <div
-              className="space-y-1 reveal"
-              style={{ transitionDelay: '0.1s' }}
-            >
+            <div className="space-y-1">
               <div className="px-3 mb-2">
                 <h2 className="text-[9px] font-black uppercase tracking-[0.2em] text-muted-foreground opacity-50">
                   Main
@@ -425,10 +389,7 @@ export default function Dashboard() {
               />
             </div>
 
-            <div
-              className="mt-12 p-5 bg-white/5 border border-white/5 rounded-3xl reveal"
-              style={{ transitionDelay: '0.2s' }}
-            >
+            <div className="mt-12 p-5 bg-white/5 border border-white/5 rounded-3xl">
               <div className="flex items-center gap-4">
                 <div className="w-10 h-10 rounded-xl bg-primary/20 border border-primary/20 flex items-center justify-center text-primary font-black text-sm">
                   {session.user.name?.charAt(0).toUpperCase()}
@@ -450,7 +411,7 @@ export default function Dashboard() {
 
           {/* Main Content Area */}
           <div className="flex-1 min-w-0">
-            <main className="reveal" style={{ transitionDelay: '0.15s' }}>
+            <main>
               {activeTab === 'overview' ? (
                 <div className="space-y-10">
                   <header>

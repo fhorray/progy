@@ -98,24 +98,6 @@ export default function Home() {
     }
   };
 
-  // Simple Scroll Reveal Logic
-  useEffect(() => {
-    const reveals = document.querySelectorAll('.reveal');
-    const observer = new IntersectionObserver(
-      (entries) => {
-        entries.forEach((entry) => {
-          if (entry.isIntersecting) {
-            entry.target.classList.add('active');
-          }
-        });
-      },
-      { threshold: 0.1 },
-    );
-
-    reveals.forEach((reveal) => observer.observe(reveal));
-    return () => reveals.forEach((reveal) => observer.unobserve(reveal));
-  }, []);
-
   const handleSignIn = async () => {
     await authClient.signIn.social({
       provider: 'github',
@@ -124,164 +106,161 @@ export default function Home() {
   };
 
   return (
-    <div className="min-h-screen bg-background selection:bg-primary/20 overflow-x-hidden font-sans">
+    <div className="min-h-screen bg-background font-sans selection:bg-primary/20 overflow-x-hidden">
       {/* Navigation */}
-      <nav className="fixed top-0 w-full z-50 bg-background/60 backdrop-blur-xl border-b border-white/5">
-        <div className="max-w-6xl mx-auto px-4 md:px-6 h-14 flex items-center justify-between">
-          <div className="flex items-center gap-2.5 cursor-pointer shrink-0">
-            <div className="w-6 h-6 rounded bg-primary flex items-center justify-center">
-              <Terminal className="w-3.5 h-3.5 text-primary-foreground" />
-            </div>
-            <span className="font-bold text-base tracking-tight">progy</span>
+      <nav className="fixed top-4 left-1/2 -translate-x-1/2 w-[calc(100%-2rem)] max-w-7xl z-50 bg-background/60 backdrop-blur-xl border border-white/5 px-6 h-16 rounded-full flex items-center justify-between shadow-2xl">
+        <div className="flex items-center gap-2.5 cursor-pointer group shrink-0">
+          <div className="w-7 h-7 rounded-lg bg-primary flex items-center justify-center group-hover:scale-110 transition-transform shadow-lg shadow-primary/20">
+            <Terminal className="w-4 h-4 text-primary-foreground" />
           </div>
+          <span className="font-bold text-lg tracking-tight">progy</span>
+        </div>
 
-          {/* Desktop Nav */}
-          <div className="hidden md:flex items-center gap-8 text-[11px] font-black uppercase tracking-[0.15em] text-muted-foreground/80">
-            <a
-              href="#how-it-works"
-              className="hover:text-foreground transition-colors"
-            >
-              Workflow
-            </a>
-            <a
-              href="#features"
-              className="hover:text-foreground transition-colors"
-            >
-              Features
-            </a>
-            <a
-              href="#pricing"
-              className="hover:text-foreground transition-colors"
-            >
-              Pricing
-            </a>
+        {/* Desktop Nav */}
+        <div className="hidden md:flex items-center gap-8 text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground/80 italic">
+          <a
+            href="#how-it-works"
+            className="hover:text-primary transition-colors"
+          >
+            Workflow
+          </a>
+          <a href="#features" className="hover:text-primary transition-colors">
+            Features
+          </a>
+          <a href="#pricing" className="hover:text-primary transition-colors">
+            Pricing
+          </a>
+          <Link
+            href="/courses"
+            className="hover:text-primary transition-colors"
+          >
+            Registry
+          </Link>
+          <a href="/docs" className="hover:text-primary transition-colors">
+            Docs
+          </a>
+        </div>
+
+        <div className="flex items-center gap-3">
+          {session ? (
             <Link
-              href="/courses"
-              className="hover:text-foreground transition-colors"
+              href="/dashboard"
+              className="flex items-center gap-3 p-1 pr-4 bg-white/5 border border-white/5 rounded-full hover:bg-white/10 transition-all group"
             >
-              Community
-            </Link>
-            <a href="/docs" className="hover:text-foreground transition-colors">
-              Docs
-            </a>
-          </div>
-
-          <div className="flex items-center gap-3">
-            {session ? (
-              <Link href="/dashboard">
-                <div className="hidden sm:flex items-center gap-3">
-                  <div className="flex flex-col items-end leading-none">
-                    <span className="text-[10px] font-black uppercase tracking-widest text-foreground">
-                      {session.user.name}
-                    </span>
-                    <span className="text-[8px] font-black uppercase tracking-[0.2em] text-primary">
-                      {isLifetime ? 'LIFETIME' : isPro ? 'PRO' : 'FREE'}
-                    </span>
-                  </div>
-                  <div className="w-8 h-8 rounded bg-primary/20 border border-primary/30 flex items-center justify-center text-[10px] font-black text-primary">
-                    {session.user.name?.charAt(0).toUpperCase()}
-                  </div>
-                </div>
-              </Link>
-            ) : (
-              <div className="hidden sm:flex items-center gap-3">
-                <Button
-                  onClick={handleSignIn}
-                  size="sm"
-                  variant="ghost"
-                  className="text-[11px] font-black tracking-widest text-muted-foreground hover:text-foreground h-9"
-                >
-                  Log in
-                </Button>
-                <Button
-                  onClick={handleSignIn}
-                  size="sm"
-                  className="bg-foreground text-background hover:bg-foreground/90 font-black px-5 h-9 rounded-lg text-[11px] tracking-widest"
-                >
-                  JOIN NOW
-                </Button>
+              <div className="w-8 h-8 rounded-full bg-primary/20 border border-primary/20 flex items-center justify-center text-primary font-black text-xs">
+                {session.user.name?.charAt(0).toUpperCase()}
               </div>
+              <div className="hidden sm:flex flex-col leading-none">
+                <span className="text-[10px] font-black uppercase italic tracking-widest text-foreground group-hover:text-primary transition-colors">
+                  {session.user.name?.split(' ')[0]}
+                </span>
+                <span className="text-[7px] font-black uppercase tracking-[0.2em] text-primary/70">
+                  {isLifetime ? 'LIFETIME' : isPro ? 'PRO' : 'COMMUNITY'}
+                </span>
+              </div>
+            </Link>
+          ) : (
+            <div className="hidden sm:flex items-center gap-3">
+              <Button
+                onClick={handleSignIn}
+                size="sm"
+                variant="ghost"
+                className="text-[10px] font-black uppercase tracking-widest text-muted-foreground hover:text-foreground h-9 italic"
+              >
+                Sign In
+              </Button>
+              <Button
+                onClick={handleSignIn}
+                size="sm"
+                className="bg-primary text-primary-foreground hover:shadow-lg hover:shadow-primary/20 font-black px-6 h-9 rounded-full text-[10px] tracking-widest uppercase"
+              >
+                Join Now
+              </Button>
+            </div>
+          )}
+          <button
+            className="md:hidden p-2 text-muted-foreground hover:text-foreground transition-colors"
+            onClick={() => setIsMenuOpen(!isMenuOpen)}
+          >
+            {isMenuOpen ? (
+              <X className="w-5 h-5" />
+            ) : (
+              <Menu className="w-5 h-5" />
             )}
-            <button
-              className="md:hidden p-2 text-muted-foreground hover:text-foreground transition-colors"
-              onClick={() => setIsMenuOpen(!isMenuOpen)}
-            >
-              {isMenuOpen ? (
-                <X className="w-5 h-5" />
-              ) : (
-                <Menu className="w-5 h-5" />
-              )}
-            </button>
-          </div>
+          </button>
         </div>
 
         {/* Mobile Menu */}
         {isMenuOpen && (
-          <div className="md:hidden absolute top-14 left-0 w-full bg-background border-b border-white/5 py-8 px-6 animate-in fade-in slide-in-from-top-2 duration-300 z-50">
-            <div className="flex flex-col gap-6 text-[12px] font-black uppercase tracking-widest">
+          <div className="md:hidden absolute top-20 left-0 w-full bg-background/95 backdrop-blur-2xl border border-white/5 rounded-3xl py-8 px-6 animate-in fade-in slide-in-from-top-2 duration-300 z-50">
+            <div className="flex flex-col gap-6 text-[10px] font-black uppercase tracking-widest italic">
               <a
                 href="#how-it-works"
                 onClick={() => setIsMenuOpen(false)}
-                className="text-muted-foreground hover:text-foreground transition-colors"
+                className="text-muted-foreground hover:text-primary transition-colors"
               >
                 Workflow
               </a>
               <a
                 href="#features"
                 onClick={() => setIsMenuOpen(false)}
-                className="text-muted-foreground hover:text-foreground transition-colors"
+                className="text-muted-foreground hover:text-primary transition-colors"
               >
                 Features
               </a>
               <a
                 href="#pricing"
                 onClick={() => setIsMenuOpen(false)}
-                className="text-muted-foreground hover:text-foreground transition-colors"
+                className="text-muted-foreground hover:text-primary transition-colors"
               >
                 Pricing
               </a>
               <Link
                 href="/courses"
-                className="text-muted-foreground hover:text-foreground transition-colors"
+                className="text-muted-foreground hover:text-primary transition-colors"
                 onClick={() => setIsMenuOpen(false)}
               >
-                Community
+                Registry
               </Link>
               <a
                 href="/docs"
-                className="text-muted-foreground hover:text-foreground transition-colors"
+                className="text-muted-foreground hover:text-primary transition-colors"
               >
                 Docs
               </a>
               <div className="pt-6 border-t border-white/5 flex flex-col gap-4">
                 {session ? (
-                  <div className="flex items-center gap-3 mb-4">
-                    <div className="w-8 h-8 rounded bg-primary/20 border border-primary/30 flex items-center justify-center text-[10px] font-black text-primary">
+                  <Link
+                    href="/dashboard"
+                    className="flex items-center gap-3"
+                    onClick={() => setIsMenuOpen(false)}
+                  >
+                    <div className="w-10 h-10 rounded-full bg-primary/20 border border-primary/20 flex items-center justify-center text-primary font-black text-sm">
                       {session.user.name?.charAt(0).toUpperCase()}
                     </div>
                     <div className="flex flex-col leading-none">
-                      <span className="text-[10px] font-black uppercase tracking-widest text-foreground">
+                      <span className="text-[10px] font-black uppercase italic tracking-widest text-foreground">
                         {session.user.name}
                       </span>
-                      <span className="text-[8px] font-black uppercase tracking-[0.2em] text-primary mt-1">
-                        {isLifetime ? 'LIFETIME' : isPro ? 'PRO' : 'FREE'}
+                      <span className="text-[7px] font-black uppercase tracking-[0.2em] text-primary/70 mt-1">
+                        {isLifetime ? 'LIFETIME' : isPro ? 'PRO' : 'COMMUNITY'}
                       </span>
                     </div>
-                  </div>
+                  </Link>
                 ) : (
                   <>
                     <Button
                       onClick={handleSignIn}
                       variant="ghost"
-                      className="justify-start px-0 text-[12px] font-black tracking-widest h-10"
+                      className="justify-start px-0 text-[10px] font-black tracking-widest h-10 italic"
                     >
-                      Log in
+                      Sign In
                     </Button>
                     <Button
                       onClick={handleSignIn}
-                      className="bg-foreground text-background w-full h-12 text-[12px] font-black tracking-widest rounded-xl"
+                      className="bg-primary text-primary-foreground w-full h-12 text-[10px] font-black tracking-widest rounded-full uppercase"
                     >
-                      JOIN NOW
+                      Join Now
                     </Button>
                   </>
                 )}
@@ -323,13 +302,13 @@ export default function Home() {
               BUILD • SOLVE • VERIFYY
             </Badge>
 
-            <h1 className="text-3xl sm:text-5xl md:text-7xl font-black tracking-tighter mb-6 max-w-4xl leading-[1.05] reveal">
+            <h1 className="text-3xl sm:text-5xl md:text-7xl font-black tracking-tighter mb-6 max-w-4xl leading-[1.05]">
               Master Code <br />
               <span className="text-primary italic">Locally.</span>
             </h1>
 
             <p
-              className="text-sm sm:text-base md:text-lg text-muted-foreground max-w-xl mb-10 leading-relaxed reveal"
+              className="text-sm sm:text-base md:text-lg text-muted-foreground max-w-xl mb-10 leading-relaxed"
               style={{ transitionDelay: '0.1s' }}
             >
               The developer platform for high-intensity, terminal-first
@@ -339,7 +318,7 @@ export default function Home() {
 
             {/* Value Propositions */}
             <div
-              className="flex flex-wrap items-center justify-center gap-x-6 gap-y-3 mb-10 reveal"
+              className="flex flex-wrap items-center justify-center gap-x-6 gap-y-3 mb-10"
               style={{ transitionDelay: '0.15s' }}
             >
               {[
@@ -376,7 +355,7 @@ export default function Home() {
 
             {/* CLI Box */}
             <div
-              className="w-full max-w-sm md:max-w-md mb-10 group cursor-pointer reveal mx-auto"
+              className="w-full max-w-sm md:max-w-md mb-10 group cursor-pointer mx-auto"
               style={{ transitionDelay: '0.2s' }}
             >
               <div className="bg-black/60 backdrop-blur-xl border border-white/10 rounded-xl overflow-hidden shadow-2xl transition-all group-hover:border-primary/40 group-hover:shadow-primary/5 group-hover:shadow-[0_0_40px_-5px]">
@@ -402,7 +381,7 @@ export default function Home() {
 
             {/* CTAs */}
             <div
-              className="flex flex-col sm:flex-row items-center justify-center gap-4 reveal w-full sm:w-auto mb-12"
+              className="flex flex-col sm:flex-row items-center justify-center gap-4 w-full sm:w-auto mb-12"
               style={{ transitionDelay: '0.3s' }}
             >
               <Button
@@ -424,7 +403,7 @@ export default function Home() {
 
             {/* Stats */}
             <div
-              className="flex flex-wrap items-center justify-center gap-8 pt-8 border-t border-white/5 reveal"
+              className="flex flex-wrap items-center justify-center gap-8 pt-8 border-t border-white/5"
               style={{ transitionDelay: '0.4s' }}
             >
               {[
@@ -449,7 +428,7 @@ export default function Home() {
         <div className="relative py-20 overflow-hidden">
           <div className="absolute inset-0 skew-up bg-black/40 border-y border-white/5 -z-10 bg-grid-white/[0.02]"></div>
           <div className="max-w-6xl mx-auto px-4 md:px-6 unskew-neg relative z-10">
-            <div className="text-center mb-12 md:mb-16 reveal">
+            <div className="text-center mb-12 md:mb-16">
               <Badge className="bg-primary/10 text-primary border-primary/20 mb-3 px-2 py-0.5 text-[9px] uppercase font-black tracking-[0.2em]">
                 THE EXPERIENCE
               </Badge>
@@ -464,7 +443,7 @@ export default function Home() {
 
             {/* Mockup Showcase */}
             <div
-              className="grid grid-cols-1 md:grid-cols-4 gap-6 md:gap-4 max-w-5xl mx-auto reveal"
+              className="grid grid-cols-1 md:grid-cols-4 gap-6 md:gap-4 max-w-5xl mx-auto"
               style={{ transitionDelay: '0.2s' }}
             >
               <div className="md:col-span-3 aspect-[16/10] bg-black rounded-xl border border-white/10 overflow-hidden shadow-2xl relative group min-h-[240px]">
@@ -520,7 +499,7 @@ export default function Home() {
           </div>
           <div className="max-w-6xl mx-auto px-4 md:px-6 relative z-10">
             <div className="flex flex-col lg:flex-row gap-12 lg:gap-16 items-center">
-              <div className="lg:w-1/2 reveal">
+              <div className="lg:w-1/2">
                 <h2 className="text-3xl md:text-4xl font-black mb-6 md:mb-8 italic leading-tight tracking-tight uppercase">
                   Elite Flow. <br className="hidden md:block" /> Zero Friction.
                 </h2>
@@ -570,7 +549,7 @@ export default function Home() {
                 </div>
               </div>
               <div
-                className="lg:w-1/2 reveal w-full"
+                className="lg:w-1/2 w-full"
                 style={{ transitionDelay: '0.3s' }}
               >
                 <div className="p-6 md:p-8 bg-black border border-white/10 rounded-2xl relative overflow-hidden shadow-3xl">
@@ -615,7 +594,7 @@ export default function Home() {
         <div className="relative py-20 md:py-24 overflow-hidden">
           <div className="absolute inset-0 skew-down bg-black border-y border-white/5 -z-10 shadow-[0_0_100px_-50px_rgba(251,146,60,0.2)]"></div>
           <div className="max-w-6xl mx-auto px-4 md:px-6 unskew relative z-10">
-            <div className="mb-12 md:mb-20 reveal">
+            <div className="mb-12 md:mb-20">
               <Badge className="bg-primary/10 text-primary border-primary/20 mb-3 px-2 py-0.5 text-[9px] uppercase font-black tracking-[0.2em]">
                 SPECIFICATIONS
               </Badge>
@@ -670,7 +649,7 @@ export default function Home() {
               ].map((feature, i) => (
                 <div
                   key={i}
-                  className="p-6 md:p-8 bg-background reveal transition-all hover:bg-white/5"
+                  className="p-6 md:p-8 bg-background transition-all hover:bg-white/5"
                   style={{ transitionDelay: `${i * 0.05}s` }}
                 >
                   <div className="mb-4 md:mb-6">{feature.icon}</div>
@@ -689,7 +668,7 @@ export default function Home() {
         {/* Pricing Section */}
         <section id="pricing" className="py-20 md:py-32">
           <div className="max-w-6xl mx-auto px-4 md:px-6">
-            <div className="text-center mb-16 md:mb-20 reveal">
+            <div className="text-center mb-16 md:mb-20">
               <h2 className="text-4xl md:text-6xl font-black italic mb-4 tracking-tighter uppercase">
                 Plans.
               </h2>
@@ -699,7 +678,7 @@ export default function Home() {
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 lg:gap-8 items-stretch max-w-5xl mx-auto">
-              <Card className="flex flex-col border-white/5 bg-black/40 reveal rounded-2xl p-2 transition-transform hover:-translate-y-1">
+              <Card className="flex flex-col border-white/5 bg-black/40 rounded-2xl p-2 transition-transform hover:-translate-y-1">
                 <CardHeader className="p-6 md:p-8">
                   <Badge className="w-fit bg-white/5 text-muted-foreground border-white/10 mb-4 text-[9px] font-black tracking-widest leading-none">
                     FREE
@@ -741,7 +720,7 @@ export default function Home() {
               </Card>
 
               <Card
-                className="flex flex-col border-primary/30 bg-black/60 relative md:scale-105 lg:scale-110 shadow-[0_0_80px_-20px_rgba(251,146,60,0.15)] reveal rounded-2xl p-2 z-10"
+                className="flex flex-col border-primary/30 bg-black/60 relative md:scale-105 lg:scale-110 shadow-[0_0_80px_-20px_rgba(251,146,60,0.15)] rounded-2xl p-2 z-10"
                 style={{ transitionDelay: '0.1s' }}
               >
                 <div className="absolute top-0 right-6 md:right-8 -translate-y-1/2 bg-primary text-primary-foreground text-[8px] font-black px-3 py-1.5 rounded-full tracking-[0.2em] uppercase shadow-lg shadow-primary/20 leading-none">
@@ -798,7 +777,7 @@ export default function Home() {
               </Card>
 
               <Card
-                className="flex flex-col border-white/5 bg-black/40 reveal rounded-2xl p-2 transition-transform hover:-translate-y-1 md:col-span-2 lg:col-span-1"
+                className="flex flex-col border-white/5 bg-black/40 rounded-2xl p-2 transition-transform hover:-translate-y-1 md:col-span-2 lg:col-span-1"
                 style={{ transitionDelay: '0.2s' }}
               >
                 <CardHeader className="p-6 md:p-8">
