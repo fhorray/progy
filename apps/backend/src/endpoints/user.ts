@@ -41,14 +41,43 @@ user.post('/update-username', async (c) => {
 
   // 3. Update
   try {
-    await db
-      .update(schema.user)
-      .set({ username: username.toLowerCase(), updatedAt: new Date() })
-      .where(eq(schema.user.id, sessionUser.id));
+    const oldUsername = sessionUser.username;
+    const newUsername = username.toLowerCase();
 
-    return c.json({ success: true, username: username.toLowerCase() });
+    await db.batch([
+      // A. Update user's username
+      db.update(schema.user)
+        .set({ username: newUsername, updatedAt: new Date() })
+        .where(eq(schema.user.id, sessionUser.id)),
+
+      // B. Update all owned packages (Migration)
+      // This is a bit complex in D1 batch, we might need to do it as a separate loop if batching is too restrictive for dynamic values.
+      // But we can update all packages where scope was the old username.
+    ]);
+
+    // Since we can't easily concatenate strings in a D1 batch .set() with drizzle efficiently for all packages at once 
+    // without fetching them first or using raw SQL, let's fetch and update them.
+    const packages = await db
+      .select()
+      .from(schema.registryPackages)
+      .where(eq(schema.registryPackages.userId, sessionUser.id))
+      .all();
+
+    for (const pkg of packages) {
+      const newName = `@${newUsername}/${pkg.slug}`;
+      await db
+        .update(schema.registryPackages)
+        .set({ name: newName, updatedAt: new Date() })
+        .where(eq(schema.registryPackages.id, pkg.id));
+    }
+
+    return c.json({
+      success: true,
+      username: newUsername,
+      packagesMigrated: packages.length
+    });
   } catch (e: any) {
-    return c.json({ error: 'Failed to update username' }, 500);
+    return c.json({ error: 'Failed to update username or migrate packages' }, 500);
   }
 });
 

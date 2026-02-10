@@ -90,13 +90,10 @@ export async function init(options: { course?: string; offline?: boolean }) {
 
       const contentSrc = join(tempDir, "content");
       if (await exists(contentSrc)) {
-        // We only copy content if it doesn't already exist locally (don't overwrite student work)
+        // We want to copy content from artifact's content/ to local content/
         const localContent = join(cwd, "content");
-        if (!(await exists(localContent))) {
-          await mkdir(localContent, { recursive: true });
-        }
-        // applyLayering will handle Recursive copy without overwriting existing exercise code
-        await SyncManager.applyLayering(cwd, tempDir, false, "content");
+        // applyLayering(dest, cacheDir, force, [optional] sourcePathInCache)
+        await SyncManager.applyLayering(localContent, tempDir, false, "content");
       }
 
       await rm(tempDir, { recursive: true, force: true });

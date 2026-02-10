@@ -100,11 +100,33 @@ registry.get('/download/:scope/:slug/:version', async (c) => {
   const slug = c.req.param('slug');
   const version = c.req.param('version');
   const name = `@${scope}/${slug}`;
-  const key = `packages/${name}/${version}.progy`;
 
-  // analytics logic could go here
+  const db = drizzle(c.env.DB);
 
-  const object = await c.env.R2.get(key);
+  // 1. Lookup version in D1 to get the actual storage key
+  const versionData = await db
+    .select({
+      storageKey: schema.registryVersions.storageKey
+    })
+    .from(schema.registryVersions)
+    .innerJoin(
+      schema.registryPackages,
+      eq(schema.registryVersions.packageId, schema.registryPackages.id)
+    )
+    .where(
+      and(
+        eq(schema.registryPackages.name, name),
+        eq(schema.registryVersions.version, version)
+      )
+    )
+    .get();
+
+  if (!versionData) {
+    return c.json({ error: 'Package version not found in registry metadata' }, 404);
+  }
+
+  // 2. Fetch from R2 using the stored key
+  const object = await c.env.R2.get(versionData.storageKey);
   if (!object) {
     return c.json({ error: 'Artifact not found in registry storage' }, 404);
   }

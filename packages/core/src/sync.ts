@@ -119,14 +119,13 @@ last_sync = "${new Date().toISOString()}"
     let content = `*
 !.gitignore
 !progy.toml
+!*.progy
 !content/
-!content/**/
+!content/**
 `;
-    for (const ext of extList) {
-      content += `!content/**/*${ext}\n`;
-    }
-    content += `!progy-notes/\n!progy-notes/**\n`;
-
+    // We don't necessarily need to add extension specific ignores if we are un-ignoring the whole content/ dir,
+    // but keeping it as a safeguard for very large hidden files if desired. 
+    // However, the user wants 'content/' to just work.
     await writeFile(join(cwd, ".gitignore"), content);
   }
 
