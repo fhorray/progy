@@ -1,6 +1,6 @@
 import { writeFile, mkdir } from "node:fs/promises";
 import { dirname, join } from "node:path";
-import type { ServerType } from "../types";
+import type { ServerType } from "@progy/core";
 
 const saveNoteHandler: ServerType<"/notes/save"> = async (req) => {
   try {

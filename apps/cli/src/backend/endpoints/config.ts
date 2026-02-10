@@ -1,6 +1,6 @@
 import { execSync } from "node:child_process";
-import type { ServerType } from "../types";
-import { ensureConfig, currentConfig, PROG_CWD } from "../helpers";
+import type { ServerType } from "@progy/core";
+import { ensureConfig, currentConfig, PROG_CWD } from "@progy/core";
 
 const checkOfficial = () => {
   // 0. Check explicit flag (set during init via CLI)

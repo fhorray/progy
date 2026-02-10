@@ -1,7 +1,5 @@
-import { BACKEND_URL, FRONTEND_URL } from "../core/paths";
-import { saveToken, clearToken } from "../core/config";
+import { BACKEND_URL, FRONTEND_URL, saveToken, clearToken, logger } from "@progy/core";
 import { spawn } from "node:child_process";
-import { logger } from "../core/logger";
 
 function openBrowser(url: string) {
   const start = process.platform === "win32" ? "start" : process.platform === "darwin" ? "open" : "xdg-open";
@@ -9,9 +7,7 @@ function openBrowser(url: string) {
 }
 
 export async function login() {
-  // @ts-ignore
   const { createAuthClient } = await import("better-auth/client");
-  // @ts-ignore
   const { deviceAuthorizationClient } = await import("better-auth/client/plugins");
 
   const authClient = createAuthClient({

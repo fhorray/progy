@@ -1,7 +1,7 @@
 import { readFile, stat } from "node:fs/promises";
 import { join } from "node:path";
 import { spawn } from "node:child_process";
-import type { ServerType } from "../types";
+import type { ServerType } from "@progy/core";
 import {
   ensureConfig,
   currentConfig,
@@ -11,7 +11,7 @@ import {
   saveProgress,
   updateStreak,
   parseRunnerOutput
-} from "../helpers";
+} from "@progy/core";
 import { DockerClient } from "../../docker/client";
 import { DockerComposeClient } from "../../docker/compose-client";
 import { ImageManager } from "../../docker/image-manager";

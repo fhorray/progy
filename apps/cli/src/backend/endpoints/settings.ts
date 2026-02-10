@@ -1,5 +1,5 @@
-import type { ServerType } from "../types";
-import { getGlobalConfig, updateGlobalConfig } from "@/src/core/config";
+import type { ServerType } from "@progy/core";
+import { getGlobalConfig, updateGlobalConfig } from "@progy/core";
 
 const getSettingsHandler: ServerType<"/local-settings"> = async () => {
   const config = await getGlobalConfig();

@@ -13,7 +13,8 @@ import { gitRoutes } from "./endpoints/git";
 import { notesRoutes } from "./endpoints/notes";
 import { instructorRoutes } from "./endpoints/instructor";
 
-import { logger } from "../core/logger";
+import { logger } from "@progy/core";
+import { PORTS } from "@consts";
 
 const IS_TS = import.meta.file.endsWith(".ts");
 const PUBLIC_DIR = join(import.meta.dir, IS_TS ? "../../public" : "../public");
@@ -25,7 +26,7 @@ const PUBLIC_DIR = join(import.meta.dir, IS_TS ? "../../public" : "../public");
 let server;
 try {
   server = serve({
-    port: 3001,
+    port: PORTS.CLI,
     routes: {
       "/": () => new Response(Bun.file(join(PUBLIC_DIR, "index.html"))),
       "/main.js": () => new Response(Bun.file(join(PUBLIC_DIR, "main.js"))),
@@ -85,7 +86,7 @@ try {
   // logger.success(`Progy API ready`);
 } catch (e: any) {
   if (e.code === "EADDRINUSE" || e.syscall === "listen") {
-    logger.error(`Port 3001 is already in use.`, "To fix this: bunx progy kill-port 3001 (or close existing Progy)");
+    logger.error(`Port ${PORTS.CLI} is already in use.`, `To fix this: bunx progy kill-port ${PORTS.CLI} (or close existing Progy)`);
     process.exit(1);
   } else {
     throw e;

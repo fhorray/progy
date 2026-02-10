@@ -1,4 +1,4 @@
-import { spawn, SpawnOptions } from "node:child_process";
+import { spawn } from "node:child_process";
 
 export interface DockerRunOptions {
   cwd: string;
@@ -107,10 +107,10 @@ export class DockerClient {
       const child = spawn("docker", args, { stdio: ["ignore", "pipe", "pipe"] });
 
       if (child.stdout) {
-          child.stdout.on("data", (d) => { output += d.toString(); });
+        child.stdout.on("data", (d) => { output += d.toString(); });
       }
       if (child.stderr) {
-          child.stderr.on("data", (d) => { output += d.toString(); });
+        child.stderr.on("data", (d) => { output += d.toString(); });
       }
 
       child.on("close", (code) => {

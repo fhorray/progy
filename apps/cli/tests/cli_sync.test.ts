@@ -5,44 +5,45 @@ import { tmpdir } from "node:os";
 
 // --- Mocks ---
 
-// Mock GitUtils
-mock.module("../src/core/git", () => ({
-  GitUtils: {
-    lock: mock(async () => true),
-    unlock: mock(async () => {}),
-    updateOrigin: mock(async () => {}),
-    exec: mock(async (args: string[]) => {
-        if (args.includes("commit")) return { success: true, stdout: "committed" };
-        if (args.includes("push")) return { success: true, stdout: "pushed" };
-        return { success: true };
-    }),
-    pull: mock(async () => ({ success: true })),
-  }
+mock.module("@progy/core", () => ({
+    GitUtils: {
+        lock: mock(async () => true),
+        unlock: mock(async () => { }),
+        updateOrigin: mock(async () => { }),
+        exec: mock(async (args: string[]) => {
+            if (args.includes("commit")) return { success: true, stdout: "committed" };
+            if (args.includes("push")) return { success: true, stdout: "pushed" };
+            return { success: true };
+        }),
+        pull: mock(async () => ({ success: true })),
+    },
+    SyncManager: {
+        loadConfig: mock(async () => ({
+            course: { id: "test-course", repo: "test-repo", branch: "main", path: "" },
+            sync: {}
+        })),
+        ensureOfficialCourse: mock(async () => "/mock/cache"),
+        applyLayering: mock(async () => { }),
+        saveConfig: mock(async () => { }),
+        generateGitIgnore: mock(async () => { }),
+        resetExercise: mock(async () => { }),
+    },
+    loadToken: mock(async () => "mock-token"),
+    getGlobalConfig: mock(async () => ({})),
+    saveGlobalConfig: mock(async () => { }),
+    saveToken: mock(async () => { }),
+    clearToken: mock(async () => { }),
+    BACKEND_URL: "https://api.progy.dev",
+    logger: {
+        info: mock(() => { }),
+        success: mock(() => { }),
+        error: mock(() => { }),
+        warn: mock(() => { }),
+    },
+    exists: mock(async () => true),
+    getCourseCachePath: mock((id: string) => `/mock/cache/${id}`),
 }));
 
-// Mock SyncManager
-mock.module("../src/core/sync", () => ({
-  SyncManager: {
-    loadConfig: mock(async () => ({
-        course: { id: "test-course", repo: "test-repo", branch: "main", path: "" },
-        sync: {}
-    })),
-    ensureOfficialCourse: mock(async () => "/mock/cache"),
-    applyLayering: mock(async () => {}),
-    saveConfig: mock(async () => {}),
-    generateGitIgnore: mock(async () => {}),
-    resetExercise: mock(async () => {}),
-  }
-}));
-
-// Mock Config
-mock.module("../src/core/config", () => ({
-  loadToken: mock(async () => "mock-token"),
-  getGlobalConfig: mock(async () => ({})),
-  saveGlobalConfig: mock(async () => {}),
-  saveToken: mock(async () => {}),
-  clearToken: mock(async () => {}),
-}));
 
 // Helper to check if path exists
 async function exists(path: string): Promise<boolean> {
@@ -56,9 +57,9 @@ async function exists(path: string): Promise<boolean> {
 
 // Helper to create temp directories
 async function createTempDir(prefix: string): Promise<string> {
-  const dir = join(tmpdir(), `progy-test-${prefix}-${Date.now()}`);
-  await mkdir(dir, { recursive: true });
-  return dir;
+    const dir = join(tmpdir(), `progy-test-${prefix}-${Date.now()}`);
+    await mkdir(dir, { recursive: true });
+    return dir;
 }
 
 describe("CLI Sync Commands", () => {
@@ -78,8 +79,7 @@ describe("CLI Sync Commands", () => {
 
     test("sync executes git operations", async () => {
         const { sync } = await import("../src/commands/sync");
-        const { GitUtils } = await import("../src/core/git");
-        const { SyncManager } = await import("../src/core/sync");
+        const { GitUtils, SyncManager } = await import("@progy/core");
 
         // Need .git folder to trigger sync
         await mkdir(join(tempCwd, ".git"));
@@ -91,7 +91,7 @@ describe("CLI Sync Commands", () => {
         try {
             await sync();
         } finally {
-             console.log = originalLog;
+            console.log = originalLog;
         }
 
         expect(GitUtils.lock).toHaveBeenCalled();
@@ -104,7 +104,7 @@ describe("CLI Sync Commands", () => {
 
     test("save executes git commit and push", async () => {
         const { save } = await import("../src/commands/sync");
-        const { GitUtils } = await import("../src/core/git");
+        const { GitUtils } = await import("@progy/core");
 
         await mkdir(join(tempCwd, ".git"));
 
@@ -127,9 +127,9 @@ describe("CLI Sync Commands", () => {
         expect(pushCall).toBeDefined();
     });
 
-     test("reset calls SyncManager.resetExercise", async () => {
+    test("reset calls SyncManager.resetExercise", async () => {
         const { reset } = await import("../src/commands/sync");
-        const { SyncManager } = await import("../src/core/sync");
+        const { SyncManager } = await import("@progy/core");
 
         await reset("content/01_intro/exercise.py");
 

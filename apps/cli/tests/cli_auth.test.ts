@@ -4,22 +4,37 @@ import { describe, test, expect, mock, beforeEach, afterEach } from "bun:test";
 
 // Mock Config
 const mockConfig = {
-    saveToken: mock(async () => {}),
-    clearToken: mock(async () => {}),
+    saveToken: mock(async () => { }),
+    clearToken: mock(async () => { }),
 };
 
-mock.module("../src/core/config", () => ({
+mock.module("@progy/core", () => ({
     saveToken: mockConfig.saveToken,
     clearToken: mockConfig.clearToken,
-    loadToken: mock(async () => null), // Added missing export
-    getGlobalConfig: mock(async () => ({})), // Added missing export
-    saveGlobalConfig: mock(async () => {}), // Added missing export
+    loadToken: mock(async () => null),
+    getGlobalConfig: mock(async () => ({})),
+    saveGlobalConfig: mock(async () => { }),
+    logger: {
+        info: mock((msg) => console.log(msg)),
+        success: mock((msg) => console.log(msg)),
+        error: mock((msg) => console.error(msg)),
+        warn: mock((msg) => console.warn(msg)),
+        brand: mock((msg) => console.log(msg)),
+        banner: mock(() => { }),
+        startupInfo: mock(() => { }),
+        divider: mock(() => { }),
+    },
+    exists: mock(async () => true),
+    BACKEND_URL: "https://api.progy.dev",
+    FRONTEND_URL: "https://progy.dev",
 }));
+
+
 
 // Mock Spawn (openBrowser)
 const mockSpawn = mock(() => {
     return {
-        unref: () => {}
+        unref: () => { }
     };
 });
 
@@ -41,7 +56,7 @@ const mockAuthClient = {
             error: null
         })),
         token: mock(async () => ({
-             // Return token on first call
+            // Return token on first call
             data: { access_token: "mock-access-token" },
             error: null
         }))
@@ -72,7 +87,7 @@ describe("CLI Auth Commands", () => {
 
         // Spy on console to avoid noise
         const originalLog = console.log;
-        console.log = () => {};
+        console.log = () => { };
 
         try {
             await login();
@@ -90,12 +105,12 @@ describe("CLI Auth Commands", () => {
         const { logout } = await import("../src/commands/auth");
 
         const originalLog = console.log;
-        console.log = () => {};
+        console.log = () => { };
 
         try {
             await logout();
         } finally {
-             console.log = originalLog;
+            console.log = originalLog;
         }
 
         expect(mockConfig.clearToken).toHaveBeenCalled();

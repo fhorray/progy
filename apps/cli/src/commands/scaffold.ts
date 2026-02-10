@@ -1,6 +1,7 @@
 import { join, resolve } from "node:path";
 import { mkdir, writeFile, readdir } from "node:fs/promises";
-import { CourseLoader, type CourseConfig } from "../core/loader";
+import { CourseLoader } from "@progy/core";
+import type { LoaderCourseConfig } from "@progy/core";
 import {
   MODULE_INFO_TOML,
   EXERCISE_README,
@@ -8,7 +9,7 @@ import {
   QUIZ_TEMPLATE
 } from "../templates/scaffolds";
 
-const PROG_CWD = process.env.PROG_CWD || process.cwd();
+const getProgCwd = () => process.env.PROG_CWD || process.cwd();
 
 async function getNextNumber(parentDir: string): Promise<string> {
   try {
@@ -23,7 +24,7 @@ async function getNextNumber(parentDir: string): Promise<string> {
 
 async function resolveShortPath(shortPath: string): Promise<string> {
   const parts = shortPath.split("/"); // ["1", "2"]
-  let currentDir = join(PROG_CWD, "content");
+  let currentDir = join(getProgCwd(), "content");
 
   for (const part of parts) {
     const num = part.padStart(2, "0"); // "01", "02"
@@ -35,7 +36,7 @@ async function resolveShortPath(shortPath: string): Promise<string> {
   return currentDir;
 }
 
-function getExerciseExtension(config: CourseConfig): string {
+function getExerciseExtension(config: LoaderCourseConfig): string {
   const cmd = config.runner.command || '';
   if (cmd.includes('python')) return 'py';
   if (cmd.includes('rustc') || cmd.includes('cargo')) return 'rs';
@@ -46,7 +47,7 @@ function getExerciseExtension(config: CourseConfig): string {
 
 
 export async function addModule(name: string, options: { title?: string }) {
-  const contentDir = join(PROG_CWD, "content");
+  const contentDir = join(getProgCwd(), "content");
   await mkdir(contentDir, { recursive: true });
 
   const num = await getNextNumber(contentDir);
@@ -64,7 +65,7 @@ export async function addModule(name: string, options: { title?: string }) {
 
 export async function addExercise(modShort: string, name: string) {
   try {
-    const config = await CourseLoader.validateCourse(PROG_CWD);
+    const config = await CourseLoader.validateCourse(getProgCwd());
     const modulePath = await resolveShortPath(modShort);
 
     const num = await getNextNumber(modulePath);

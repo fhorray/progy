@@ -1,7 +1,7 @@
 import { readFile, exists } from "node:fs/promises";
 import { join } from "node:path";
-import type { ServerType } from "../types";
-import { ensureConfig, currentConfig, runSetupChecks, PROG_CWD } from "../helpers";
+import type { ServerType } from "@progy/core";
+import { ensureConfig, currentConfig, runSetupChecks, PROG_CWD } from "@progy/core";
 
 const setupStatusHandler: ServerType<"/setup/status"> = async () => {
   await ensureConfig();

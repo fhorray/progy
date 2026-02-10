@@ -1,75 +1,74 @@
-import { mkdir, rm, writeFile, readFile } from "node:fs/promises";
+import { mkdir, rm, writeFile, readFile, cp } from "node:fs/promises";
 import { join } from "node:path";
 import { existsSync } from "node:fs";
 
-console.log("[BUILD] Starting build process...");
+console.log("[BUILD] Starting monorepo build process...");
 
-const ROOT = join(import.meta.dir, "../apps/cli");
-const DIST = join(ROOT, "dist");
-const PUBLIC_SRC = join(ROOT, "public");
-const PUBLIC_DIST = join(DIST, "public");
+async function buildApp(appName: string, entryPoints: string[], hasFrontend: boolean = true) {
+  console.log(`\n[BUILD] Building app: ${appName}...`);
+  const appRoot = join(import.meta.dir, `../apps/${appName}`);
+  const dist = join(appRoot, "dist");
+  const publicSrc = join(appRoot, "public");
+  const publicDist = join(dist, "public");
 
-// 1. Clean dist
-await rm(DIST, { recursive: true, force: true });
-await mkdir(PUBLIC_DIST, { recursive: true });
+  // 1. Clean dist
+  await rm(dist, { recursive: true, force: true });
+  await mkdir(dist, { recursive: true });
 
-// Copy static assets
-// We need to copy everything from PUBLIC_SRC to PUBLIC_DIST excluding index.html which is processed later
-// But simplest is to copy all and overwrite index.html later.
-// Bun/Node cp
-const { cp } = await import("node:fs/promises");
-await cp(PUBLIC_SRC, PUBLIC_DIST, { recursive: true });
+  if (hasFrontend && existsSync(publicSrc)) {
+    await mkdir(publicDist, { recursive: true });
 
-console.log("[BUILD] Building Frontend...");
-// 2. Build Frontend
-const frontendBuild = await Bun.build({
-  entrypoints: [join(ROOT, "src/frontend/main.tsx")],
-  outdir: PUBLIC_DIST,
-  naming: "main.[ext]", // Force main.js / main.css
-  minify: true,
-});
+    // Copy static assets
+    await cp(publicSrc, publicDist, { recursive: true });
 
-if (!frontendBuild.success) {
-  console.error("Frontend build failed:", frontendBuild.logs);
-  process.exit(1);
-}
+    console.log(`[BUILD][${appName}] Building Frontend...`);
+    const frontendBuild = await Bun.build({
+      entrypoints: [join(appRoot, "src/frontend/main.tsx")],
+      outdir: publicDist,
+      naming: "main.[ext]",
+      minify: true,
+    });
 
-// 3. Process index.html
-console.log("[BUILD] Processing index.html...");
-let indexHtml = await readFile(join(PUBLIC_SRC, "index.html"), "utf-8");
+    if (!frontendBuild.success) {
+      console.error(`[${appName}] Frontend build failed:`, frontendBuild.logs);
+      process.exit(1);
+    }
 
-// Replace script tag TSX -> JS
-// Matches <script type="module" src="../src/frontend/main.tsx"></script> or similar
-indexHtml = indexHtml.replace(/src=".*main\.tsx"/, 'src="/main.js"');
+    // Process index.html
+    const indexHtmlPath = join(publicDist, "index.html");
+    if (existsSync(indexHtmlPath)) {
+      let indexHtml = await readFile(indexHtmlPath, "utf-8");
+      // Replace source script with bundle
+      indexHtml = indexHtml.replace(/src=".*frontend\/main\.tsx"/, 'src="/main.js"');
+      indexHtml = indexHtml.replace(/src="\/app\.js"/, 'src="/main.js"'); // For editor index.html
 
-// Inject CSS if generated
-if (existsSync(join(PUBLIC_DIST, "main.css"))) {
-  if (!indexHtml.includes("main.css")) {
-    indexHtml = indexHtml.replace("</head>", '<link rel="stylesheet" href="/main.css">\n</head>');
+      if (existsSync(join(publicDist, "main.css"))) {
+        if (!indexHtml.includes("main.css")) {
+          indexHtml = indexHtml.replace("</head>", '<link rel="stylesheet" href="/main.css">\n</head>');
+        }
+      }
+      await writeFile(indexHtmlPath, indexHtml);
+    }
+  }
+
+  console.log(`[BUILD][${appName}] Building Backend & CLI...`);
+  const backendBuild = await Bun.build({
+    entrypoints: entryPoints.map(p => join(appRoot, p)),
+    outdir: dist,
+    target: "bun",
+    minify: true,
+  });
+
+  if (!backendBuild.success) {
+    console.error(`[${appName}] Backend build failed:`, backendBuild.logs);
+    process.exit(1);
   }
 }
 
-await writeFile(join(PUBLIC_DIST, "index.html"), indexHtml);
+// Build CLI
+await buildApp("cli", ["src/cli.ts", "src/backend/server.ts"]);
 
-// 4. Build Backend & CLI
-console.log("[BUILD] Building Backend & CLI...");
-const backendBuild = await Bun.build({
-  entrypoints: [
-    join(ROOT, "src/cli.ts"),
-    join(ROOT, "src/backend/server.ts")
-  ],
-  outdir: DIST,
-  target: "bun",
-  minify: true,
-  external: ["better-auth"], // Externalize if needed, usually CLI bundles deps? Or relies on node_modules?
-  // For npm cli, we usually want minimal bundle, relying on installed node_modules.
-  // But Bun target bundles.
-  // Let's bundle to specific file names to match package.json bin
-});
+// Build Editor
+await buildApp("editor", ["src/cli.ts", "src/server.ts"]);
 
-if (!backendBuild.success) {
-  console.error("Backend build failed:", backendBuild.logs);
-  process.exit(1);
-}
-
-console.log("[BUILD] Success! Artifacts in dist/");
+console.log("\n[BUILD] All apps built successfully!");

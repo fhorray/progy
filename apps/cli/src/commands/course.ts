@@ -2,23 +2,7 @@ import { join, resolve, basename } from "node:path";
 import { mkdir, writeFile, readFile, readdir, stat, rm } from "node:fs/promises";
 import { spawn } from "node:child_process";
 import { tmpdir } from "node:os";
-import { GitUtils } from "../core/git";
-import { SyncManager } from "../core/sync";
-import { CourseLoader } from "../core/loader";
-import { CourseContainer } from "../core/container";
-import { loadToken } from "../core/config";
-import { BACKEND_URL, COURSE_CONFIG_NAME } from "../core/paths";
-import { TEMPLATES, RUNNER_README } from "../templates";
-import { logger } from "../core/logger";
-
-async function exists(path: string): Promise<boolean> {
-  try {
-    await stat(path);
-    return true;
-  } catch {
-    return false;
-  }
-}
+import { GitUtils, SyncManager, CourseLoader, CourseContainer, loadToken, BACKEND_URL, COURSE_CONFIG_NAME, TEMPLATES, RUNNER_README, logger, exists } from "@progy/core";
 
 async function runServer(runtimeCwd: string, isOffline: boolean, containerFile: string | null, bypass: boolean = false, isEditor: boolean = false) {
   const isTs = import.meta.file.endsWith(".ts");
@@ -201,7 +185,7 @@ export async function pack(options: { out?: string }) {
   }
 }
 
-async function detectEnvironment(cwd: string): Promise<"student" | "instructor"> {
+export async function detectEnvironment(cwd: string): Promise<"student" | "instructor"> {
   const hasCourseJson = await exists(join(cwd, "course.json"));
   const hasContentDir = await exists(join(cwd, "content"));
 

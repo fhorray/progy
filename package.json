@@ -2,26 +2,17 @@
   "name": "progy-monorepo",
   "private": true,
   "scripts": {
-    "dev": "bunx concurrently \"bun run dev:web\" \"bun run dev:backend\" --names \"WEB,API\" --prefix-colors \"blue,magenta\"",
-    "dev:backend": "bun run --cwd apps/backend dev",
-    "dev:web": "bun run --cwd apps/web dev",
+    "dev:cli": "bun run --cwd apps/cli dev",
+    "dev:editor": "bun run --cwd apps/editor dev",
     "build": "bun scripts/build.ts",
-    "cleanup": "bun scripts/cleanup.ts",
-    "deploy:backend": "bun run --cwd apps/backend deploy",
-    "build:web": "bun run --cwd apps/web build:cf",
-    "deploy:web": "bun run --cwd apps/web deploy",
-    "pkg:major": "bun pm --cwd apps/cli version major --force",
-    "pkg:minor": "bun pm --cwd apps/cli version minor --force",
-    "pkg:patch": "bun pm --cwd apps/cli version patch --force",
-    "pkg:publish": "bun publish --cwd apps/cli",
-    "db:clean": "wrangler d1 execute cli --remote --file=scripts/clean-db.sql",
-    "db:gen": "bun run --cwd apps/backend db:gen",
-    "db:up": "bun run --cwd apps/backend db:up:local",
-    "db:deploy": "bun run --cwd apps/backend db:up:remote",
-    "db:studio": "bun run --cwd apps/backend db:studio"
+    "test": "bun test",
+    "typecheck": "bun tsc --noEmit",
+    "cleanup": "bun scripts/cleanup.ts"
   },
   "workspaces": [
-    "apps/*"
+    "apps/*",
+    "packages/*",
+    "courses/*"
   ],
   "devDependencies": {
     "@types/bun": "latest"

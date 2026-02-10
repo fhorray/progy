@@ -1,5 +1,5 @@
-import { getGlobalConfig, updateGlobalConfig } from "@/src/core/config";
-import type { ServerType } from "../types";
+import { getGlobalConfig, updateGlobalConfig } from "@progy/core";
+import type { ServerType } from "@progy/core";
 
 const getTokenHandler: ServerType<"/auth/token"> = async () => {
   const config = await getGlobalConfig();

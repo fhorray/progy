@@ -36,58 +36,110 @@ mock.module("node:child_process", () => ({
   spawn: mockSpawn
 }));
 
-// Mock GitUtils
-mock.module("../src/core/git", () => ({
+let mockToken: string | null = null;
+
+mock.module("@progy/core", () => ({
   GitUtils: {
     clone: mock(async (url, dir) => {
-      // Create a dummy course.json so validation passes
-      await mkdir(dir, { recursive: true });
-      await writeFile(join(dir, "course.json"), JSON.stringify({
+      await mkdir(dir as string, { recursive: true });
+      await writeFile(join(dir as string, "course.json"), JSON.stringify({
         id: "test-course",
         name: "Test",
         runner: { command: "echo", args: [], cwd: "." },
         content: { root: ".", exercises: "content" },
         setup: { checks: [], guide: "SETUP.md" }
       }));
-      await mkdir(join(dir, "content"), { recursive: true });
-      await mkdir(join(dir, "content", "01_intro"), { recursive: true }); // Need XX_ folder
-      await mkdir(join(dir, "content", "01_intro", "01_hello"), { recursive: true }); // Need XX_ exercise
-      await writeFile(join(dir, "SETUP.md"), "setup");
+      await mkdir(join(dir as string, "content"), { recursive: true });
+      await mkdir(join(dir as string, "content", "01_intro"), { recursive: true });
+      await mkdir(join(dir as string, "content", "01_intro", "01_hello"), { recursive: true });
+      await writeFile(join(dir as string, "SETUP.md"), "setup");
       return { success: true };
     }),
     init: mock(async () => ({ success: true })),
     addRemote: mock(async () => ({ success: true })),
     pull: mock(async () => ({ success: true })),
     getGitInfo: mock(async () => ({ remoteUrl: null, root: null })),
-  }
-}));
-
-// Mock CourseContainer
-mock.module("../src/core/container", () => ({
+  },
   CourseContainer: {
     pack: mock(async (src, dest) => {
-      await writeFile(dest, "dummy-progy-content");
+      await writeFile(dest as string, "dummy-progy-content");
     }),
     unpack: mock(async (file) => {
-      // Return a dummy temp dir
       const dir = join(tmpdir(), "progy-unpack-" + Date.now());
       await mkdir(dir, { recursive: true });
       return dir;
     }),
     sync: mock(async () => { })
-  }
-}));
-
-// Mock SyncManager
-mock.module("../src/core/sync", () => ({
+  },
   SyncManager: {
     loadConfig: mock(async () => null),
     ensureOfficialCourse: mock(async () => ""),
     applyLayering: mock(async () => { }),
     saveConfig: mock(async () => { }),
     generateGitIgnore: mock(async () => { }),
+  },
+  CourseLoader: {
+    validateCourse: mock(async (path) => {
+      const configPath = join(path as string, "course.json");
+      try {
+        await stat(configPath);
+      } catch {
+        throw new Error("Missing course.json");
+      }
+      return {
+        id: "test-course",
+        name: "Test Course",
+        runner: { command: "echo", args: [], cwd: "." },
+        content: { root: ".", exercises: "content" },
+        setup: { guide: "SETUP.md", checks: [] }
+      };
+    }),
+    resolveSource: mock(async (input) => ({ url: `https://github.com/progy-dev/${input}.git` })),
+  },
+  logger: {
+    info: mock((msg) => console.log(msg)),
+    success: mock((msg) => console.log(msg)),
+    error: mock((msg) => console.error(msg)),
+    warn: mock((msg) => console.warn(msg)),
+    brand: mock((msg) => console.log(msg)),
+    banner: mock(() => { }),
+    startupInfo: mock(() => { }),
+    divider: mock(() => { }),
+  },
+  exists: mock(async (p: string) => {
+    try {
+      await stat(p);
+      return true;
+    } catch {
+      return false;
+    }
+  }),
+  BACKEND_URL: "https://api.progy.dev",
+  FRONTEND_URL: "https://progy.dev",
+  loadToken: mock(async () => mockToken),
+  saveToken: mock(async (t: string) => { mockToken = t; }),
+  clearToken: mock(async () => { mockToken = null; }),
+  getGlobalConfig: mock(async () => ({})),
+  saveGlobalConfig: mock(async () => { }),
+  getCourseCachePath: mock((id: string) => join(tmpdir(), "progy-cache-" + id)),
+  get PROG_CWD() { return process.env.PROG_CWD || process.cwd(); },
+  RUNNER_README: "mock-runner",
+  MODULE_INFO_TOML: "mock",
+  EXERCISE_README: "mock",
+  EXERCISE_STARTER: "mock",
+  QUIZ_TEMPLATE: "[]",
+  TEMPLATES: {
+    python: {
+      courseJson: {},
+      setupMd: "",
+      introReadme: "",
+      introFilename: "",
+      introCode: ""
+    }
   }
 }));
+
+
 
 // --- Existing Tests ---
 
@@ -126,7 +178,7 @@ describe("CLI Environment Detection", () => {
 
 describe("Config Functions", () => {
   test("saveToken and loadToken work correctly", async () => {
-    const { saveToken, loadToken, clearToken } = await import("../src/core/config");
+    const { saveToken, loadToken, clearToken } = await import("@progy/core");
 
     const testToken = `test-token-${Date.now()}`;
     await saveToken(testToken);
@@ -140,7 +192,7 @@ describe("Config Functions", () => {
   });
 
   test("clearToken removes the token", async () => {
-    const { saveToken, clearToken, loadToken } = await import("../src/core/config");
+    const { saveToken, clearToken, loadToken } = await import("@progy/core");
 
     await saveToken("temp-token");
     await clearToken();
@@ -152,7 +204,7 @@ describe("Config Functions", () => {
 
 describe("Course Loader", () => {
   test("validateCourse throws on missing course.json", async () => {
-    const { CourseLoader } = await import("../src/core/loader");
+    const { CourseLoader } = await import("@progy/core");
     const tempDir = await createTempDir("invalid-course");
 
     try {
@@ -163,7 +215,7 @@ describe("Course Loader", () => {
   });
 
   test("validateCourse accepts valid course structure", async () => {
-    const { CourseLoader } = await import("../src/core/loader");
+    const { CourseLoader } = await import("@progy/core");
     const tempDir = await createTempDir("valid-course");
 
     try {
@@ -202,7 +254,7 @@ describe("Course Loader", () => {
   });
 
   test("resolveSource resolves alias to progy-dev organization", async () => {
-    const { CourseLoader } = await import("../src/core/loader");
+    const { CourseLoader } = await import("@progy/core");
     const result = await CourseLoader.resolveSource("python");
     expect(result.url).toBe("https://github.com/progy-dev/python.git");
   });
@@ -230,13 +282,13 @@ describe("CLI Commands Exports", () => {
   });
 
   test("config functions are exported", async () => {
-    const configModule = await import("../src/core/config");
+    const { saveToken, loadToken, clearToken, getGlobalConfig, saveGlobalConfig } = await import("@progy/core");
 
-    expect(typeof configModule.saveToken).toBe("function");
-    expect(typeof configModule.loadToken).toBe("function");
-    expect(typeof configModule.clearToken).toBe("function");
-    expect(typeof configModule.getGlobalConfig).toBe("function");
-    expect(typeof configModule.saveGlobalConfig).toBe("function");
+    expect(typeof saveToken).toBe("function");
+    expect(typeof loadToken).toBe("function");
+    expect(typeof clearToken).toBe("function");
+    expect(typeof getGlobalConfig).toBe("function");
+    expect(typeof saveGlobalConfig).toBe("function");
   });
 });
 
@@ -282,8 +334,7 @@ describe("CLI Start Command (Integration)", () => {
 
   test("start command handles alias to container flow", async () => {
     const { start } = await import("../src/commands/course");
-    const { GitUtils } = await import("../src/core/git");
-    const { CourseContainer } = await import("../src/core/container");
+    const { GitUtils, CourseContainer } = await import("@progy/core");
 
     const alias = "test-alias-course";
 

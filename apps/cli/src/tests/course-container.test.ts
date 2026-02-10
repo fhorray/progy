@@ -1,6 +1,6 @@
 
 import { describe, test, expect, beforeAll, afterAll } from "bun:test";
-import { CourseContainer } from "../core/container";
+import { CourseContainer } from "@progy/core";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
 import { mkdir, writeFile, readFile, rm, stat } from "node:fs/promises";

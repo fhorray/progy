@@ -1,4 +1,4 @@
-import type { ServerType } from "../types";
+import type { ServerType } from "@progy/core";
 import { spawn } from "node:child_process";
 
 const ideOpenHandler: ServerType<"/ide/open"> = async (req) => {

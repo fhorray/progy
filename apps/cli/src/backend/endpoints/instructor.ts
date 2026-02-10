@@ -1,9 +1,9 @@
 import { join, dirname } from "node:path";
 import { readFile, writeFile, mkdir, rename, rm, readdir, stat } from "node:fs/promises";
-import type { ServerType } from "../types";
-import { PROG_CWD, COURSE_CONFIG_PATH, ensureConfig, currentConfig } from "../helpers";
-import { logger } from "../../core/logger";
-import { CourseLoader } from "../../core/loader";
+import type { ServerType } from "@progy/core";
+import { PROG_CWD, COURSE_CONFIG_PATH, ensureConfig, currentConfig } from "@progy/core";
+import { logger } from "@progy/core";
+import { CourseLoader } from "@progy/core";
 
 const IS_EDITOR = () => process.env.PROGY_EDITOR_MODE === "true";
 
@@ -184,10 +184,10 @@ const scaffoldHandler: ServerType<"/instructor/scaffold"> = async (req) => {
 
   try {
     const body = await req.json() as {
-      type: "module" | "exercise";
+      type: "module" | "lesson" | "exercise" | "quiz";
       title: string;
       message?: string;
-      // exercise-specific
+      // lesson/exercise/quiz-specific
       modulePath?: string;
       fileExtension?: string;
     };
@@ -212,7 +212,7 @@ const scaffoldHandler: ServerType<"/instructor/scaffold"> = async (req) => {
       });
     }
 
-    if (body.type === "exercise") {
+    if (body.type === "lesson" || body.type === "exercise" || body.type === "quiz") {
       if (!body.modulePath) {
         return Response.json({ success: false, error: "modulePath is required" }, { status: 400 });
       }
@@ -220,30 +220,49 @@ const scaffoldHandler: ServerType<"/instructor/scaffold"> = async (req) => {
       const absModuleDir = sanitizePath(body.modulePath);
       const num = await getNextNumber(absModuleDir);
       const slug = slugify(body.title);
-      const ext = body.fileExtension || "py";
       const dirName = `${num}_${slug}`;
       const absDir = join(absModuleDir, dirName);
 
       await mkdir(absDir, { recursive: true });
 
-      // Create README.md
-      const readme = `# ${body.title}\n\nWrite your lesson instructions here.\n`;
-      await writeFile(join(absDir, "README.md"), readme);
+      if (body.type === "quiz") {
+        const quizData = {
+          title: body.title,
+          description: "New quiz description",
+          questions: [
+            {
+              id: Math.random().toString(36).substring(2, 9),
+              type: "multiple-choice",
+              question: "Sample Question?",
+              options: [
+                { id: "a", text: "Option A", isCorrect: true },
+                { id: "b", text: "Option B", isCorrect: false }
+              ]
+            }
+          ]
+        };
+        await writeFile(join(absDir, "quiz.json"), JSON.stringify(quizData, null, 2));
+      } else {
+        const ext = body.fileExtension || "py";
+        // Create README.md
+        const readme = `# ${body.title}\n\nWrite your lesson instructions here.\n`;
+        await writeFile(join(absDir, "README.md"), readme);
 
-      // Create starter code file
-      const starterComments: Record<string, string> = {
-        py: `# ${body.title}\n# Write your solution below\n`,
-        rs: `// ${body.title}\n// Write your solution below\nfn main() {\n    \n}\n`,
-        js: `// ${body.title}\n// Write your solution below\n`,
-        ts: `// ${body.title}\n// Write your solution below\n`,
-        sql: `-- ${body.title}\n-- Write your query below\n`,
-        go: `package main\n\n// ${body.title}\nfunc main() {\n\t\n}\n`,
-      };
-      const starterContent = starterComments[ext] || `// ${body.title}\n`;
-      const mainFile = ext === "rs" ? "exercise" : "main";
-      await writeFile(join(absDir, `${mainFile}.${ext}`), starterContent);
+        // Create starter code file
+        const starterComments: Record<string, string> = {
+          py: `# ${body.title}\n# Write your solution below\n`,
+          rs: `// ${body.title}\n// Write your solution below\nfn main() {\n    \n}\n`,
+          js: `// ${body.title}\n// Write your solution below\n`,
+          ts: `// ${body.title}\n// Write your solution below\n`,
+          sql: `-- ${body.title}\n-- Write your query below\n`,
+          go: `package main\n\n// ${body.title}\nfunc main() {\n\t\n}\n`,
+        };
+        const starterContent = starterComments[ext] || `// ${body.title}\n`;
+        const mainFile = ext === "rs" ? "exercise" : "main";
+        await writeFile(join(absDir, `${mainFile}.${ext}`), starterContent);
+      }
 
-      // Update info.toml — append exercise entry
+      // Update info.toml — append entry
       const infoPath = join(absModuleDir, "info.toml");
       try {
         let tomlContent = await readFile(infoPath, "utf-8");
@@ -367,7 +386,7 @@ const reorderHandler: ServerType<"/instructor/reorder"> = async (req) => {
       const oldName = order[i];
       const newPrefix = (i + 1).toString().padStart(2, "0");
       // remove old prefix if exists (e.g. 03_hello -> hello)
-      const cleanName = oldName.replace(/^\d+_/, "");
+      const cleanName = oldName?.replace(/^\d+_/, "");
       const newName = `${newPrefix}_${cleanName}`;
 
       await rename(join(absParent, `__tmp_${oldName}`), join(absParent, newName));

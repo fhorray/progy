@@ -1,5 +1,4 @@
-import { getGlobalConfig, saveGlobalConfig } from "../core/config";
-import { logger } from "../core/logger";
+import { getGlobalConfig, saveGlobalConfig, logger } from "@progy/core";
 
 export async function setConfig(path: string, value: any) {
   const keys = path.split(".");

@@ -12,7 +12,7 @@ process.env.PROGY_BYPASS_MODE = "false";
 process.env.NODE_ENV = "test";
 
 // Mock paths module BEFORE it's loaded by anyone else
-mock.module("../src/core/paths", () => {
+mock.module("@progy/core", () => {
   const original = require("../src/core/paths");
   return {
     ...original,

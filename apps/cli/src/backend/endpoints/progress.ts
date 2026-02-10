@@ -1,5 +1,5 @@
-import type { ServerType } from "../types";
-import { getProgress, saveProgress, updateStreak, } from "../helpers";
+import type { ServerType } from "@progy/core";
+import { getProgress, saveProgress, updateStreak, } from "@progy/core";
 import { DEFAULT_PROGRESS } from "@consts";
 
 const getProgressHandler: ServerType<"/progress"> = async () => {

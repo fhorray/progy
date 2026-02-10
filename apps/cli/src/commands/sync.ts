@@ -1,19 +1,5 @@
 import { join, relative, resolve } from "node:path";
-import { stat } from "node:fs/promises";
-import { GitUtils } from "../core/git";
-import { SyncManager } from "../core/sync";
-import { loadToken } from "../core/config";
-import { BACKEND_URL, getCourseCachePath } from "../core/paths";
-import { logger } from "../core/logger";
-
-async function exists(path: string): Promise<boolean> {
-  try {
-    await stat(path);
-    return true;
-  } catch {
-    return false;
-  }
-}
+import { GitUtils, SyncManager, loadToken, BACKEND_URL, getCourseCachePath, logger, exists } from "@progy/core";
 
 export async function save(options: { message: string }) {
   const cwd = process.cwd();

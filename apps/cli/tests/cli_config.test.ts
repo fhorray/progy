@@ -10,13 +10,25 @@ const mockConfig = {
     }),
 };
 
-mock.module("../src/core/config", () => ({
+mock.module("@progy/core", () => ({
     getGlobalConfig: mockConfig.getGlobalConfig,
     saveGlobalConfig: mockConfig.saveGlobalConfig,
     loadToken: mock(async () => null),
-    saveToken: mock(async () => {}),
-    clearToken: mock(async () => {}),
+    saveToken: mock(async () => { }),
+    clearToken: mock(async () => { }),
+    logger: {
+        info: mock((msg) => console.log(msg)),
+        success: mock((msg) => console.log(msg)),
+        error: mock((msg) => console.error(msg)),
+        warn: mock((msg) => console.warn(msg)),
+        brand: mock((msg) => console.log(msg)),
+        banner: mock(() => { }),
+        startupInfo: mock(() => { }),
+        divider: mock(() => { }),
+    },
+    exists: mock(async () => true),
 }));
+
 
 
 describe("CLI Config Commands", () => {

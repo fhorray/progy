@@ -1,5 +1,5 @@
-import { GitUtils } from "@/src/core/git";
-import { getCourseConfig } from "../helpers";
+import { GitUtils } from "@progy/core";
+import { getCourseConfig } from "@progy/core";
 import { join, relative } from "node:path";
 
 const getStatus = async () => {
