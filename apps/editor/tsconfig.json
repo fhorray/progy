@@ -1,0 +1,20 @@
+{
+  "extends": "../../tsconfig.json",
+  "compilerOptions": {
+    "target": "ESNext",
+    "module": "ESNext",
+    "moduleResolution": "bundler",
+    "allowImportingTsExtensions": true,
+    "noEmit": true,
+    "jsx": "react-jsx",
+    "strict": true,
+    "skipLibCheck": true,
+    "baseUrl": ".",
+    "paths": {
+      "@/*": ["./src/frontend/*", "./*"],
+      "@consts": ["../../constants.ts"],
+      "@progy/core": ["../../packages/core/src/index.ts"]
+    }
+  },
+  "include": ["src/**/*"]
+}
