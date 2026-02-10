@@ -1,62 +1,69 @@
-# Progy Editor: Technical Specification (v2 - Bun & Modern Stack)
+# Progy Editor: Technical Specification (v2.1 - Hybrid Editor)
 
-This document outlines the detailed technical architecture for the standalone `apps/editor` application.
+This document outlines the technical architecture for the standalone `apps/editor` application, pivoting towards a **Hybrid Editor Strategy**.
 
-**Core Vision:** A high-performance, developer-centric Course Creator environment built on cutting-edge, minimal-dependency web standards. It prioritizes the "IDE feel" over traditional CMS interfaces.
+**Core Vision:** A high-performance, developer-centric Course Orchestrator. It excels at **Structure, Configuration, and Content Creation** (Markdown/Quizzes) while seamlessly integrating with the user's preferred local IDE (VS Code, Neovim) for heavy code editing.
 
 ---
 
 ## 1. High-Level Architecture
 
-The **Progy Editor** will be a single-binary application (when bundled) that serves a React frontend and handles file system operations via a Bun native server.
+The **Progy Editor** is a local web application that bridges the gap between raw file editing and a rich course management interface.
 
-### 1.1. Technology Stack
+### 1.1. The Hybrid Strategy
+
+| Feature | Progy Editor (Web) | Local IDE (VS Code) |
+| :--- | :--- | :--- |
+| **Course Structure** | **Primary.** Drag & drop modules, reorder lessons, visualize dependencies. | **Secondary.** Raw file system manipulation. |
+| **Configuration** | **Primary.** Form-based editing for `course.json` with validation & image selection. | **Secondary.** Raw JSON editing (error-prone). |
+| **Content (Markdown)** | **Primary.** WYSIWYG editor with live preview of custom blocks (Video, Quiz). | **Secondary.** Raw Markdown. |
+| **Quizzes** | **Primary.** Visual builder for complex JSON structures. | **Secondary.** Raw JSON. |
+| **Code (Rust/Python)** | **Secondary.** Quick fixes, embedded playgrounds. | **Primary.** Heavy coding, LSP features, debugging. |
+
+### 1.2. Technology Stack
 
 | Layer | Technology | Rationale |
 | :--- | :--- | :--- |
-| **Runtime & Server** | **Bun** (`Bun.serve`) | Zero-config, ultra-fast HTTP/WebSocket server. Replaces Express/Fastify. |
-| **Frontend Framework** | **React 19** (via Vite) | Standard component model. We need React for the rich ecosystem (Tiptap, Monaco). |
-| **Styling** | **Tailwind CSS v4** | Using the JIT CDN script for dev speed or the new CLI. No `postcss.config.js` or `tailwind.config.ts`. |
-| **State Management** | **Nanostores** | Atomic, framework-agnostic state. Perfect for frequent updates (typing, cursor). |
-| **Routing** | **@nanostores/router** | Minimal, type-safe router that syncs URL state with atoms. |
-| **Data Fetching** | **@nanostores/query** | Revalidating cache for file tree and content (SWR pattern). |
-| **Form Handling** | **@tanstack/react-form** | Headless, type-safe form validation for complex configs (`course.json`). |
-| **Rich Text Editor** | **Tiptap** | Headless wrapper around ProseMirror. Allows custom React components for blocks. |
-| **Code Editor** | **Monaco Editor** | The VS Code editor core. Essential for the "IDE feel" (Minimap, LSP, IntelliSense). |
+| **Runtime & Server** | **Bun** (`Bun.serve`) | Zero-config, ultra-fast HTTP/WebSocket server. |
+| **Frontend Framework** | **React 19** (via Vite) | Standard component model. |
+| **Styling** | **Tailwind CSS v4** | JIT CDN/CLI. No config files. |
+| **State Management** | **Nanostores** | Atomic state for high-frequency updates. |
+| **Routing** | **@nanostores/router** | Minimal, type-safe router. |
+| **Data Fetching** | **@nanostores/query** | Revalidating cache for file tree (SWR). |
+| **Form Handling** | **@tanstack/react-form** | Headless, type-safe validation for configs. |
+| **Rich Text Editor** | **Tiptap** | Block-based editing for course content. |
+| **Code Editor** | **Monaco Editor** | Embedded editor for quick edits & playgrounds. |
 
 ---
 
 ## 2. Project Structure (`apps/editor`)
 
-The folder structure is designed to separate the "Server Bridge" from the "Client UI".
+Designed to separate the "Server Bridge" from the "Client UI".
 
 ```
 apps/editor/
 ├── index.ts                # Entry point (Bun.serve)
-├── public/                 # Static assets (favicons, manifest)
-├── server/                 # Backend Logic (The "Bridge")
-│   ├── router.ts           # API Route matching (native Request/Response)
+├── public/                 # Static assets
+├── server/                 # Backend Logic (Bridge)
+│   ├── router.ts           # API Routes
 │   ├── handlers/
-│   │   ├── fs.ts           # File System operations (read, write, move, delete)
-│   │   ├── docker.ts       # Docker/Compose integration
-│   │   └── lsp.ts          # Language Server Protocol bridge
-│   └── ws.ts               # WebSocket handler (Hot Reload, Terminal PTY)
+│   │   ├── fs.ts           # File System operations
+│   │   ├── ide.ts          # IDE Integration (open in VS Code)
+│   │   └── docker.ts       # Runner integration
+│   └── ws.ts               # WebSocket (Hot Reload)
 ├── src/                    # Frontend React App
-│   ├── main.tsx            # React entry
-│   ├── App.tsx             # Root Layout
-│   ├── stores/             # Nanostores Definitions
-│   │   ├── router.ts       # URL definition
-│   │   ├── files.ts        # File tree & Active file atoms
-│   │   └── ui.ts           # Sidebar/Theme state
+│   ├── main.tsx            # Entry
+│   ├── App.tsx             # Layout
+│   ├── stores/             # Nanostores
 │   ├── components/
-│   │   ├── editor/         # The core editing surface
-│   │   │   ├── RichText.tsx   # Tiptap wrapper
-│   │   │   ├── Code.tsx       # Monaco wrapper
-│   │   │   └── extensions/    # Custom Tiptap Node Views (Video, Note)
-│   │   ├── layout/         # Panels, Resizable Logic
-│   │   └── forms/          # Configuration forms (TanStack Form)
-│   └── lib/                # Utilities (API client, debouncers)
-├── index.html              # App Shell (Tailwind CDN script here)
+│   │   ├── editor/         # Core editors
+│   │   │   ├── RichText.tsx
+│   │   │   ├── Code.tsx
+│   │   │   └── extensions/ # Custom Tiptap Nodes
+│   │   ├── layout/         # Panels
+│   │   └── forms/          # Config Forms
+│   └── lib/                # Utilities
+├── index.html              # App Shell
 └── vite.config.ts          # Minimal build config
 ```
 
@@ -64,242 +71,73 @@ apps/editor/
 
 ## 3. Detailed Component Specifications
 
-### 3.1. The Bun Server (`server/`)
+### 3.1. IDE Integration (`server/handlers/ide.ts`)
 
-The server is not just an API; it's a bridge to the OS.
+The backend must provide robust support for opening files in the user's preferred editor.
 
-**`index.ts` Implementation Strategy:**
-We use `Bun.serve` to handle both static files (the built frontend) and API calls.
+**Endpoints:**
+-   `POST /api/ide/open`: Accepts `{ path: string, line?: number, column?: number }`.
+    -   Detects `EDITOR` env var or defaults to `code`.
+    -   Executes `code -g <path>:<line>:<col>` or `launch <path>` (macOS).
 
-```typescript
-// server/index.ts (Concept)
-const server = Bun.serve({
-  port: 4000,
-  async fetch(req, server) {
-    const url = new URL(req.url);
+**UI Integration:**
+-   **File Tree:** Right-click -> "Open in System Editor".
+-   **Code Editor Toolbar:** "Open in VS Code" button (primary action).
+-   **Error Links:** Clicking a compiler error line number opens the file in the IDE at that line.
 
-    // 1. WebSocket Upgrade (LSP, Terminal, HMR)
-    if (url.pathname === "/ws") {
-      const success = server.upgrade(req);
-      return success ? undefined : new Response("Upgrade failed", { status: 500 });
-    }
+### 3.2. Rich Text Editor (Tiptap)
 
-    // 2. API Routes
-    if (url.pathname.startsWith("/api/")) {
-      return handleApiRequest(req); // Router logic
-    }
+Focus on providing a "What You See Is What You Get" experience for course elements.
 
-    // 3. Static Files (Vite build or Dev Server proxy)
-    // In dev: Proxy to Vite (http://localhost:5173)
-    // In prod: Serve from ./dist
-    return serveStatic(req);
-  },
-  websocket: {
-    message(ws, message) { /* ... */ },
-    open(ws) { /* ... */ },
-  }
-});
-```
+**Custom Nodes:**
+1.  **Video Block:** Embeds YouTube/Vimeo players.
+2.  **Callout Block:** Visual alerts (`:::note`, `:::warning`).
+3.  **Quiz Block:** Embeds a visual quiz editor *inline* within the lesson content (serialized to `quiz.json` or frontmatter).
+4.  **Playground Block:** Embeds a runnable code snippet.
 
-### 3.2. State & Routing (Nanostores)
+### 3.3. Configuration Forms (`@tanstack/react-form`)
 
-We strictly separate **URL state** from **Application state**.
+**Schema-Driven UI:**
+-   **`course.json`:** Fields for ID, Title, Runner (Docker/Process), Repository.
+-   **`info.toml`:** Fields for Module Title, Message, Prerequisites.
+-   **Validation:** Immediate feedback on invalid IDs or missing fields using Zod.
 
-**Router Setup (`src/stores/router.ts`):**
-```typescript
-import { createRouter } from '@nanostores/router';
+### 3.4. The Bun Server
 
-export const $router = createRouter({
-  home: '/',
-  editor: '/edit/:filePath', // e.g., /edit/content/01_intro/01_hello.rs
-  settings: '/settings',
-  preview: '/preview/:moduleId',
-});
-```
-
-**Query Setup (`src/stores/files.ts`):**
-Using `@nanostores/query` allows us to fetch the file tree and have it auto-update when the backend notifies of changes via WS.
-
-```typescript
-import { createFetcherStore } from '@nanostores/query';
-
-// Fetches directory structure
-export const $fileTree = createFetcherStore<FileNode[]>(['file-tree']);
-
-// Fetches content for the active file
-export const $fileContent = createFetcherStore<string>(['file-content', $activeFilePath]);
-```
-
-### 3.3. Rich Text Editor (Tiptap with Custom Nodes)
-
-The standard Tiptap is insufficient. We need **Block-based editing** for specific Progy features.
-
-**Architecture:**
--   **Core:** `@tiptap/react`, `@tiptap/starter-kit`.
--   **Markdown:** `tiptap-markdown` (We save as MD, not HTML/JSON).
--   **Custom Node Views (React Components):**
-
-1.  **Video Block (`<VideoNode />`):**
-    -   *Markdown:* `::video[url="https://..."]` (using `remark-directive` syntax).
-    -   *UI:* Renders a specialized player placeholder. Supports pasting YouTube/Vimeo links.
-    -   *Props:* `src`, `title`, `poster`.
-
-2.  **Note/Callout Block (`<CalloutNode />`):**
-    -   *Markdown:* `:::note ... :::` or `> [!NOTE]`.
-    -   *UI:* A colored box (Blue/Info, Yellow/Warning, Red/Danger) with an icon.
-    -   *Interaction:* Dropdown to change type (Note -> Warning).
-
-3.  **Interactive Code Block (`<PlaygroundNode />`):**
-    -   *Markdown:* ` ```rust:playground ... ``` `
-    -   *UI:* Embeds a mini Monaco instance *inside* the rich text flow.
-    -   *Feature:* "Run" button that sends code to the backend Docker runner.
-
-### 3.4. Code Editor (Monaco vs. CodeMirror)
-
-**Verdict:** Use **Monaco Editor**.
-
-**Why Monaco?**
--   **IntelliSense:** Out-of-the-box support for TypeScript/JS/JSON validation.
--   **LSP Support:** Robust libraries (`monaco-languageclient`) exist to connect to `rust-analyzer` via WebSockets.
--   **Minimap & Diff View:** Essential for comparing file versions or large files.
--   **Familiarity:** Users expect VS Code keybindings (`Cmd+D`, `Alt+Click`).
-
-**Implementation Strategy:**
--   Wrap `@monaco-editor/react` in a generic `<CodeEditor />` component.
--   **Theme:** Create a custom Monaco theme that matches the **Zinc/Rust** UI palette exactly (background `#09090b`, keywords `#f97316`).
--   **Typings:** For `course.json`, inject the JSON Schema to get auto-completion for fields like `runner.image`.
-
-### 3.5. Form Management (`@tanstack/react-form`)
-
-For complex configuration files (`course.json`, `info.toml`), raw JSON editing is error-prone. We will provide a **GUI Form**.
-
-**Why TanStack Form?**
--   **Headless:** Full control over UI components (using our shadcn/ui library).
--   **Validation:** First-class Zod integration.
--   **Performance:** Fine-grained subscription to field updates (no re-rendering the whole form on every keystroke).
-
-**Example Schema (`course.json`):**
-```typescript
-const courseSchema = z.object({
-  id: z.string().min(3).regex(/^[a-z0-9-]+$/),
-  name: z.string().min(5),
-  runner: z.object({
-    type: z.enum(['docker', 'process']),
-    image: z.string().optional(),
-  }),
-});
-```
+**`index.ts` Strategy:**
+-   Use `Bun.serve` to serve both the API and the static frontend.
+-   **WebSockets:** Essential for:
+    -   **File Watcher:** Notify frontend when files change externally (e.g., edited in VS Code).
+    -   **Terminal Stream:** Pipe runner output to the frontend console.
 
 ---
 
-## 4. Implementation Guide (Step-by-Step)
+## 4. Implementation Plan
 
-### Phase 1: The Foundation (Day 1-2)
+### Phase 1: Foundation (Days 1-2)
+1.  Initialize `apps/editor` with Bun, React, Vite.
+2.  Implement `server/index.ts` with `Bun.serve`.
+3.  Implement basic FS API (`GET /tree`, `GET /content`).
+4.  Implement `POST /api/ide/open`.
 
-1.  **Initialize Bun Project:**
-    -   `bun init` in `apps/editor`.
-    -   `bun add react react-dom vite @vitejs/plugin-react`.
-    -   `bun add -d tailwindcss postcss autoprefixer` (or use CDN for MVP).
+### Phase 2: Core Editors (Days 3-5)
+5.  **Monaco:** Setup basic code editing. Add "Open in IDE" button.
+6.  **Tiptap:** Setup Markdown editing. Implement basic formatting.
+7.  **File Tree:** Visual tree with icons and context menu.
 
-2.  **Setup Server Bridge:**
-    -   Create `server/index.ts` with `Bun.serve`.
-    -   Implement `GET /api/fs/tree` using `node:fs/promises`.
-    -   Implement `ws` handler for `chokidar` file watching.
-
-3.  **Setup Frontend Router & Store:**
-    -   Initialize `@nanostores/router`.
-    -   Create the layout shell (Sidebar + Main Area) using Tailwind v4 classes.
-
-### Phase 2: The Editor Core (Day 3-5)
-
-4.  **Integrate Monaco:**
-    -   Install `@monaco-editor/react`.
-    -   Create `<CodeEditor path="..." />`.
-    -   Connect it to `$fileContent` store (fetch on mount, save on `Ctrl+S`).
-
-5.  **Integrate Tiptap:**
-    -   Install `@tiptap/react` `tiptap-markdown`.
-    -   Create `<RichTextEditor />`.
-    -   Implement the serialization/deserialization logic (Markdown <-> ProseMirror Node Tree).
-
-6.  **File Tree Component:**
-    -   Use `@nanostores/query` to fetch tree data.
-    -   Recursive rendering with `<Folder />` and `<File />` icons.
-    -   Connect click events to `$router.open('/edit/...')`.
-
-### Phase 3: Advanced Features (Day 6-8)
-
-7.  **Configuration Forms:**
-    -   Create `ConfigEditor.tsx`.
-    -   Use `@tanstack/react-form` to bind `course.json` fields.
-    -   Implement "Switch View" (GUI <-> JSON Source).
-
-8.  **Terminal Panel:**
-    -   Install `xterm` and `xterm-addon-fit`.
-    -   Backend: Use `node-pty` to spawn a shell.
-    -   Frontend: Render `xterm` in a bottom collapsible panel.
-
-9.  **Custom Tiptap Nodes:**
-    -   Implement `<CalloutNode />` and `<VideoNode />`.
-    -   Ensure they serialize correctly back to Markdown.
+### Phase 3: Advanced Features (Days 6-8)
+8.  **Config Forms:** Implement `course.json` editor with TanStack Form.
+9.  **Visual Assets:** Drag-and-drop image upload to Markdown.
+10. **Hot Reload:** WebSocket file watcher to sync external edits.
 
 ---
 
-## 5. Tailwind v4 Specifics
+## 5. Why Hybrid?
 
-Since Tailwind v4 is CSS-first, we avoid `tailwind.config.ts`.
+By acknowledging that **VS Code** is the best tool for writing code, we free up the Progy Editor to be the best tool for **everything else**:
+-   **Structure:** Organizing modules visually.
+-   **Content:** Writing rich, interactive lessons.
+-   **Configuration:** Managing complex settings without syntax errors.
+-   **Preview:** Seeing the course exactly as a student would.
 
-**`index.html`:**
-```html
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Progy Editor</title>
-    <!-- Development CDN -->
-    <script src="https://unpkg.com/@tailwindcss/browser@4"></script>
-    <style type="text/tailwindcss">
-        @theme {
-            --color-rust: #f97316;
-            --color-zinc-950: #09090b;
-            --font-sans: 'Inter', sans-serif;
-            --font-mono: 'JetBrains Mono', monospace;
-        }
-    </style>
-</head>
-<body>
-    <div id="root"></div>
-    <script type="module" src="/src/main.tsx"></script>
-</body>
-</html>
-```
-
-This setup allows immediate prototyping. For production, we will switch to the Vite plugin `tailwindcss`.
-
----
-
-## 6. Comparison: Monaco vs. CodeMirror
-
-| Feature | Monaco Editor | CodeMirror 6 | Recommendation |
-| :--- | :--- | :--- | :--- |
-| **Bundle Size** | Heavy (~2-4MB) | Light/Modular (~500KB) | Monaco for Editor App |
-| **Performance** | Excellent (Canvas-like) | Excellent (DOM-based) | Tie |
-| **LSP** | Native-like (VS Code) | Requires Adapter | Monaco |
-| **Minimap** | Built-in | Plugin required | Monaco |
-| **Mobile** | Poor | Good | CodeMirror |
-| **Customization** | Hard (Internal APIs) | Easy (Extension system) | CodeMirror |
-
-**Decision:** Since this is a **Desktop/Web Editor for Instructors** (who are developers), the **"IDE Feel"** is paramount. Monaco provides the exact experience of VS Code, which is the gold standard. The file size penalty is acceptable for a dedicated editor application.
-
----
-
-## 7. Migration Strategy (From CLI to Standalone)
-
-1.  **Freeze CLI Editor:** Stop adding features to `apps/cli/src/frontend/editor`.
-2.  **Scaffold `apps/editor`:** Set up the Bun server and basic React shell.
-3.  **Port Logic:** Move the file system logic from `apps/cli/backend` to `apps/editor/server`.
-4.  **Rewrite UI:** Re-implement the UI using the new stack (TanStack Form, Monaco).
-5.  **Release:** Add `progy edit` command to CLI that downloads/runs the new editor binary or server.
-
----
+This approach minimizes scope creep (building a full IDE) and maximizes value (solving the unique pain points of course creation).
