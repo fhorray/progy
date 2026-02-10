@@ -77,6 +77,18 @@ export async function openModuleSettings(path: string, name: string) {
   const settingsPath = (path === '.' || path === '') ? 'course.json' : `${path}/info.toml`;
 
   if (!tabs[settingsPath]) {
+    // For course.json, we don't need content to be present as ConfigForm fetches it independently.
+    if (settingsPath === 'course.json') {
+      $openTabs.setKey(settingsPath, {
+        path: settingsPath,
+        content: '', // ConfigForm fetches its own data
+        isDirty: false,
+        type: 'settings',
+      });
+      $activeTabPath.set(settingsPath);
+      return;
+    }
+
     try {
       const res = await fetch(`/instructor/fs?path=${encodeURIComponent(settingsPath)}`);
       const data = await res.json();

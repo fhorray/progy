@@ -531,7 +531,7 @@ export function EditorLayout() {
                       />
                     ) : activeTab.type === 'settings' ? (
                       activeTab.path === 'course.json'
-                        ? <CourseSettings key={activeTab.path} tab={activeTab} />
+                        ? <ConfigForm key={activeTab.path} />
                         : <ModuleSettings key={activeTab.path} tab={activeTab} />
                     ) : (
                       <CodeEditor
