@@ -50,9 +50,19 @@ export class CourseLoader {
 
     // 3. Registry Packages (@scope/slug or simple slug)
     if (courseInput.startsWith("@") || !courseInput.includes("/")) {
-      console.log(`[INFO] Resolving registry package '${courseInput}'...`);
+      let query = courseInput;
+
+      // If no scope is provided, default to official username
+      if (!courseInput.startsWith("@") && !courseInput.includes("/")) {
+        const { OFICIAL_USERNAME } = await import("./paths.ts");
+        query = `${OFICIAL_USERNAME}/${courseInput}`;
+        console.log(`[INFO] Resolving official course '${courseInput}' as '${query}'...`);
+      } else {
+        console.log(`[INFO] Resolving registry package '${courseInput}'...`);
+      }
+
       try {
-        const url = `${getBackendUrl()}/registry/resolve/${encodeURIComponent(courseInput)}`;
+        const url = `${getBackendUrl()}/registry/resolve/${encodeURIComponent(query)}`;
         const response = await fetch(url);
         if (response.ok) {
           const data: any = await response.json();
@@ -63,7 +73,7 @@ export class CourseLoader {
           };
         }
       } catch (e) {
-        console.warn(`[WARN] Registry resolution failed for ${courseInput}:`, (e as Error).message);
+        console.warn(`[WARN] Registry resolution failed for ${query}:`, (e as Error).message);
       }
     }
 

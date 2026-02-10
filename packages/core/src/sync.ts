@@ -147,8 +147,7 @@ last_sync = "${new Date().toISOString()}"
       if (entry.isDirectory()) {
         await this.copyRecursive(srcPath, destPath, force);
       } else {
-        const relPath = srcPath.replace(src, "").replace(/\\/g, "/");
-        const isContent = relPath.includes("/content/");
+        const isContent = destPath.replace(/\\/g, "/").includes("/content/");
 
         let shouldOverwrite = true;
         if (isContent) {
