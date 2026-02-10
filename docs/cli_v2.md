@@ -6,7 +6,8 @@ The Progy CLI is the central tool for both instructors (creating courses) and st
 
 The Progy CLI is built as a monorepo application using **Bun** as the runtime. It is split into two main packages:
 
-*   **`apps/cli`**: The user-facing executable. It handles command-line arguments, starts the local server, and serves the frontend application.
+*   **`apps/cli`**: The student-facing runner and course manager. It handles progress tracking, code execution, and serves the student UI.
+*   **`apps/editor`** (Progy Studio): The standalone visual editor for instructors.
 *   **`packages/core`**: The shared library containing business logic for course loading, validation, runner execution, and state management.
 
 ### Key Components
@@ -40,16 +41,16 @@ Initializes a new course environment.
 
 ### `progy dev`
 
-Starts the course runner in **Development Mode**. This is primarily for instructors to test their course content.
+Starts the course runner in **Development Mode** (Guest Mode). This allows you to test your course exactly as a student would see it, but without saving progress to the cloud.
 
 *   **Options**:
-    *   `--ui`: Launches the **Visual Course Editor (Progy Studio)** instead of the standard student view.
     *   `--bypass`: Enables **Progression Bypass**, unlocking all exercises and modules regardless of completion status.
     *   `--offline`: Runs without checking for updates or syncing progress.
+    *   ~~`--ui`~~: **Deprecated.** Use `bunx @progy/studio start` instead.
 *   **Behavior**:
     1.  Validates the current directory as a valid course.
     2.  Starts the local backend server (Bun).
-    3.  Serves the frontend application at `http://localhost:3000`.
+    3.  Serves the student frontend application at `http://localhost:3000`.
     4.  Watches for file changes in `content/` to live-reload the runner.
 
 ### `progy pack`

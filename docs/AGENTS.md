@@ -280,3 +280,9 @@ If using `process` or `docker-local`:
 
 **Step 6: Validation**
 Ensure strict JSON syntax in `course.json` and strict TOML in `info.toml`. Verify that all `prerequisites` reference valid IDs.
+
+### 5.1 Verification Commands
+
+Instruct the user to verify the course with:
+*   `progy dev`: To run the course as a student (cli runner).
+*   `bunx @progy/studio start`: To open the visual editor for final tweaks.

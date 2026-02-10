@@ -2,37 +2,51 @@
 
 Progy Studio (formerly "Visual Course Editor") is the integrated development environment (IDE) for creating and managing Progy courses. It provides a rich, graphical interface for editing course content, configuration, and metadata, replacing manual JSON/TOML editing.
 
-## 1. Technical Overview
+Progy Studio is distributed as a standalone CLI tool (`@progy/studio`), separate from the student runner (`progy`).
 
-Progy Studio is built as a Single Page Application (SPA) served by the Progy CLI's local server.
+## 1. Getting Started
+
+To launch the editor in your course directory:
+
+```bash
+cd my-course
+bunx @progy/studio start
+```
+
+This will start the Studio server (usually on `http://localhost:3001`) and open your browser.
+
+> **Note:** The legacy method `progy dev --ui` is deprecated. Please use `bunx @progy/studio start`.
+
+---
+
+## 2. Technical Overview
+
+Progy Studio is built as a standalone **Bun** application (`apps/editor`) that serves a **React 19** SPA.
 
 ### Tech Stack
 
 *   **Runtime**: **Bun** (Server-side) + **React 19** (Client-side).
 *   **State Management**: **Nanostores** (Atomic, framework-agnostic state).
-    *   Why? To share state easily between React components and non-React logic (like WebSocket handlers) without context hell.
-*   **Form Management**: **TanStack Form**.
-    *   Why? For complex, deeply nested configuration forms (`course.json`, `info.toml`) with validation.
-*   **Rich Text Editor**: **Tiptap** (Headless wrapper around ProseMirror).
-    *   Custom extensions for Markdown directives (`::video`, `::note`).
+*   **Form Management**: **TanStack Form** (for complex configuration validation).
+*   **Rich Text Editor**: **Tiptap** (ProseMirror wrapper with custom directives).
 *   **Code Editor**: **CodeMirror 6**.
-    *   Used for editing source code files (`.py`, `.rs`, `.js`, etc.).
-*   **Styling**: **Tailwind CSS** + **Radix UI** primitives.
-*   **Icons**: **Lucide React**.
+*   **Styling**: **Tailwind CSS** + **Radix UI**.
 
-### Architecture: Client-Server Model
+### Architecture
 
-When you run `progy dev --ui`, the following happens:
+Unlike the student runner (`progy start`), which is optimized for lightweight execution, the Studio server is a full-featured development backend.
 
-1.  **CLI Backend (`apps/cli/src/backend`)**:
-    *   Starts a Bun HTTP server (e.g., `http://localhost:3000`).
-    *   Exposes API endpoints for file operations (`/api/fs/*`), git operations (`/api/git/*`), and course validation.
-    *   Serves the static frontend assets from `apps/cli/dist/frontend`.
+1.  **Studio Backend (`apps/editor/src/server.ts`)**:
+    *   Starts a dedicated Bun HTTP server (default port: `3001` or `PORTS.EDITOR`).
+    *   Mounts the core logic from `packages/core` but exposes instructor-only endpoints.
+    *   **Endpoints**:
+        *   `/api/fs/*`: Full read/write access to the local filesystem.
+        *   `/api/git/*`: Git operations (commit, push, pull).
+        *   `/api/instructor/*`: Specialized endpoints for course validation and scaffolding.
 
-2.  **Frontend (`apps/cli/src/frontend`)**:
-    *   Loads the React application.
-    *   Connects to the backend via REST API (mostly) and potentially WebSockets for terminal streaming.
-    *   Manages local state using Nanostores (`editor-store.ts`).
+2.  **Frontend (`apps/editor/src/frontend`)**:
+    *   A heavy-duty React application designed for desktop-class editing.
+    *   Connects to the backend via REST and WebSockets.
 
 ---
 
@@ -139,19 +153,21 @@ To add a new view (e.g., a "Quiz Builder"):
 
 ## 6. Development Workflow
 
-To work on the Editor itself:
+To work on the Editor codebase itself (contributing to Progy):
 
-1.  **Run Backend**: `cd apps/cli && bun run dev` (Starts server on port 3000).
-2.  **Run Frontend**: The frontend is bundled with the CLI in production, but for dev, you can run `bun run dev:web` (if configured) or rely on the backend to serve the `dist/` folder after a build.
-    *   *Tip*: Use `progy dev --ui` in a sample course directory to test changes in a real context.
+1.  **Navigate to Editor App**: `cd apps/editor`
+2.  **Run Dev Server**: `bun run dev` (Starts server with Hot Module Replacement).
+3.  **Test with Course**: Set `PROG_CWD=/path/to/test-course` env var to point the editor to a real course.
+
+*   *Tip*: For end-users, always use `bunx @progy/studio start`.
 
 ## 7. Troubleshooting & FAQ
 
 ### 7.1 "Backend Disconnected"
-If you see a red "Disconnected" banner, the frontend has lost connection to the CLI backend.
+If you see a red "Disconnected" banner, the frontend has lost connection to the Studio backend.
 
-*   **Cause**: The `progy dev` process crashed or was terminated.
-*   **Fix**: Restart `progy dev --ui`. Check the terminal for backend errors.
+*   **Cause**: The `progy-editor` process crashed or was terminated.
+*   **Fix**: Restart the `bunx` command. Check the terminal for backend errors.
 
 ### 7.2 File Tree Not Updating
 If you add files manually outside the editor, they might not appear immediately.
