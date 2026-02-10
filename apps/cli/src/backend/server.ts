@@ -13,7 +13,7 @@ import { gitRoutes } from "./endpoints/git";
 import { notesRoutes } from "./endpoints/notes";
 import { instructorRoutes } from "./endpoints/instructor";
 
-import { logger } from "@progy/core";
+import { logger, PROG_CWD } from "@progy/core";
 import { PORTS } from "@consts";
 
 const IS_TS = import.meta.file.endsWith(".ts");
@@ -61,6 +61,15 @@ try {
         if (originUrl.host !== host) {
           logger.security(`Blocked CSRF attempt from ${origin}`);
           return new Response("Forbidden", { status: 403 });
+        }
+      }
+
+      // 0. Serve Assets (if any)
+      if (url.pathname.startsWith("/assets/")) {
+        const assetPath = join(PROG_CWD, url.pathname);
+        const assetFile = Bun.file(assetPath);
+        if (await assetFile.exists()) {
+          return new Response(assetFile);
         }
       }
 

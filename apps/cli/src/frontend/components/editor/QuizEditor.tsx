@@ -1,12 +1,30 @@
 import React, { useState, useEffect } from 'react';
 import {
   Trash2, Plus, GripVertical, CheckCircle2,
-  HelpCircle, AlertCircle, BrainCircuit, Save, X
+  HelpCircle, AlertCircle, BrainCircuit, Save, X,
+  ArrowDownUp, Layers
 } from 'lucide-react';
 import { updateTabContent } from '../../stores/editor-store';
 import { Input } from '../ui/input';
 import { Button } from '../ui/button';
 import { Textarea } from '../ui/textarea';
+import {
+  DndContext,
+  closestCenter,
+  KeyboardSensor,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  DragEndEvent
+} from '@dnd-kit/core';
+import {
+  arrayMove,
+  SortableContext,
+  sortableKeyboardCoordinates,
+  verticalListSortingStrategy,
+  useSortable
+} from '@dnd-kit/sortable';
+import { CSS } from '@dnd-kit/utilities';
 
 interface QuizOption {
   id: string;
@@ -17,7 +35,7 @@ interface QuizOption {
 
 interface QuizQuestion {
   id: string;
-  type: 'multiple-choice';
+  type: 'multiple-choice' | 'ordering';
   question: string;
   options: QuizOption[];
 }
@@ -33,9 +51,186 @@ interface QuizEditorProps {
   path: string;
 }
 
+// ─── Sortable Question Item ─────────────────────────────────────────────────
+
+function SortableQuestion({
+  q,
+  index,
+  onRemove,
+  onChange,
+  onAddOption,
+  onRemoveOption,
+  onOptionChange
+}: {
+  q: QuizQuestion;
+  index: number;
+  onRemove: () => void;
+  onChange: (field: string, val: any) => void;
+  onAddOption: () => void;
+  onRemoveOption: (oIndex: number) => void;
+  onOptionChange: (oIndex: number, field: keyof QuizOption, val: any) => void;
+}) {
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging
+  } = useSortable({ id: q.id });
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    zIndex: isDragging ? 10 : 1,
+    opacity: isDragging ? 0.5 : 1,
+  };
+
+  return (
+    <div
+      ref={setNodeRef}
+      style={style}
+      className="bg-zinc-900/40 border border-zinc-800 rounded-xl overflow-hidden shadow-sm transition-all hover:border-zinc-700 mb-6"
+    >
+      <div className="flex items-stretch">
+        <div
+          {...attributes}
+          {...listeners}
+          className="p-4 pt-5 text-zinc-600 cursor-grab active:cursor-grabbing hover:text-zinc-400 border-r border-zinc-800/50 bg-zinc-900/30 flex items-center justify-center w-12"
+        >
+          <GripVertical size={16} />
+        </div>
+
+        <div className="flex-1 min-w-0">
+          {/* Question Header & Input */}
+          <div className="p-5 space-y-3">
+            <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                    <label className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest">Question {index + 1}</label>
+                    <select
+                        value={q.type}
+                        onChange={(e) => onChange('type', e.target.value)}
+                        className="text-[10px] font-bold uppercase tracking-wider bg-zinc-900 border border-zinc-800 rounded px-2 py-0.5 text-zinc-400 focus:outline-none focus:border-orange-500/50"
+                    >
+                        <option value="multiple-choice">Multiple Choice</option>
+                        <option value="ordering">Ordering (Drag & Drop)</option>
+                    </select>
+                </div>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={onRemove}
+                  className="text-zinc-600 hover:text-red-400 h-6 w-6 -mr-2"
+                >
+                  <Trash2 size={14} />
+                </Button>
+            </div>
+            <Textarea
+              value={q.question}
+              onChange={(e) => onChange('question', e.target.value)}
+              placeholder="Enter your question here..."
+              className="bg-zinc-950/50 border-zinc-800 text-base font-medium min-h-[60px] resize-none focus:border-orange-500/50 placeholder-zinc-700 text-zinc-200"
+            />
+          </div>
+
+          {/* Options */}
+          <div className="px-5 pb-6 space-y-4 border-t border-zinc-800/50 pt-4 bg-zinc-950/20">
+            <div className="flex items-center justify-between">
+                <label className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest">
+                    {q.type === 'ordering' ? 'Correct Order (Top to Bottom)' : 'Answer Options'}
+                </label>
+                {q.type === 'multiple-choice' && (
+                    <span className="text-[10px] text-zinc-600 italic">Select correct answer</span>
+                )}
+            </div>
+
+            <div className="space-y-3">
+              {q.options.map((option, oIndex) => (
+                <div
+                  key={option.id} // Ensure stable key
+                  className={`group flex items-start gap-3 p-3 rounded-lg border transition-all ${
+                    q.type === 'ordering'
+                        ? 'bg-zinc-900 border-zinc-800 cursor-move'
+                        : option.isCorrect
+                            ? 'bg-emerald-500/5 border-emerald-500/20'
+                            : 'bg-zinc-900 border-zinc-800 hover:border-zinc-700'
+                  }`}
+                >
+                  {q.type === 'multiple-choice' ? (
+                      <button
+                        onClick={() => onOptionChange(oIndex, 'isCorrect', true)}
+                        className={`mt-1.5 shrink-0 transition-colors ${
+                          option.isCorrect ? 'text-emerald-500' : 'text-zinc-700 hover:text-emerald-500/50'
+                        }`}
+                        title="Mark as correct answer"
+                      >
+                        <CheckCircle2 size={18} className={option.isCorrect ? "fill-emerald-500/20" : ""} />
+                      </button>
+                  ) : (
+                      <div className="mt-1.5 shrink-0 text-zinc-700">
+                          <span className="text-xs font-mono font-bold">{oIndex + 1}.</span>
+                      </div>
+                  )}
+
+                  <div className="flex-1 space-y-2">
+                    <Input
+                      value={option.text}
+                      onChange={(e) => onOptionChange(oIndex, 'text', e.target.value)}
+                      placeholder={q.type === 'ordering' ? `Step ${oIndex + 1}` : `Option ${option.id.toUpperCase()}`}
+                      className="bg-transparent border-0 p-0 h-auto text-sm focus-visible:ring-0 placeholder-zinc-600"
+                    />
+
+                    {(option.isCorrect || q.type === 'ordering') && (
+                      <div className="flex items-start gap-2 pt-1 border-t border-zinc-800/50 mt-1">
+                        <Textarea
+                          value={option.explanation || ''}
+                          onChange={(e) => onOptionChange(oIndex, 'explanation', e.target.value)}
+                          placeholder="Explanation (optional)..."
+                          className="text-xs bg-transparent border-0 p-0 h-auto min-h-[20px] resize-none focus-visible:ring-0 text-zinc-500 placeholder-zinc-700 leading-normal"
+                        />
+                      </div>
+                    )}
+                  </div>
+
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => onRemoveOption(oIndex)}
+                    className="h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity text-zinc-600 hover:text-red-400"
+                  >
+                    <X size={14} />
+                  </Button>
+                </div>
+              ))}
+            </div>
+
+            <Button
+              onClick={onAddOption}
+              variant="ghost"
+              size="sm"
+              className="text-xs text-zinc-500 hover:text-zinc-300 pl-0 hover:bg-transparent"
+            >
+              <Plus size={12} className="mr-1.5" /> Add Option
+            </Button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ─── Main Editor Component ──────────────────────────────────────────────────
+
 export function QuizEditor({ initialContent, path }: QuizEditorProps) {
   const [data, setData] = useState<QuizData | null>(null);
   const [error, setError] = useState<string | null>(null);
+
+  const sensors = useSensors(
+    useSensor(PointerSensor),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+    })
+  );
 
   useEffect(() => {
     if (!initialContent.trim()) {
@@ -77,7 +272,6 @@ export function QuizEditor({ initialContent, path }: QuizEditorProps) {
       options: [
         { id: 'a', text: '', isCorrect: true },
         { id: 'b', text: '', isCorrect: false },
-        { id: 'c', text: '', isCorrect: false },
       ],
     };
     updateStore({ ...data, questions: [...data.questions, newQuestion] });
@@ -90,10 +284,10 @@ export function QuizEditor({ initialContent, path }: QuizEditorProps) {
     updateStore({ ...data, questions });
   };
 
-  const handleQuestionChange = (index: number, question: string) => {
+  const handleQuestionChange = (index: number, field: string, val: any) => {
     if (!data) return;
     const questions = [...data.questions];
-    questions[index] = { ...questions[index], question };
+    questions[index] = { ...questions[index], [field]: val };
     updateStore({ ...data, questions });
   };
 
@@ -101,7 +295,7 @@ export function QuizEditor({ initialContent, path }: QuizEditorProps) {
     if (!data) return;
     const questions = [...data.questions];
     const question = questions[qIndex];
-    const nextId = String.fromCharCode(97 + question.options.length); // a, b, c...
+    const nextId = String.fromCharCode(97 + question.options.length);
     const newOption: QuizOption = { id: nextId, text: '', isCorrect: false };
     question.options = [...question.options, newOption];
     updateStore({ ...data, questions });
@@ -121,13 +315,28 @@ export function QuizEditor({ initialContent, path }: QuizEditorProps) {
     const question = questions[qIndex];
     const options = [...question.options];
 
-    if (field === 'isCorrect' && value === true) {
+    if (field === 'isCorrect' && value === true && question.type === 'multiple-choice') {
       options.forEach(o => o.isCorrect = false);
     }
 
     options[oIndex] = { ...options[oIndex], [field]: value };
     question.options = options;
     updateStore({ ...data, questions });
+  };
+
+  const handleDragEnd = (event: DragEndEvent) => {
+    const { active, over } = event;
+    if (!data || !over || active.id === over.id) return;
+
+    const oldIndex = data.questions.findIndex((q) => q.id === active.id);
+    const newIndex = data.questions.findIndex((q) => q.id === over.id);
+
+    if (oldIndex !== -1 && newIndex !== -1) {
+      updateStore({
+        ...data,
+        questions: arrayMove(data.questions, oldIndex, newIndex),
+      });
+    }
   };
 
   if (error) {
@@ -193,114 +402,31 @@ export function QuizEditor({ initialContent, path }: QuizEditorProps) {
             </Button>
           </div>
 
-          <div className="space-y-6">
-            {data.questions.map((q, qIndex) => (
-              <div
-                key={q.id}
-                className="bg-zinc-900/40 border border-zinc-800 rounded-xl overflow-hidden shadow-sm transition-all hover:border-zinc-700"
-              >
-                <div className="flex items-start">
-                  <div className="p-4 pt-5 text-zinc-600 cursor-grab active:cursor-grabbing hover:text-zinc-400 border-r border-zinc-800/50 bg-zinc-900/30">
-                    <GripVertical size={16} />
-                  </div>
-
-                  <div className="flex-1 min-w-0">
-                    {/* Question Header & Input */}
-                    <div className="p-5 space-y-3">
-                      <div className="flex items-center justify-between">
-                         <label className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest">Question {qIndex + 1}</label>
-                         <Button
-                            variant="ghost"
-                            size="icon"
-                            onClick={() => handleRemoveQuestion(qIndex)}
-                            className="text-zinc-600 hover:text-red-400 h-6 w-6 -mr-2"
-                          >
-                            <Trash2 size={14} />
-                          </Button>
-                      </div>
-                      <Textarea
-                        value={q.question}
-                        onChange={(e) => handleQuestionChange(qIndex, e.target.value)}
-                        placeholder="Enter your question here..."
-                        className="bg-zinc-950/50 border-zinc-800 text-base font-medium min-h-[60px] resize-none focus:border-orange-500/50 placeholder-zinc-700 text-zinc-200"
-                      />
-                    </div>
-
-                    {/* Options */}
-                    <div className="px-5 pb-6 space-y-4 border-t border-zinc-800/50 pt-4 bg-zinc-950/20">
-                      <div className="flex items-center justify-between">
-                         <label className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest">Answer Options</label>
-                         <span className="text-[10px] text-zinc-600 italic">Select correct answer</span>
-                      </div>
-
-                      <div className="space-y-3">
-                        {q.options.map((option, oIndex) => (
-                          <div
-                            key={option.id}
-                            className={`group flex items-start gap-3 p-3 rounded-lg border transition-all ${
-                              option.isCorrect
-                                ? 'bg-emerald-500/5 border-emerald-500/20'
-                                : 'bg-zinc-900 border-zinc-800 hover:border-zinc-700'
-                            }`}
-                          >
-                            <button
-                              onClick={() => handleOptionChange(qIndex, oIndex, 'isCorrect', true)}
-                              className={`mt-1.5 shrink-0 transition-colors ${
-                                option.isCorrect ? 'text-emerald-500' : 'text-zinc-700 hover:text-emerald-500/50'
-                              }`}
-                              title="Mark as correct answer"
-                            >
-                              <CheckCircle2 size={18} className={option.isCorrect ? "fill-emerald-500/20" : ""} />
-                            </button>
-
-                            <div className="flex-1 space-y-2">
-                              <Input
-                                value={option.text}
-                                onChange={(e) => handleOptionChange(qIndex, oIndex, 'text', e.target.value)}
-                                placeholder={`Option ${option.id.toUpperCase()}`}
-                                className="bg-transparent border-0 p-0 h-auto text-sm focus-visible:ring-0 placeholder-zinc-600"
-                              />
-
-                              {option.isCorrect && (
-                                <div className="flex items-start gap-2 animate-in fade-in slide-in-from-top-1 duration-200 pt-1 border-t border-emerald-500/10 mt-1">
-                                  <HelpCircle size={12} className="text-emerald-500/50 mt-1 shrink-0" />
-                                  <Textarea
-                                    value={option.explanation || ''}
-                                    onChange={(e) => handleOptionChange(qIndex, oIndex, 'explanation', e.target.value)}
-                                    placeholder="Explanation (optional)..."
-                                    className="text-xs bg-transparent border-0 p-0 h-auto min-h-[20px] resize-none focus-visible:ring-0 text-emerald-400/70 placeholder-emerald-500/30 leading-normal"
-                                  />
-                                </div>
-                              )}
-                            </div>
-
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              onClick={() => handleRemoveOption(qIndex, oIndex)}
-                              className="h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity text-zinc-600 hover:text-red-400"
-                              disabled={q.options.length <= 2}
-                            >
-                              <X size={14} />
-                            </Button>
-                          </div>
-                        ))}
-                      </div>
-
-                      <Button
-                        onClick={() => handleAddOption(qIndex)}
-                        variant="ghost"
-                        size="sm"
-                        className="text-xs text-zinc-500 hover:text-zinc-300 pl-0 hover:bg-transparent"
-                      >
-                        <Plus size={12} className="mr-1.5" /> Add Option
-                      </Button>
-                    </div>
-                  </div>
-                </div>
+          <DndContext
+            sensors={sensors}
+            collisionDetection={closestCenter}
+            onDragEnd={handleDragEnd}
+          >
+            <SortableContext
+              items={data.questions.map(q => q.id)}
+              strategy={verticalListSortingStrategy}
+            >
+              <div className="space-y-6">
+                {data.questions.map((q, qIndex) => (
+                  <SortableQuestion
+                    key={q.id}
+                    q={q}
+                    index={qIndex}
+                    onRemove={() => handleRemoveQuestion(qIndex)}
+                    onChange={(field, val) => handleQuestionChange(qIndex, field, val)}
+                    onAddOption={() => handleAddOption(qIndex)}
+                    onRemoveOption={(oIndex) => handleRemoveOption(qIndex, oIndex)}
+                    onOptionChange={(oIndex, field, val) => handleOptionChange(qIndex, oIndex, field, val)}
+                  />
+                ))}
               </div>
-            ))}
-          </div>
+            </SortableContext>
+          </DndContext>
 
           {data.questions.length === 0 && (
             <div className="text-center py-16 border-2 border-dashed border-zinc-800 rounded-xl bg-zinc-900/20">

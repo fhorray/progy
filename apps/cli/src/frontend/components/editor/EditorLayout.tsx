@@ -24,6 +24,10 @@ import { openPage } from '@nanostores/router';
 import { $router } from '../../stores/router';
 import { ResizablePanelGroup, ResizablePanel, ResizableHandle } from '../ui/resizable';
 import { CommandPalette } from './CommandPalette';
+import { IdeSettingsModal } from '../modals/ide-settings-modal';
+import { RunOutputPanel } from './RunOutputPanel';
+import { AssetManager } from './AssetManager';
+import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs'; // Ensure these exist or import from primitives
 
 // ─── Tiptap Editor Styles (injected once) ───────────────────────────────────
 
@@ -367,7 +371,10 @@ export function EditorLayout() {
   const activeTab = activePath ? openTabs[activePath] : null;
   const [validating, setValidating] = useState(false);
   const [showGraph, setShowGraph] = useState(false);
+  const [showIdeSettings, setShowIdeSettings] = useState(false);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const [showRunPanel, setShowRunPanel] = useState(false);
+  const [sidebarTab, setSidebarTab] = useState<'files' | 'assets'>('files');
   const [validationResult, setValidationResult] = useState<{
     success: boolean;
     message?: string;
@@ -453,6 +460,15 @@ export function EditorLayout() {
 
         <div className="ml-auto flex items-center gap-2">
           <button
+            onClick={() => setShowIdeSettings(true)}
+            className="flex items-center gap-1.5 px-3 py-1 bg-zinc-800 hover:bg-zinc-700 border border-zinc-700/50 rounded text-xs font-medium transition-colors text-zinc-400 hover:text-white"
+            title="Editor Preferences"
+          >
+            <Settings size={12} />
+            Prefs
+          </button>
+
+          <button
             onClick={() => openModuleSettings('.', 'Course Settings')}
             className="flex items-center gap-1.5 px-3 py-1 bg-zinc-800 hover:bg-zinc-700 border border-zinc-700/50 rounded text-xs font-medium transition-colors"
             title="Edit Course Settings"
@@ -503,8 +519,25 @@ export function EditorLayout() {
             {!sidebarCollapsed && (
               <>
                 <ResizablePanel defaultSize="18%" minSize="12%" maxSize="35%">
-                  <div className="h-full bg-zinc-900/50 border-r border-zinc-800/80 overflow-hidden">
-                    <FileTree />
+                  <div className="h-full bg-zinc-900/50 border-r border-zinc-800/80 overflow-hidden flex flex-col">
+                    <div className="flex items-center border-b border-zinc-800/50">
+                      <button
+                        onClick={() => setSidebarTab('files')}
+                        className={`flex-1 py-2 text-xs font-bold uppercase tracking-wider transition-colors ${sidebarTab === 'files' ? 'text-orange-500 bg-zinc-800/50 border-b-2 border-orange-500' : 'text-zinc-500 hover:text-zinc-300'}`}
+                      >
+                        Files
+                      </button>
+                      <button
+                        onClick={() => setSidebarTab('assets')}
+                        className={`flex-1 py-2 text-xs font-bold uppercase tracking-wider transition-colors ${sidebarTab === 'assets' ? 'text-orange-500 bg-zinc-800/50 border-b-2 border-orange-500' : 'text-zinc-500 hover:text-zinc-300'}`}
+                      >
+                        Assets
+                      </button>
+                    </div>
+
+                    <div className="flex-1 overflow-hidden">
+                      {sidebarTab === 'files' ? <FileTree /> : <AssetManager />}
+                    </div>
                   </div>
                 </ResizablePanel>
                 <ResizableHandle className="w-1 bg-transparent hover:bg-orange-500/30 active:bg-orange-500/50 transition-colors cursor-col-resize" />
@@ -550,6 +583,13 @@ export function EditorLayout() {
                     </div>
                   )}
                 </div>
+
+                {/* Run Output Panel */}
+                <RunOutputPanel
+                  isOpen={showRunPanel}
+                  onClose={() => setShowRunPanel(false)}
+                  activePath={activePath}
+                />
               </div>
             </ResizablePanel>
           </ResizablePanelGroup>
@@ -570,7 +610,16 @@ export function EditorLayout() {
         ) : (
           <span>No file open</span>
         )}
-        <span className="ml-auto text-zinc-600">Ctrl+Shift+E sidebar · Ctrl+S save</span>
+        <div className="ml-auto flex items-center gap-4">
+          <button
+            onClick={() => setShowRunPanel(!showRunPanel)}
+            className={`hover:text-zinc-300 transition-colors ${showRunPanel ? 'text-orange-400 font-bold' : 'text-zinc-600'}`}
+            title="Toggle Output Panel"
+          >
+            Terminal
+          </button>
+          <span className="text-zinc-600">Ctrl+Shift+E sidebar · Ctrl+S save</span>
+        </div>
       </footer>
 
       {/* Validation Results Toast */}
@@ -612,6 +661,8 @@ export function EditorLayout() {
           </div>
         </div>
       )}
+
+      <IdeSettingsModal open={showIdeSettings} onOpenChange={setShowIdeSettings} />
     </div>
   );
 }

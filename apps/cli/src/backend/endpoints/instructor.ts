@@ -398,6 +398,42 @@ const reorderHandler: ServerType<"/instructor/reorder"> = async (req) => {
   }
 };
 
+// ─── Upload Handler ─────────────────────────────────────────────────────────
+
+const uploadHandler: ServerType<"/instructor/upload"> = async (req) => {
+  const blocked = guardEditor();
+  if (blocked) return blocked;
+
+  try {
+    const formData = await req.formData();
+    const file = formData.get("file");
+
+    if (!file || !(file instanceof File)) {
+      return Response.json({ success: false, error: "No file uploaded" }, { status: 400 });
+    }
+
+    // Ensure assets directory exists
+    const assetsDir = join(PROG_CWD, "assets");
+    await mkdir(assetsDir, { recursive: true });
+
+    // Generate safe filename
+    const safeName = file.name.replace(/[^a-zA-Z0-9.-]/g, "_");
+    const targetPath = join(assetsDir, safeName);
+
+    // Check if file exists to prevent overwrite? For now, we overwrite or rename?
+    // Let's just write.
+    await Bun.write(targetPath, file);
+
+    return Response.json({
+      success: true,
+      path: `assets/${safeName}`,
+      url: `/assets/${safeName}` // assuming public serving or relative linking
+    });
+  } catch (e: any) {
+    return Response.json({ success: false, error: e.message }, { status: 500 });
+  }
+};
+
 // ─── Export Routes ──────────────────────────────────────────────────────────
 
 export const instructorRoutes = {
@@ -426,5 +462,8 @@ export const instructorRoutes = {
   },
   "/instructor/reorder": {
     POST: reorderHandler,
+  },
+  "/instructor/upload": {
+    POST: uploadHandler,
   },
 };

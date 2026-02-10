@@ -4,6 +4,10 @@ import StarterKit from '@tiptap/starter-kit';
 import Link from '@tiptap/extension-link';
 import { Markdown } from 'tiptap-markdown';
 import { updateTabContent, saveActiveFile } from '../../stores/editor-store';
+import { VideoExtension } from './extensions/VideoNode';
+import { NoteExtension } from './extensions/NoteNode';
+import { SimpleImage } from './extensions/SimpleImage';
+import { ImageUpload } from './extensions/ImageUpload';
 import {
   Bold,
   Italic,
@@ -18,6 +22,9 @@ import {
   Minus,
   Undo,
   Redo,
+  Video,
+  StickyNote,
+  Image as ImageIcon,
 } from 'lucide-react';
 
 // ─── Toolbar Button ─────────────────────────────────────────────────────────
@@ -151,6 +158,35 @@ function Toolbar({ editor }: { editor: ReturnType<typeof useEditor> }) {
       <div className="w-px h-5 bg-zinc-700/50 mx-1" />
 
       <ToolbarButton
+        onClick={() => editor.chain().focus().insertContent({ type: 'video', attrs: { url: '' } }).run()}
+        isActive={editor.isActive('video')}
+        title="Insert Video"
+      >
+        <Video size={14} />
+      </ToolbarButton>
+
+      <ToolbarButton
+        onClick={() => editor.chain().focus().insertContent({ type: 'note', attrs: { type: 'info' }, content: [{ type: 'paragraph' }] }).run()}
+        isActive={editor.isActive('note')}
+        title="Insert Note"
+      >
+        <StickyNote size={14} />
+      </ToolbarButton>
+
+      <ToolbarButton
+        onClick={() => {
+            const url = window.prompt('Image URL:');
+            if (url) editor.chain().focus().insertContent({ type: 'image', attrs: { src: url } }).run();
+        }}
+        isActive={editor.isActive('image')}
+        title="Insert Image"
+      >
+        <ImageIcon size={14} />
+      </ToolbarButton>
+
+      <div className="w-px h-5 bg-zinc-700/50 mx-1" />
+
+      <ToolbarButton
         onClick={() => editor.chain().focus().undo().run()}
         title="Undo (Ctrl+Z)"
       >
@@ -187,8 +223,12 @@ export function MarkdownEditor({
           rel: 'noopener noreferrer',
         },
       }),
+      VideoExtension,
+      NoteExtension,
+      SimpleImage,
+      ImageUpload,
       Markdown.configure({
-        html: false,
+        html: true, // Allow HTML for custom nodes as fallback
         transformPastedText: true,
       }),
     ],

@@ -25,10 +25,11 @@ export function OpenInIdeButton({
 
     setIsLoading(true);
     try {
+      const command = localSettings.ide || 'code';
       const res = await fetch('/ide/open', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ path }),
+        body: JSON.stringify({ path, command }),
       });
 
       if (res.ok) {
