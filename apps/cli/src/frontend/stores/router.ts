@@ -8,4 +8,5 @@ export const $router = createRouter({
   editorExercise: '/editor/:moduleId/:exerciseId',
   map: '/map',
   git: '/git',
+  studio: '/studio',
 });

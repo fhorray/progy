@@ -135,6 +135,53 @@ export class CourseLoader {
 
     return result.data;
   }
+
+  static async getCourseFlow(path: string) {
+    const config = await this.validateCourse(path);
+    const exercisesDir = join(path, config.content.exercises);
+
+    const modules: any[] = [];
+    const entries = await readdir(exercisesDir, { withFileTypes: true });
+
+    // Sort modules by prefix
+    const sortedEntries = entries
+      .filter(e => e.isDirectory() && /^\d{2}_/.test(e.name))
+      .sort((a, b) => a.name.localeCompare(b.name));
+
+    for (const entry of sortedEntries) {
+      const modulePath = join(exercisesDir, entry.name);
+      const moduleInfoPath = join(modulePath, "info.toml");
+      let moduleTitle = entry.name.replace(/^\d{2}_/, "");
+
+      if (await exists(moduleInfoPath)) {
+        const content = await readFile(moduleInfoPath, "utf-8");
+        const titleMatch = content.match(/title\s*=\s*"([^"]+)"/);
+        if (titleMatch) moduleTitle = titleMatch[1]!;
+      }
+
+      const exercises: any[] = [];
+      const exEntries = await readdir(modulePath, { withFileTypes: true });
+      const sortedExEntries = exEntries
+        .filter(e => e.isDirectory() && /^\d{2}_/.test(e.name))
+        .sort((a, b) => a.name.localeCompare(b.name));
+
+      for (const exEntry of sortedExEntries) {
+        exercises.push({
+          id: exEntry.name,
+          name: exEntry.name.replace(/^\d{2}_/, ""),
+          path: join(config.content.exercises, entry.name, exEntry.name)
+        });
+      }
+
+      modules.push({
+        id: entry.name,
+        title: moduleTitle,
+        exercises
+      });
+    }
+
+    return modules;
+  }
 }
 
 function spawnPromise(command: string, args: string[], cwd: string): Promise<void> {

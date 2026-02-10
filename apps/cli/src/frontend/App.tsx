@@ -6,6 +6,7 @@ import { Loader2 } from 'lucide-react';
 import { MapView } from './views/map-view';
 import { EditorView } from './views/editor-view';
 import { GitView } from './views/git-view';
+import { EditorLayout } from './components/editor/EditorLayout';
 
 // Stores & Actions
 import {
@@ -36,6 +37,11 @@ export function App() {
   console.log('[App] Current Route:', router?.route);
   if (router?.route === 'editor') {
     console.log('[App] Params:', router.params);
+  }
+
+  // Studio mode: render as standalone fullscreen, bypassing the main shell
+  if (router?.route === 'studio') {
+    return <EditorLayout />;
   }
 
   let content;

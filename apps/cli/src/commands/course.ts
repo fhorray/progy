@@ -20,7 +20,7 @@ async function exists(path: string): Promise<boolean> {
   }
 }
 
-async function runServer(runtimeCwd: string, isOffline: boolean, containerFile: string | null, bypass: boolean = false) {
+async function runServer(runtimeCwd: string, isOffline: boolean, containerFile: string | null, bypass: boolean = false, isEditor: boolean = false) {
   const isTs = import.meta.file.endsWith(".ts");
   const serverExt = isTs ? "ts" : "js";
   const serverPath = isTs
@@ -33,7 +33,8 @@ async function runServer(runtimeCwd: string, isOffline: boolean, containerFile: 
       ...process.env,
       PROG_CWD: runtimeCwd,
       PROGY_OFFLINE: isOffline ? "true" : "false",
-      PROGY_BYPASS_MODE: bypass ? "true" : "false"
+      PROGY_BYPASS_MODE: bypass ? "true" : "false",
+      PROGY_EDITOR_MODE: isEditor ? "true" : "false"
     },
   });
 
@@ -208,7 +209,7 @@ async function detectEnvironment(cwd: string): Promise<"student" | "instructor">
   return "student";
 }
 
-export async function dev(options: { offline?: boolean }) {
+export async function dev(options: { offline?: boolean; bypass?: boolean; ui?: boolean }) {
   const cwd = process.cwd();
   const env = await detectEnvironment(cwd);
   if (env === "student") {
@@ -219,9 +220,13 @@ export async function dev(options: { offline?: boolean }) {
   try {
     await CourseLoader.validateCourse(cwd);
     logger.banner("0.15.0", "instructor", "offline");
-    logger.brand("✨ Development Mode: Running as GUEST (progress will not be persistent).");
-    if ((options as any).bypass) logger.info("🔓 Progression Bypass Mode active.");
-    await runServer(cwd, true, null, (options as any).bypass);
+    if (options.ui) {
+      logger.brand("🎨 Progy Studio: Visual Course Editor active.");
+    } else {
+      logger.brand("✨ Development Mode: Running as GUEST (progress will not be persistent).");
+    }
+    if (options.bypass) logger.info("🔓 Progression Bypass Mode active.");
+    await runServer(cwd, true, null, !!options.bypass, !!options.ui);
   } catch (e: any) {
     logger.error(`Not a valid course`, e.message);
     process.exit(1);

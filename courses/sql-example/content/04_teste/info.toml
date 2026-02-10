@@ -1,0 +1,6 @@
+[module]
+title = "Teste"
+message = "Lets learn!"
+
+[exercises]
+"01_testing_123" = "Testing 123"

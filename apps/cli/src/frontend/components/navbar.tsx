@@ -1,5 +1,5 @@
 import { useStore } from '@nanostores/react';
-import { Flame, Layout, Map, Share2, Zap } from 'lucide-react';
+import { Flame, Layout, Map, Pencil, Share2, Zap } from 'lucide-react';
 import { useState } from 'react';
 import {
   $progress,
@@ -52,6 +52,7 @@ export function Navbar() {
                 if (v === 'editor') $router.open('/editor');
                 if (v === 'map') $router.open('/map');
                 if (v === 'git') $router.open('/git');
+                if (v === 'studio') $router.open('/studio');
               }}
             >
               <TabsList className="bg-zinc-900 border border-zinc-800 h-8 p-0.5">
@@ -75,6 +76,13 @@ export function Navbar() {
                 >
                   <Share2 className="w-3 h-3" />
                   SYNC (GIT)
+                </TabsTrigger>
+                <TabsTrigger
+                  value="studio"
+                  className="text-[10px] font-black px-3 gap-1.5 h-7 data-[state=active]:bg-blue-600/50 text-blue-300"
+                >
+                  <Pencil className="w-3 h-3" />
+                  STUDIO
                 </TabsTrigger>
               </TabsList>
             </Tabs>

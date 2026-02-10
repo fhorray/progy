@@ -11,6 +11,7 @@ import { authRoutes } from "./endpoints/auth";
 import { settingsRoutes } from "./endpoints/settings";
 import { gitRoutes } from "./endpoints/git";
 import { notesRoutes } from "./endpoints/notes";
+import { instructorRoutes } from "./endpoints/instructor";
 
 import { logger } from "../core/logger";
 
@@ -44,6 +45,7 @@ try {
       ...settingsRoutes,
       ...gitRoutes,
       ...notesRoutes,
+      ...instructorRoutes,
     },
     development: { hmr: process.env.ENABLE_HMR === "true" },
     async fetch(req) {

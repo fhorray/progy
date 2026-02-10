@@ -1,4 +1,4 @@
-# 📂 Module: SQL Basics
+# 📂 Module: SQL Basicssss
 
 This module covers the fundamentals of SQL. Explore the sub-exercises to practice your skills.
 
@@ -29,5 +29,6 @@ graph TD
     D --> E[Final Project]
 ```
 
-> [!TIP]
-> Complete each exercise in order to unlock the next one!
+> \[!TIP\] Complete each exercise in order to unlock the next one!
+
+!\[Screenshot 2026-02-08 203240.png\](assets/Screenshot 2026-02-08 203240.png)
