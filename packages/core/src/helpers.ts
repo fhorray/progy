@@ -240,6 +240,8 @@ export async function scanAndGenerateManifest(config: CourseConfig) {
     if (await exists(modPath) && (await stat(modPath)).isDirectory()) {
       manifest[mod] = [];
       let moduleTitle = beautify(mod);
+      let moduleIcon: string | undefined = undefined;
+      let completionMessage: string | undefined = undefined;
       let exercisesFromToml: any = {};
       let modulePrerequisites: string[] = [];
 
@@ -251,6 +253,8 @@ export async function scanAndGenerateManifest(config: CourseConfig) {
           const parsed = Bun.TOML.parse(fixedContent) as any;
           if (parsed.module?.title) moduleTitle = parsed.module.title;
           else if (parsed.module?.message) moduleTitle = parsed.module.message;
+          if (parsed.module?.icon) moduleIcon = parsed.module.icon;
+          if (parsed.module?.completion_message) completionMessage = parsed.module.completion_message;
           if (parsed.module?.prerequisites) modulePrerequisites = parsed.module.prerequisites;
           if (Array.isArray(parsed.exercises)) {
             for (const ex of parsed.exercises) { if (ex.name) exercisesFromToml[ex.name] = ex; }
@@ -335,10 +339,14 @@ export async function scanAndGenerateManifest(config: CourseConfig) {
         }
 
         const id = `${mod}/${entry.name}`;
+        const exMeta = exercisesFromToml[exerciseKey];
+
         manifest[mod]?.push({
           id,
           module: mod,
           moduleTitle,
+          moduleIcon,
+          completionMessage,
           name: entry.name,
           exerciseName: exerciseKey,
           friendlyName,
@@ -348,7 +356,10 @@ export async function scanAndGenerateManifest(config: CourseConfig) {
           hasQuiz: (entry.isDirectory() ? await exists(join(modPath, entry.name, "quiz.json")) : false),
           type: entry.isDirectory() ? "directory" : "file",
           isLocked,
-          lockReason
+          lockReason,
+          tags: exMeta?.tags,
+          difficulty: exMeta?.difficulty,
+          xp: exMeta?.xp
         });
 
         const isPassed = !!(progress.exercises[id]?.status === 'pass' || progress.quizzes[id]?.passed);
