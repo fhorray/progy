@@ -371,8 +371,7 @@ export function ContentTabs() {
 
                   {/* HISTORY */}
                   {(() => {
-                    history || [];
-                    const exerciseHistory = history
+                    const exerciseHistory = (Array.isArray(history) ? history : [])
                       .filter((h: any) => h.exerciseId === selectedExercise?.id)
                       .sort((a: any, b: any) => b.timestamp - a.timestamp);
 
