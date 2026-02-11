@@ -19,30 +19,6 @@ export interface ProgyConfig {
 }
 
 export class SyncManager {
-  static async ensureOfficialCourse(courseId: string, repoUrl: string, branch = "main", path?: string): Promise<string> {
-    const cacheDir = getCourseCachePath(courseId);
-    const gitDir = join(cacheDir, ".git");
-
-    if (await exists(gitDir)) {
-      console.log(`[SYNC] Updating official course cache: ${courseId}...`);
-      await GitUtils.exec(["fetch", "origin"], cacheDir);
-      await GitUtils.exec(["reset", "--hard", `origin/${branch}`], cacheDir);
-    } else {
-      console.log(`[SYNC] Cloning official course cache: ${courseId}...`);
-      await rm(cacheDir, { recursive: true, force: true });
-      await mkdir(cacheDir, { recursive: true });
-
-      if (path) {
-        await GitUtils.exec(["init"], cacheDir);
-        await GitUtils.addRemote(cacheDir, "", repoUrl);
-        await GitUtils.sparseCheckout(cacheDir, [path]);
-        await GitUtils.exec(["pull", "--depth=1", "origin", branch], cacheDir);
-      } else {
-        await GitUtils.clone(repoUrl, cacheDir, "", branch);
-      }
-    }
-    return cacheDir;
-  }
 
   static async loadConfig(cwd: string): Promise<ProgyConfig | null> {
     const configPath = join(cwd, "progy.toml");

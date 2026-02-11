@@ -337,11 +337,18 @@ export async function start(file: string | undefined, options: { offline?: boole
     let artifactPath = "";
 
     // Resolve cache path
-    if (config.course.repo.endsWith(".progy") || config.course.repo.includes("/") || config.course.repo.includes("\\")) {
-         // Legacy/Local absolute path
+    // IMPORTANT: Distinguish between registry IDs (@scope/pkg) and local paths
+    const { isAbsolute } = await import("node:path");
+    const isLocalPath = config.course.repo.endsWith(".progy") ||
+                        config.course.repo.startsWith("./") ||
+                        config.course.repo.startsWith("../") ||
+                        isAbsolute(config.course.repo);
+
+    if (isLocalPath) {
+         // Explicit local path
          artifactPath = resolve(cwd, config.course.repo);
     } else {
-         // ID-based lookup
+         // Registry ID (e.g. "python-basics", "@scope/course")
          const artifactName = `${basename(config.course.id)}.progy`;
          artifactPath = join(getCourseCachePath(config.course.id), artifactName);
     }

@@ -2,64 +2,12 @@ import { join, relative, resolve } from "node:path";
 import { GitUtils, SyncManager, loadToken, BACKEND_URL, getCourseCachePath, logger, exists } from "@progy/core";
 
 export async function save(options: { message: string }) {
-  const cwd = process.cwd();
-  if (!(await exists(join(cwd, ".git")))) {
-    logger.error("Not a synced course", "No .git repository found in current directory.");
-    return;
-  }
-
-  const token = await loadToken();
-  const config = await SyncManager.loadConfig(cwd);
-
-  if (config?.course?.id) {
-    await SyncManager.generateGitIgnore(cwd, config.course.id);
-  }
-
-  if (!(await GitUtils.lock(cwd))) {
-    logger.warn("Sync in progress: Another Progy process is currently syncing. Please wait.");
-    return;
-  }
-
-  try {
-    if (token) {
-      try {
-        const res = await fetch(`${BACKEND_URL}/git/credentials`, {
-          headers: { "Authorization": `Bearer ${token}` }
-        });
-        if (res.ok) {
-          const gitCreds = await res.json() as any;
-          await GitUtils.updateOrigin(cwd, gitCreds.token);
-          logger.info(`Authenticated as \x1b[1m${gitCreds.user}\x1b[0m`, "SYNC");
-        }
-      } catch { }
-    }
-
-    logger.info("Preparing artifacts for upload...", "SYNC");
-    await GitUtils.exec(["add", "."], cwd);
-    const commit = await GitUtils.exec(["commit", "-m", options.message], cwd);
-
-    if (commit.success) {
-      logger.info("Snapshotted current state.", "SYNC");
-    } else if (!commit.stdout.includes("nothing to commit")) {
-      logger.error("Commit failed", commit.stderr);
-      return;
-    }
-
-    logger.info("Synchronizing with Progy Cloud...", "SYNC");
-    const pull = await GitUtils.pull(cwd);
-    if (!pull.success) {
-      logger.warn(`Manual merge may be required: ${pull.stderr}`);
-    }
-
-    const push = await GitUtils.exec(["push", "origin", "HEAD"], cwd);
-    if (push.success) {
-      logger.success("All changes successfully pushed to the cloud.");
-    } else {
-      logger.error("Push failed", push.stderr);
-    }
-  } finally {
-    await GitUtils.unlock(cwd);
-  }
+  // Deprecated: progy save was for Git. We now use progy sync for cloud.
+  // We can alias it to sync if we want, or remove it.
+  // Given the instruction to clean up, we should probably remove it or redirect it.
+  // Let's redirect it to sync for backward compatibility but warn.
+  logger.warn("'progy save' is deprecated. Please use 'progy sync' to save your progress to the cloud.");
+  await sync();
 }
 
 export async function sync() {
@@ -100,7 +48,12 @@ export async function reset(path: string) {
     logger.info(`Restoring \x1b[38;5;208m${targetFile}\x1b[0m to its original state...`, "RESET");
     const cacheDir = getCourseCachePath(config.course.id);
     if (!(await exists(cacheDir))) {
-      await SyncManager.ensureOfficialCourse(config.course.id, config.course.repo, config.course.branch);
+      // With Cloud First, we can't "ensure" (git clone) if it's missing.
+      // We must assume the user ran 'progy start' or 'progy init' which handles hydration.
+      // But if we really need to, we could try to download the artifact again using CourseLoader.
+      // For now, let's error out guiding the user.
+      logger.error("Cache missing", "Please run 'progy start' to restore course assets first.");
+      return;
     }
 
     await SyncManager.resetExercise(cwd, cacheDir, targetFile);
