@@ -315,7 +315,12 @@ async function syncAiToGithub(exercise: Exercise, type: 'hint' | 'explanation', 
  * Computed property that returns the exercise groups.
  * @returns {Record<string, Exercise[]>} The exercise groups.
  */
-export const $exerciseGroups = computed($exerciseGroupsQuery, (q) => q.data || {});
+export const $exerciseGroups = computed($exerciseGroupsQuery, (q) => {
+  const data = q.data || {};
+  // If the backend returns an error object instead of manifest, return empty
+  if ((data as any).error) return {};
+  return data as GroupedExercises;
+});
 /**
  * Computed property that returns the progress.
  * @returns {Progress | null} The progress.

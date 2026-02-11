@@ -21,7 +21,9 @@ const checkOfficial = () => {
 const configHandler: ServerType<"/config"> = async () => {
   await ensureConfig();
   const { detectEnvironment } = await import("../../commands/course");
-  const env = await detectEnvironment(PROG_CWD);
+
+  // Use environment passed from CLI if available, otherwise detect
+  const env = (process.env.PROGY_CLI_ENV as any) || await detectEnvironment(PROG_CWD);
 
   return Response.json({
     ...(currentConfig || {}),

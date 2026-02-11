@@ -49,7 +49,7 @@ export const $localSettingsQuery = createFetcherStore<LocalSettings>(['/local-se
 // --- Derived State ---
 
 // Use API_URL from constants as base default
-const BASE_API_URL = API_URL.endsWith('') ? API_URL.slice(0, -4) : API_URL;
+const BASE_API_URL = API_URL;
 
 export const $remoteApiUrl = computed($configQuery, (config) => {
   return config.data?.remoteApiUrl || BASE_API_URL;

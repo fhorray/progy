@@ -173,7 +173,7 @@ export function EditorView() {
                     {Object.keys(exerciseGroups)
                       .filter((key) => key !== 'practice')
                       .map((moduleKey) => {
-                        const exercises = exerciseGroups[moduleKey] || [];
+                        const exercises = Array.isArray(exerciseGroups[moduleKey]) ? exerciseGroups[moduleKey] : [];
                         const modulePassCount = exercises.filter(
                           (ex) => results[ex.id] === 'pass',
                         ).length;

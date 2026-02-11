@@ -2,9 +2,10 @@ import { join, resolve, basename } from "node:path";
 import { mkdir, writeFile, readFile, readdir, stat, rm } from "node:fs/promises";
 import { spawn } from "node:child_process";
 import { tmpdir } from "node:os";
-import { GitUtils, SyncManager, CourseLoader, CourseContainer, RegistryCache, loadToken, BACKEND_URL, COURSE_CONFIG_NAME, TEMPLATES, RUNNER_README, logger, exists } from "@progy/core";
+import pkg from "../../package.json";
+import { GitUtils, SyncManager, CourseLoader, CourseContainer, RegistryCache, loadToken, getCourseCachePath, BACKEND_URL, COURSE_CONFIG_NAME, TEMPLATES, RUNNER_README, logger, exists } from "@progy/core";
 
-async function runServer(runtimeCwd: string, isOffline: boolean, containerFile: string | null, bypass: boolean = false, isEditor: boolean = false) {
+async function runServer(runtimeCwd: string, isOffline: boolean, containerFile: string | null, bypass: boolean = false, isEditor: boolean = false, cliEnv: "student" | "instructor" = "student") {
   const isTs = import.meta.file.endsWith(".ts");
   const serverExt = isTs ? "ts" : "js";
   const serverPath = isTs
@@ -18,7 +19,8 @@ async function runServer(runtimeCwd: string, isOffline: boolean, containerFile: 
       PROG_CWD: runtimeCwd,
       PROGY_OFFLINE: isOffline ? "true" : "false",
       PROGY_BYPASS_MODE: bypass ? "true" : "false",
-      PROGY_EDITOR_MODE: isEditor ? "true" : "false"
+      PROGY_EDITOR_MODE: isEditor ? "true" : "false",
+      PROGY_CLI_ENV: cliEnv
     },
   });
 
@@ -75,7 +77,9 @@ export async function init(options: { course?: string; offline?: boolean }) {
       logger.info(`Resolving ${courseId} from Registry...`, "REGISTRY");
 
       const artifactName = `${basename(courseId!)}.progy`;
-      const artifactPath = join(cwd, artifactName);
+      const cacheDir = getCourseCachePath(courseId!);
+      await mkdir(cacheDir, { recursive: true });
+      const artifactPath = join(cacheDir, artifactName);
 
       // 1. Download artifact to local folder
       logger.info(`Downloading course artifact...`, "SYNC");
@@ -102,7 +106,7 @@ export async function init(options: { course?: string; offline?: boolean }) {
       await SyncManager.saveConfig(cwd, {
         course: {
           id: courseId!,
-          repo: artifactName, // Relative to CWD
+          repo: artifactPath, // Absolute path to global cache
           branch: "registry",
           path: "."
         }
@@ -260,10 +264,10 @@ export async function dev(options: { offline?: boolean; bypass?: boolean }) {
 
   try {
     await CourseLoader.validateCourse(cwd);
-    logger.banner("0.15.0", "instructor", "offline");
+    logger.banner(pkg.version, "instructor", "offline");
     logger.brand("✨ Development Mode: Running as GUEST (progress will not be persistent).");
     if (options.bypass) logger.info("🔓 Progression Bypass Mode active.");
-    await runServer(cwd, true, null, !!options.bypass, false);
+    await runServer(cwd, true, null, !!options.bypass, false, "instructor");
   } catch (e: any) {
     logger.error(`Not a valid course`, e.message);
     process.exit(1);
@@ -286,13 +290,14 @@ export async function start(file: string | undefined, options: { offline?: boole
     runtimeCwd = await CourseContainer.unpack(containerFile);
   } else if (config && config.course.repo.endsWith(".progy")) {
     // Running a course initialized via registry (layered flow)
-    const artifactPath = resolve(cwd, config.course.repo);
+    const artifactPath = resolve(cwd, config.course.repo); // config.course.repo holds the absolute path to global cache
     if (await exists(artifactPath)) {
       logger.info(`Extracting course artifact...`, "RUNTIME");
       const runtimeRoot = await CourseContainer.unpack(artifactPath);
 
       // CRITICAL: Set PROG_RUNTIME_ROOT so the backend knows where to find supplemental files
       process.env.PROG_RUNTIME_ROOT = runtimeRoot;
+      runtimeCwd = runtimeRoot;
       logger.success(`Runtime environment ready.`);
     }
   } else if (file && !file.endsWith(".progy") && !await exists(file)) {
@@ -310,12 +315,12 @@ export async function start(file: string | undefined, options: { offline?: boole
     }
   }
 
-  logger.banner("0.15.1", env, isOffline ? "offline" : "online");
+  logger.banner(pkg.version, env, isOffline ? "offline" : "online");
   if (env === "instructor") {
     logger.brand("✨ Instructor Environment: Running in persistent GUEST mode.");
   }
 
-  await runServer(runtimeCwd, isOffline, containerFile);
+  await runServer(runtimeCwd, isOffline, containerFile, false, false, env);
 }
 
 export async function testExercise(path: string) {

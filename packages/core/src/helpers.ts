@@ -4,8 +4,10 @@ import { spawn } from "node:child_process";
 import type { Progress, CourseConfig, SRPOutput, ProgressStats, SetupConfig, ManifestEntry } from "./types.ts";
 import {
   PROG_CWD,
+  PROG_RUNTIME_ROOT,
   PROG_DIR,
   PROGRESS_PATH,
+  COURSE_CONFIG_NAME,
   COURSE_CONFIG_PATH,
   MANIFEST_PATH
 } from "./paths.ts";
@@ -81,16 +83,22 @@ export let exerciseManifestCache: Record<string, any[]> | null = null;
 export let exerciseManifestTimestamp: number = 0;
 
 export async function getCourseConfig(): Promise<CourseConfig | null> {
-  try {
-    if (await exists(COURSE_CONFIG_PATH)) {
-      const text = await readFile(COURSE_CONFIG_PATH, "utf-8");
-      return JSON.parse(text);
-    }
-    return null;
-  } catch (e) {
-    logger.warn(`Failed to read course.json: ${e}`);
-    return null;
+  const paths = [COURSE_CONFIG_PATH];
+  if (PROG_RUNTIME_ROOT) {
+    paths.push(join(PROG_RUNTIME_ROOT, COURSE_CONFIG_NAME));
   }
+
+  for (const path of paths) {
+    try {
+      if (await exists(path)) {
+        const text = await readFile(path, "utf-8");
+        return JSON.parse(text);
+      }
+    } catch (e) {
+      logger.warn(`Failed to read course config at ${path}: ${e}`);
+    }
+  }
+  return null;
 }
 
 export async function ensureConfig() {
@@ -214,16 +222,29 @@ export async function scanAndGenerateManifest(config: CourseConfig) {
   const bypassMode = process.env.PROGY_BYPASS_MODE === "true";
   const exercisesRelPath = config.content.exercises;
   const absExercisesPath = join(PROG_CWD, exercisesRelPath);
-  if (process.env.NODE_ENV === 'test') console.log(`[DEBUG] absExercisesPath: ${absExercisesPath}`);
+  const runtimeExercisesPath = PROG_RUNTIME_ROOT ? join(PROG_RUNTIME_ROOT, exercisesRelPath) : null;
 
-  if (!(await exists(absExercisesPath))) {
-    if (process.env.NODE_ENV === 'test') console.log(`[DEBUG] absExercisesPath does not exist`);
+  if (!(await exists(absExercisesPath)) && (!runtimeExercisesPath || !(await exists(runtimeExercisesPath)))) {
     return {};
   }
 
-  const allFiles = await readdir(absExercisesPath);
-  const modules = allFiles.filter(m => !m.startsWith(".") && m !== "README.md" && m !== "mod.rs" && m !== "practice");
-  if (process.env.NODE_ENV === 'test') console.log(`[DEBUG] modules: ${JSON.stringify(modules)}`);
+  // Aggregate modules from both locations
+  const moduleSet = new Set<string>();
+  const addModules = async (p: string) => {
+    if (await exists(p)) {
+      const files = await readdir(p);
+      for (const f of files) {
+        if (!f.startsWith(".") && f !== "README.md" && f !== "mod.rs" && f !== "practice") {
+          moduleSet.add(f);
+        }
+      }
+    }
+  };
+
+  await addModules(absExercisesPath);
+  if (runtimeExercisesPath) await addModules(runtimeExercisesPath);
+
+  const modules = Array.from(moduleSet);
 
   modules.sort((a, b) => {
     const numA = parseInt(a.split('_')[0] || "999");

@@ -6,13 +6,14 @@ import { init, createCourse, validate, pack, dev, start, testExercise } from "./
 import { publish } from "./commands/publish";
 import { save, sync, reset } from "./commands/sync";
 import { patch, minor, major } from "./commands/version";
+import pkg from "../package.json";
 
 const program = new Command();
 
 program
   .name("progy")
   .description("The interactive CLI and learning platform for Progy courses.")
-  .version("0.15.0");
+  .version(pkg.version);
 
 // --- Auth ---
 program
