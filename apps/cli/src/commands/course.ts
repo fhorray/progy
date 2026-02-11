@@ -295,9 +295,10 @@ export async function start(file: string | undefined, options: { offline?: boole
       logger.info(`Extracting course artifact...`, "RUNTIME");
       const runtimeRoot = await CourseContainer.unpack(artifactPath);
 
-      // CRITICAL: Set PROG_RUNTIME_ROOT so the backend knows where to find supplemental files
+      // CRITICAL: Set PROG_RUNTIME_ROOT so the backend knows where to find supplemental files (course.json, etc)
       process.env.PROG_RUNTIME_ROOT = runtimeRoot;
-      runtimeCwd = runtimeRoot;
+      // Keep PROG_CWD as the original folder so resolveFile sees local edits first
+      runtimeCwd = cwd;
       logger.success(`Runtime environment ready.`);
     }
   } else if (file && !file.endsWith(".progy") && !await exists(file)) {

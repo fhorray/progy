@@ -1,16 +1,20 @@
 import { useStore } from '@nanostores/react';
 import { Flame, Layout, Map, Pencil, Share2, Zap } from 'lucide-react';
 import { useState } from 'react';
-import {
-  $progress,
-} from '../stores/course-store';
+import { $progress } from '../stores/course-store';
 import { Tabs, TabsList, TabsTrigger } from './ui/tabs';
 import { UserNav } from './user-nav';
 import { $router } from '@/stores/router';
+import { BellIcon } from 'lucide-react';
+import { Button } from './ui/button';
+import { ScrollArea } from './ui/scroll-area';
+import {
+  $hasUnread,
+  $unreadNotifications,
+  markAllAsRead,
+} from '../stores/notification-store';
 // TYPES
 export type ViewMode = 'editor' | 'map' | 'git';
-
-
 
 export function Navbar() {
   const router = useStore($router);
@@ -18,10 +22,13 @@ export function Navbar() {
 
   // Local States
 
-
   // Determine active tab
   const activeRoute = router?.route || 'home';
   const currentTab = activeRoute.startsWith('editor') ? 'editor' : activeRoute;
+
+  const unreadNotifications = useStore($unreadNotifications);
+  const hasUnread = useStore($hasUnread);
+  const [showNotifications, setShowNotifications] = useState(false);
 
   return (
     <nav className="border-b border-zinc-800/50 p-4 bg-zinc-900/80 backdrop-blur-xl sticky top-0 z-20">
@@ -76,7 +83,6 @@ export function Navbar() {
                   <Share2 className="w-3 h-3" />
                   SYNC (GIT)
                 </TabsTrigger>
-
               </TabsList>
             </Tabs>
           </div>
@@ -95,11 +101,82 @@ export function Navbar() {
             </div>
           )}
 
+          <div className="flex items-center gap-2 relative">
+            {/* Notifications Bell */}
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => setShowNotifications(!showNotifications)}
+              className="relative text-zinc-400 hover:text-zinc-100 h-8 w-8 hover:bg-zinc-800/50"
+            >
+              <BellIcon className="w-4 h-4" />
+              {hasUnread && (
+                <span className="absolute top-2 right-2 w-2 h-2 bg-rust rounded-full border-2 border-zinc-900 animate-pulse" />
+              )}
+            </Button>
+
+            {/* Manual Dropdown */}
+            {showNotifications && (
+              <div className="absolute top-10 right-0 w-[280px] bg-zinc-900 border border-zinc-800 rounded-xl shadow-2xl z-50 overflow-hidden animate-in fade-in zoom-in-95 duration-200">
+                <div className="p-3 border-b border-zinc-800 bg-zinc-900/50 flex items-center justify-between">
+                  <span className="text-xs font-bold text-zinc-100">
+                    Notifications
+                  </span>
+                  {hasUnread && (
+                    <button
+                      className="text-[10px] text-zinc-500 hover:text-zinc-300 transition-colors"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        markAllAsRead();
+                      }}
+                    >
+                      Mark as read
+                    </button>
+                  )}
+                </div>
+                <ScrollArea className="h-[300px]">
+                  {unreadNotifications.length === 0 ? (
+                    <div className="py-8 text-center text-xs text-zinc-500 italic">
+                      All good here!
+                    </div>
+                  ) : (
+                    <div className="divide-y divide-zinc-800/50">
+                      {unreadNotifications.map((n) => (
+                        <div
+                          key={n.id}
+                          className="p-3 flex flex-col items-start gap-1 cursor-pointer hover:bg-zinc-800 transition-colors"
+                          onClick={() => {
+                            if (n.type === 'tutor' && n.metadata?.exerciseId) {
+                              $router.open(`/editor/${n.metadata.exerciseId}`);
+                            }
+                            setShowNotifications(false);
+                          }}
+                        >
+                          <div className="flex items-center gap-2 w-full">
+                            <div
+                              className={`w-1.5 h-1.5 rounded-full ${n.type === 'tutor' ? 'bg-rust' : 'bg-blue-400'}`}
+                            />
+                            <span className="font-bold text-[11px] text-zinc-100">
+                              {n.title}
+                            </span>
+                          </div>
+                          <p className="text-[10px] text-zinc-400 leading-relaxed italic">
+                            {n.message}
+                          </p>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </ScrollArea>
+              </div>
+            )}
+          </div>
+
           <div className="h-6 w-[1px] bg-zinc-800/50 mx-1" />
 
           <UserNav />
         </div>
       </div>
-    </nav >
+    </nav>
   );
 }

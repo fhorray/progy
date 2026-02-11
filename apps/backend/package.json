@@ -25,6 +25,7 @@
     "better-auth": "^1.4.18",
     "drizzle-orm": "^0.45.1",
     "drizzle-zod": "^0.8.3",
+    "fflate": "^0.8.2",
     "hono": "^4.11.8",
     "hono-rate-limiter": "^0.5.3",
     "stripe": "^20.3.1",

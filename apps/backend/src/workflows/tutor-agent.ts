@@ -70,6 +70,24 @@ export class TutorAgentWorkflow extends WorkflowEntrypoint<CloudflareBindings, T
         await db.update(schema.courseProgress)
           .set({ data: JSON.stringify(data), updatedAt: new Date() })
           .where(eq(schema.courseProgress.id, syncId));
+
+        // Create notification
+        const notificationId = crypto.randomUUID();
+        const notification = {
+          id: notificationId,
+          userId,
+          type: 'tutor',
+          title: 'Novo conselho do Tutor!',
+          message: `Identificamos uma dificuldade em ${exerciseId.split('/').pop()}. Clique aqui para ver uma micro-lição.`,
+          read: false,
+          createdAt: new Date().toISOString(),
+          metadata: { courseId, exerciseId }
+        };
+
+        // Store in KV: notifications:userId:id
+        await this.env.KV.put(`notifications:${userId}:${notificationId}`, JSON.stringify(notification), {
+          expirationTtl: 60 * 60 * 24 * 7 // 7 days
+        });
       }
 
       console.log(`[TutorAgent] Lesson stored for student on ${exerciseId}`);

@@ -1,6 +1,10 @@
-
 import { OpenInIdeButton } from '@/components/open-in-ide-button';
-import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from '@/components/ui/accordion';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
@@ -8,7 +12,19 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { $router } from '@/stores/router';
 import { useStore } from '@nanostores/react';
-import { BookOpenIcon, CheckCircle2Icon, CheckCircleIcon, FileCodeIcon, Loader2Icon, LockIcon, PlayIcon, SparklesIcon, TerminalIcon, Wand2Icon, XCircleIcon } from 'lucide-react';
+import {
+  TerminalIcon,
+  Wand2Icon,
+  XCircleIcon,
+  BookOpenIcon,
+  LockIcon,
+  CheckCircleIcon,
+  CheckCircle2Icon,
+  FileCodeIcon,
+  Loader2Icon,
+  PlayIcon,
+  SparklesIcon,
+} from 'lucide-react';
 import { useState } from 'react';
 import { ContentTabs } from '../components/content-tabs';
 import { PremiumGateModal } from '../components/modals/premium-gate-modal';
@@ -29,7 +45,7 @@ import {
   explainExercise,
   getAiHint,
   runTests,
-  setSelectedExercise
+  setSelectedExercise,
 } from '../stores/course-store';
 import { ChallengeGenerator } from '../components/modals/challenge-generator-modal';
 import { SoundManager } from '../components/sound-manager';
@@ -42,7 +58,6 @@ export function EditorView() {
   const isAiLoading = useStore($isAiLoading);
   const output = useStore($output);
   const exerciseGroups = useStore($exerciseGroups);
-  // const exerciseGroupsQuery = useStore($exerciseGroupsQuery);
   const selectedExercise = useStore($selectedExercise);
   const results = useStore($results);
   const isAiLocked = useStore($isAiLocked);
@@ -55,14 +70,17 @@ export function EditorView() {
   // Local States
   const [sidebarTab, setSidebarTab] = useState<SidebarTab>('learning');
 
+  // Helper para pegar o status do exercício selecionado fora do loop
+  const currentStatus = selectedExercise ? results[selectedExercise.id] : null;
+
   return (
     <div className="container mx-auto gap-6 flex flex-1 py-6 min-h-full">
       <SoundManager />
+
       {/* SIDEBAR */}
       <aside className="w-full max-w-[22vw] h-full flex flex-col overflow-hidden rounded-2xl border border-zinc-800/50 bg-zinc-900/30 backdrop-blur-sm shadow-xl">
         {/* Sidebar Header: Stats & Actions */}
         <div className="p-4 border-b border-zinc-800/50 bg-zinc-900/50 space-y-4">
-          {/* XP & Level - Compact */}
           {progress && (
             <div className="flex items-center justify-between">
               <div className="flex flex-col">
@@ -115,7 +133,9 @@ export function EditorView() {
           <div className="space-y-1.5">
             <div className="flex items-center justify-between text-[10px] font-medium text-zinc-500">
               <span>Progress</span>
-              <span className="text-zinc-300">{completedCount}/{totalExercises}</span>
+              <span className="text-zinc-300">
+                {completedCount}/{totalExercises}
+              </span>
             </div>
             <div className="h-1.5 w-full bg-zinc-800 rounded-full overflow-hidden">
               <div
@@ -125,6 +145,7 @@ export function EditorView() {
             </div>
           </div>
         </div>
+
         <Tabs
           value={sidebarTab}
           onValueChange={(v) => setSidebarTab(v as SidebarTab)}
@@ -149,147 +170,155 @@ export function EditorView() {
             </TabsList>
           </div>
 
-          {/* MODULES */}
           <TabsContent
             value="learning"
             className="flex-1 overflow-hidden m-0 text-zinc-100"
           >
             <ScrollArea className="h-full px-2 py-2">
-              {/* {exerciseGroupsQuery.loading && */
-                Object.keys(exerciseGroups).length === 0 ? (
-                  <div className="space-y-4 p-2">
-                    <div className="h-10 bg-zinc-800/50 rounded-xl animate-pulse" />
-                    <div className="h-10 bg-zinc-800/50 rounded-xl animate-pulse" />
-                    <div className="h-10 bg-zinc-800/50 rounded-xl animate-pulse" />
-                  </div>
-                ) : (
-                  <Accordion
-                    type="single"
-                    collapsible
-                    className="w-full space-y-1"
-                    value={expandedModule}
-                    onValueChange={(v) => $expandedModule.set(v)}
-                  >
-                    {Object.keys(exerciseGroups)
-                      .filter((key) => key !== 'practice')
-                      .map((moduleKey) => {
-                        const exercises = Array.isArray(exerciseGroups[moduleKey]) ? exerciseGroups[moduleKey] : [];
-                        const modulePassCount = exercises.filter(
-                          (ex) => results[ex.id] === 'pass',
-                        ).length;
-                        const isModuleComplete =
-                          modulePassCount === exercises.length &&
-                          exercises.length > 0;
-                        const isModuleLocked = exercises.length > 0 && exercises.every(ex => ex.isLocked);
+              {Object.keys(exerciseGroups).length === 0 ? (
+                <div className="space-y-4 p-2">
+                  <div className="h-10 bg-zinc-800/50 rounded-xl animate-pulse" />
+                  <div className="h-10 bg-zinc-800/50 rounded-xl animate-pulse" />
+                  <div className="h-10 bg-zinc-800/50 rounded-xl animate-pulse" />
+                </div>
+              ) : (
+                <Accordion
+                  type="single"
+                  collapsible
+                  className="w-full space-y-1"
+                  value={expandedModule}
+                  onValueChange={(v) => $expandedModule.set(v)}
+                >
+                  {Object.keys(exerciseGroups)
+                    .filter((key) => key !== 'practice')
+                    .map((moduleKey) => {
+                      const exercises = Array.isArray(exerciseGroups[moduleKey])
+                        ? exerciseGroups[moduleKey]
+                        : [];
+                      const modulePassCount = exercises.filter(
+                        (ex) => results[ex.id] === 'pass',
+                      ).length;
+                      const isModuleComplete =
+                        modulePassCount === exercises.length &&
+                        exercises.length > 0;
+                      const isModuleLocked =
+                        exercises.length > 0 &&
+                        exercises.every((ex) => ex.isLocked);
 
-                        return (
-                          <AccordionItem
-                            key={moduleKey}
-                            value={moduleKey}
-                            className="border-none"
-                          >
-                            <AccordionTrigger className="hover:no-underline py-3 px-3 rounded-xl hover:bg-zinc-800/30 text-zinc-300 text-sm transition-colors [&[data-state=open]]:bg-zinc-800/50">
-                              <div className="flex items-center gap-3 truncate">
-                                {isModuleLocked ? (
-                                  <div className="w-5 h-5 rounded-full bg-zinc-800 flex items-center justify-center">
-                                    <LockIcon className="w-3 h-3 text-zinc-600" />
-                                  </div>
-                                ) : isModuleComplete ? (
-                                  <div className="w-5 h-5 rounded-full bg-emerald-500/20 flex items-center justify-center">
-                                    <CheckCircleIcon className="w-3 h-3 text-emerald-400" />
-                                  </div>
-                                ) : (
-                                  <div className="w-5 h-5 rounded-full bg-zinc-800 flex items-center justify-center">
-                                    <span className="text-[8px] font-bold text-zinc-500">
-                                      {modulePassCount}
-                                    </span>
-                                  </div>
-                                )}
-                                <span
-                                  className={`font-semibold truncate ${isModuleComplete ? 'text-zinc-500' : ''}`}
-                                >
-                                  {exercises[0]?.moduleTitle ||
-                                    moduleKey
-                                      .replace(/^\d+_/, '')
-                                      .replace(/_/g, ' ')}
-                                </span>
-                              </div>
-                              <Badge
-                                variant={isModuleComplete ? 'outline' : 'secondary'}
-                                className={`ml-auto mr-2 text-[10px] h-5 px-2 ${isModuleComplete ? 'text-emerald-400 border-emerald-500/30 bg-emerald-500/10' : ''}`}
+                      return (
+                        <AccordionItem
+                          key={moduleKey}
+                          value={moduleKey}
+                          className="border-none"
+                        >
+                          <AccordionTrigger className="hover:no-underline py-3 px-3 rounded-xl hover:bg-zinc-800/30 text-zinc-300 text-sm transition-colors [&[data-state=open]]:bg-zinc-800/50">
+                            <div className="flex items-center gap-3 truncate">
+                              {isModuleLocked ? (
+                                <div className="w-5 h-5 rounded-full bg-zinc-800 flex items-center justify-center">
+                                  <LockIcon className="w-3 h-3 text-zinc-600" />
+                                </div>
+                              ) : isModuleComplete ? (
+                                <div className="w-5 h-5 rounded-full bg-emerald-500/20 flex items-center justify-center">
+                                  <CheckCircleIcon className="w-3 h-3 text-emerald-400" />
+                                </div>
+                              ) : (
+                                <div className="w-5 h-5 rounded-full bg-zinc-800 flex items-center justify-center">
+                                  <span className="text-[8px] font-bold text-zinc-500">
+                                    {modulePassCount}
+                                  </span>
+                                </div>
+                              )}
+                              <span
+                                className={`font-semibold truncate ${isModuleComplete ? 'text-zinc-500' : ''}`}
                               >
-                                {modulePassCount}/{exercises.length}
-                              </Badge>
-                            </AccordionTrigger>
-                            <AccordionContent className="pb-2 pt-1 space-y-1">
-                              {exercises.map((ex) => {
-                                const status = results[ex.id];
-                                const isSelected = selectedExercise?.id === ex.id;
-                                const locked = ex.isLocked;
-                                return (
-                                  <button
-                                    key={ex.id}
-                                    onClick={() => {
-                                      if (locked) return;
-                                      $router.open(`/editor/${ex.id}`);
-                                      setSelectedExercise(ex);
-                                    }}
-                                    title={locked ? ex.lockReason : undefined}
-                                    className={`w-full text-left pl-10 pr-3 py-2.5 text-xs rounded-lg transition-all flex items-center gap-2 group
-                                ${locked
-                                        ? 'opacity-50 cursor-not-allowed text-zinc-600 border-l-2 border-transparent'
-                                        : isSelected
-                                          ? 'bg-gradient-to-r from-rust/20 to-transparent text-rust font-bold border-l-2 border-rust'
-                                          : 'cursor-pointer text-zinc-500 hover:text-zinc-300 hover:bg-zinc-800/30 border-l-2 border-transparent'
-                                      }`}
-                                  >
-                                    {locked ? (
-                                      <LockIcon className="w-3 h-3 text-zinc-600" />
-                                    ) : (
-                                      <FileCodeIcon
-                                        className={`w-3 h-3 ${isSelected ? 'text-rust' : 'text-zinc-600 group-hover:text-zinc-400'}`}
-                                      />
-                                    )}
-                                    <span className="truncate flex-1">
-                                      {ex.friendlyName || ex.exerciseName}
-                                    </span>
-                                    <div className="flex items-center gap-1.5 ml-auto">
-                                      {ex.difficulty && (
-                                        <div
-                                          className={`w-1.5 h-1.5 rounded-full ${ex.difficulty === 'easy'
+                                {exercises[0]?.moduleTitle ||
+                                  moduleKey
+                                    .replace(/^\d+_/, '')
+                                    .replace(/_/g, ' ')}
+                              </span>
+                            </div>
+                            <Badge
+                              variant={
+                                isModuleComplete ? 'outline' : 'secondary'
+                              }
+                              className={`ml-auto mr-2 text-[10px] h-5 px-2 ${isModuleComplete ? 'text-emerald-400 border-emerald-500/30 bg-emerald-500/10' : ''}`}
+                            >
+                              {modulePassCount}/{exercises.length}
+                            </Badge>
+                          </AccordionTrigger>
+                          <AccordionContent className="pb-2 pt-1 space-y-1">
+                            {exercises.map((ex) => {
+                              const status = results[ex.id];
+                              const isSelected = selectedExercise?.id === ex.id;
+                              const locked = ex.isLocked;
+                              return (
+                                <button
+                                  key={ex.id}
+                                  onClick={() => {
+                                    if (locked) return;
+                                    $router.open(`/editor/${ex.id}`);
+                                    setSelectedExercise(ex);
+                                  }}
+                                  title={locked ? ex.lockReason : undefined}
+                                  className={`w-full text-left pl-10 pr-3 py-2.5 text-xs rounded-lg transition-all flex items-center gap-2 group
+                                ${
+                                  locked
+                                    ? 'opacity-50 cursor-not-allowed text-zinc-600 border-l-2 border-transparent'
+                                    : isSelected
+                                      ? 'bg-gradient-to-r from-rust/20 to-transparent text-rust font-bold border-l-2 border-rust'
+                                      : 'cursor-pointer text-zinc-500 hover:text-zinc-300 hover:bg-zinc-800/30 border-l-2 border-transparent'
+                                }`}
+                                >
+                                  {locked ? (
+                                    <LockIcon className="w-3 h-3 text-zinc-600" />
+                                  ) : (
+                                    <FileCodeIcon
+                                      className={`w-3 h-3 ${isSelected ? 'text-rust' : 'text-zinc-600 group-hover:text-zinc-400'}`}
+                                    />
+                                  )}
+                                  <span className="truncate flex-1">
+                                    {ex.friendlyName || ex.exerciseName}
+                                  </span>
+                                  <div className="flex items-center gap-1.5 ml-auto">
+                                    {ex.difficulty && (
+                                      <div
+                                        className={`w-1.5 h-1.5 rounded-full ${
+                                          ex.difficulty === 'easy'
                                             ? 'bg-emerald-500'
                                             : ex.difficulty === 'medium'
                                               ? 'bg-amber-500'
                                               : 'bg-red-500'
-                                            }`}
-                                          title={ex.difficulty}
-                                        />
-                                      )}
-                                      {ex.tags?.[0] && (
-                                        <Badge variant="outline" className="text-[8px] h-3.5 px-1 py-0 border-zinc-700/50 text-zinc-500">
-                                          {ex.tags[0]}
-                                        </Badge>
-                                      )}
-                                      {!locked && status === 'pass' && (
-                                        <CheckCircle2Icon className="w-3.5 h-3.5 text-emerald-400" />
-                                      )}
-                                      {!locked && status === 'fail' && (
-                                        <XCircleIcon className="w-3.5 h-3.5 text-red-400" />
-                                      )}
-                                    </div>
-                                  </button>
-                                );
-                              })}
-                            </AccordionContent>
-                          </AccordionItem>
-                        );
-                      })}
-                  </Accordion>
-                )}
+                                        }`}
+                                        title={ex.difficulty}
+                                      />
+                                    )}
+                                    {ex.tags?.[0] && (
+                                      <Badge
+                                        variant="outline"
+                                        className="text-[8px] h-3.5 px-1 py-0 border-zinc-700/50 text-zinc-500"
+                                      >
+                                        {ex.tags[0]}
+                                      </Badge>
+                                    )}
+                                    {!locked && status === 'pass' && (
+                                      <CheckCircle2Icon className="w-3.5 h-3.5 text-emerald-400" />
+                                    )}
+                                    {!locked && status === 'fail' && (
+                                      <XCircleIcon className="w-3.5 h-3.5 text-red-400" />
+                                    )}
+                                  </div>
+                                </button>
+                              );
+                            })}
+                          </AccordionContent>
+                        </AccordionItem>
+                      );
+                    })}
+                </Accordion>
+              )}
             </ScrollArea>
           </TabsContent>
 
-          {/* PRACTICE */}
           <TabsContent
             value="practice"
             className="flex-1 overflow-hidden m-0 text-zinc-100"
@@ -308,7 +337,7 @@ export function EditorView() {
               </div>
 
               {exerciseGroups['practice'] &&
-                Array.isArray(exerciseGroups['practice']) ? (
+              Array.isArray(exerciseGroups['practice']) ? (
                 <div className="space-y-1">
                   {exerciseGroups['practice'].map((ex) => {
                     const status = results[ex.id];
@@ -317,19 +346,22 @@ export function EditorView() {
                       <button
                         key={ex.id}
                         onClick={() => {
-                          $router.open(`/editor/${ex.id}`)
-                          setSelectedExercise(ex)
+                          $router.open(`/editor/${ex.id}`);
+                          setSelectedExercise(ex);
                         }}
                         className={`w-full text-left px-3 py-3 text-xs rounded-lg transition-all flex items-center gap-3 group
-                        ${isSelected
+                        ${
+                          isSelected
                             ? 'bg-gradient-to-r from-rust/20 to-transparent text-rust font-bold border-l-2 border-rust'
                             : 'text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800/30 border-l-2 border-transparent'
-                          }`}
+                        }`}
                       >
                         <Wand2Icon
                           className={`w-4 h-4 ${isSelected ? 'text-rust' : 'text-zinc-600'}`}
                         />
-                        <span className="truncate flex-1">{ex.exerciseName}</span>
+                        <span className="truncate flex-1">
+                          {ex.exerciseName}
+                        </span>
                         {status === 'pass' && (
                           <CheckCircle2Icon className="w-3.5 h-3.5 text-emerald-400" />
                         )}
@@ -354,9 +386,8 @@ export function EditorView() {
         </Tabs>
       </aside>
 
-      {/* Editor */}
+      {/* Editor Section */}
       <section className="flex-1 flex flex-col gap-4 h-full min-h-0">
-
         {!selectedExercise && (
           <Card className="w-full flex-none p-3 border-zinc-800/50 bg-gradient-to-br from-zinc-900/60 via-zinc-900/40 to-transparent backdrop-blur-sm">
             <div className="text-center py-8 text-zinc-500">
@@ -366,13 +397,12 @@ export function EditorView() {
           </Card>
         )}
 
-        {/* Lesson Details */}
-        {selectedExercise &&
+        {selectedExercise && (
           <Card className="flex-none py-2 px-0 border-zinc-800/50 bg-gradient-to-br from-zinc-900/60 via-zinc-900/40 to-transparent backdrop-blur-sm">
-            <CardContent className='flex flex-col md:flex-row md:items-center justify-between gap-4'>
+            <CardContent className="flex flex-col md:flex-row md:items-center justify-between gap-4">
               <div className="space-y-1">
                 <div className="flex items-center gap-2">
-                  {status === 'pass' ? (
+                  {currentStatus === 'pass' ? (
                     <Badge className="bg-emerald-500/20 text-emerald-400 border-emerald-500/30 text-[10px]">
                       <CheckCircle2Icon className="w-3 h-3 mr-1" /> Mastered
                     </Badge>
@@ -383,19 +413,20 @@ export function EditorView() {
                   )}
                 </div>
                 <h2 className="text-2xl font-black tracking-tight text-white line-clamp-1">
-                  {selectedExercise?.friendlyName || selectedExercise?.exerciseName}
+                  {selectedExercise?.friendlyName ||
+                    selectedExercise?.exerciseName}
                 </h2>
                 <p className="text-zinc-500 text-xs flex items-center gap-2">
                   <span className="text-zinc-600">
                     {selectedExercise?.moduleTitle ||
-                      selectedExercise?.module.replace(/_/g, ' ')}
+                      selectedExercise?.module?.replace(/_/g, ' ')}
                   </span>
                   <span className="text-zinc-700">•</span>
                   <OpenInIdeButton
                     path={selectedExercise?.path || ''}
                     className="bg-zinc-800/50 hover:bg-zinc-700/50 px-2 py-1 rounded text-zinc-400 hover:text-zinc-300 text-[10px] w-auto h-auto transition-colors font-mono"
                   >
-                    {selectedExercise?.path.split('prog').pop()}
+                    {selectedExercise?.path?.split('prog').pop()}
                   </OpenInIdeButton>
                 </p>
               </div>
@@ -408,11 +439,18 @@ export function EditorView() {
                   className={`font-bold shadow-xl ${selectedExercise?.isLocked ? 'bg-zinc-700 shadow-none cursor-not-allowed' : 'shadow-rust/20 bg-gradient-to-r from-rust to-orange-500 hover:from-rust/90 hover:to-orange-500/90'}`}
                 >
                   {selectedExercise?.isLocked ? (
-                    <><LockIcon className="mr-2 h-4 w-4" /> Locked</>
+                    <>
+                      <LockIcon className="mr-2 h-4 w-4" /> Locked
+                    </>
                   ) : isRunning ? (
-                    <><Loader2Icon className="mr-2 h-4 w-4 animate-spin" /> Compiling...</>
+                    <>
+                      <Loader2Icon className="mr-2 h-4 w-4 animate-spin" />{' '}
+                      Compiling...
+                    </>
                   ) : (
-                    <><PlayIcon className="mr-2 h-4 w-4 fill-white" /> Run Tests</>
+                    <>
+                      <PlayIcon className="mr-2 h-4 w-4 fill-white" /> Run Tests
+                    </>
                   )}
                 </Button>
 
@@ -452,11 +490,10 @@ export function EditorView() {
               </div>
             </CardContent>
           </Card>
-        }
+        )}
 
         <ContentTabs />
       </section>
-
     </div>
   );
 }

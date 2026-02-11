@@ -3,7 +3,7 @@
   "name": "Docker Local Example",
   "description": "Learn how to use Docker as a local runner environment.",
   "runner": {
-    "type": "docker-local",
+    "type": "docker-file",
     "dockerfile": "Dockerfile",
     "command": "python3 /workspace/runner.py exercises/{{id}}",
     "args": [],

@@ -7,15 +7,20 @@ import { exists } from "./utils.ts";
 
 const getBackendUrl = () => process.env.PROGY_API_URL || DEFAULT_BACKEND_URL;
 
-const CourseConfigSchema = z.object({
+export const CourseConfigSchema = z.object({
   id: z.string(),
   name: z.string(),
   version: z.string().optional().default("1.0.0"), // Add versioning
   runner: z.object({
-    type: z.string().optional().default("process"),
+    type: z.enum(["process", "docker-file", "docker-compose"]).optional().default("process"),
     command: z.string(),
     args: z.array(z.string()),
     cwd: z.string(),
+    dockerfile: z.string().optional(),
+    image_tag: z.string().optional(),
+    network_access: z.boolean().optional().default(false),
+    compose_file: z.string().optional(),
+    service_to_run: z.string().optional(),
   }),
   content: z.object({
     root: z.string(),
@@ -45,6 +50,33 @@ const CourseConfigSchema = z.object({
     trigger: z.string(),
   })).optional(),
 });
+
+export const ModuleInfoSchema = z.object({
+  module: z.object({
+    title: z.string().optional(),
+    message: z.string().optional(),
+    icon: z.string().optional(),
+    completion_message: z.string().optional(),
+    prerequisites: z.array(z.string()).optional(),
+  }).optional(),
+  exercises: z.record(z.string(), z.union([
+    z.string(),
+    z.object({
+      title: z.string().optional(),
+      xp: z.number().optional(),
+      prerequisites: z.array(z.string()).optional(),
+      tags: z.array(z.string()).optional(),
+      difficulty: z.enum(["easy", "medium", "hard"]).optional(),
+    })
+  ])).optional(),
+});
+
+export const QuizSchema = z.array(z.object({
+  question: z.string(),
+  options: z.array(z.string()),
+  answer: z.number(),
+  explanation: z.string().optional(),
+}));
 
 export type LoaderCourseConfig = z.infer<typeof CourseConfigSchema>;
 
@@ -163,11 +195,16 @@ export class CourseLoader {
       throw new Error("Missing required 'runner/' directory at course root.");
     }
 
-    const isProcessRunner = result.data.runner?.type === "process";
-    if (!isProcessRunner) {
-      const hasDocker = (await exists(join(path, "Dockerfile"))) || (await exists(join(path, "docker-compose.yml")));
-      if (!hasDocker) {
-        throw new Error("Missing required Docker configuration. Course must have either a 'Dockerfile' or 'docker-compose.yml' at the root for non-process runners.");
+    const runnerType = result.data.runner?.type || "process";
+    if (runnerType === "docker-file") {
+      const hasDockerfile = await exists(join(path, "Dockerfile"));
+      if (!hasDockerfile) {
+        throw new Error("Missing required 'Dockerfile' at the root for 'docker-file' runner.");
+      }
+    } else if (runnerType === "docker-compose") {
+      const hasCompose = await exists(join(path, "docker-compose.yml"));
+      if (!hasCompose) {
+        throw new Error("Missing required 'docker-compose.yml' at the root for 'docker-compose' runner.");
       }
     }
 
@@ -202,6 +239,40 @@ export class CourseLoader {
         if (!hasExerciseFile) {
           throw new Error(`Missing entry point file (exercise.* or main.*) in: ${moduleName}/${exerciseName}`);
         }
+
+        // Validate quiz.json if present
+        const quizPath = join(exercisePath, "quiz.json");
+        if (await exists(quizPath)) {
+          try {
+            const quizContent = await readFile(quizPath, "utf-8");
+            const quizJson = JSON.parse(quizContent);
+            const quizResult = QuizSchema.safeParse(quizJson);
+            if (!quizResult.success) {
+              const issues = quizResult.error.issues.map((e: any) => `- ${e.path.join('.')}: ${e.message}`).join("\n");
+              throw new Error(`Invalid quiz.json in ${moduleName}/${exerciseName}:\n${issues}`);
+            }
+          } catch (e: any) {
+            throw new Error(`Failed to validate quiz.json in ${moduleName}/${exerciseName}: ${e.message}`);
+          }
+        }
+      }
+
+      // Validate info.toml if present
+      const infoPath = join(modulePath, "info.toml");
+      if (await exists(infoPath)) {
+        try {
+          const infoContent = await readFile(infoPath, "utf-8");
+          // Handle potential issues with raw numeric keys in TOML
+          const fixedContent = infoContent.replace(/^(\s*)(\d+[\w-]*)\s*=/gm, '$1"$2" =');
+          const parsed = Bun.TOML.parse(fixedContent);
+          const infoResult = ModuleInfoSchema.safeParse(parsed);
+          if (!infoResult.success) {
+            const issues = infoResult.error.issues.map((e: any) => `- ${e.path.join('.')}: ${e.message}`).join("\n");
+            throw new Error(`Invalid info.toml in ${moduleName}:\n${issues}`);
+          }
+        } catch (e: any) {
+          throw new Error(`Failed to validate info.toml in ${moduleName}: ${e.message}`);
+        }
       }
     }
 
@@ -227,28 +298,20 @@ export class CourseLoader {
       let exMetadata: Record<string, any> = {};
 
       if (await exists(moduleInfoPath)) {
-        const content = await readFile(moduleInfoPath, "utf-8");
-        const titleMatch = content.match(/title\s*=\s*"([^"]+)"/);
-        if (titleMatch) moduleTitle = titleMatch[1]!;
+        try {
+          const content = await readFile(moduleInfoPath, "utf-8");
+          const fixedContent = content.replace(/^(\s*)(\d+[\w-]*)\s*=/gm, '$1"$2" =');
+          const parsed = Bun.TOML.parse(fixedContent) as any;
 
-        // Parse [[exercises]] blocks
-        const blocks = content.split('[[exercises]]').slice(1);
-        for (const block of blocks) {
-          const nameMatch = block.match(/name\s*=\s*"([^"]+)"/);
-          if (nameMatch) {
-            const name = nameMatch[1]!;
-            const titleMatch = block.match(/title\s*=\s*"([^"]+)"/);
-            const tagsMatch = block.match(/tags\s*=\s*\[([^\]]+)\]/);
-            const difficultyMatch = block.match(/difficulty\s*=\s*"([^"]+)"/);
-            const xpMatch = block.match(/xp\s*=\s*(\d+)/);
+          if (parsed.module?.title) moduleTitle = parsed.module.title;
 
-            exMetadata[name] = {
-              title: titleMatch ? titleMatch[1] : undefined,
-              tags: tagsMatch ? tagsMatch[1]!.split(',').map(t => t.trim().replace(/"/g, '')) : undefined,
-              difficulty: difficultyMatch ? difficultyMatch[1] : undefined,
-              xp: xpMatch ? parseInt(xpMatch[1]!) : undefined
-            };
+          if (parsed.exercises && typeof parsed.exercises === 'object') {
+            for (const [name, meta] of Object.entries(parsed.exercises)) {
+              exMetadata[name] = typeof meta === 'string' ? { title: meta } : meta;
+            }
           }
+        } catch (e) {
+          console.warn(`[WARN] Failed to parse info.toml in ${modulePath}: ${e}`);
         }
       }
 

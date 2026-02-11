@@ -37,7 +37,8 @@ export class DockerComposeClient {
     composeFile: string,
     serviceName: string,
     command: string,
-    env?: Record<string, string>
+    env?: Record<string, string>,
+    volumes?: string[]
   ): Promise<{ exitCode: number, output: string }> {
     await this.readyPromise;
 
@@ -53,6 +54,13 @@ export class DockerComposeClient {
     if (env) {
       for (const [key, val] of Object.entries(env)) {
         args.push("-e", `${key}=${val}`);
+      }
+    }
+
+    // Pass volume overrides if needed
+    if (volumes) {
+      for (const vol of volumes) {
+        args.push("-v", vol);
       }
     }
 

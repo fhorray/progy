@@ -151,7 +151,7 @@ last_sync = "${new Date().toISOString()}"
 
         let shouldOverwrite = true;
         if (isContent) {
-          const isCode = /\.(rs|go|ts|js|py|lua|c|cpp|h|toml|mod|sum|json)$/.test(entry.name);
+          const isCode = /\.(rs|go|ts|js|py|lua|c|cpp|h|toml|mod|sum|json|sql)$/.test(entry.name);
           if (isCode && !force) {
             if (await exists(destPath)) {
               shouldOverwrite = false;

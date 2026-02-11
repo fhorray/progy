@@ -257,16 +257,23 @@ export async function scanAndGenerateManifest(config: CourseConfig) {
   const progressionMode = config.progression?.mode || "sequential";
 
   for (const mod of modules) {
-    const modPath = join(absExercisesPath, mod);
-    if (await exists(modPath) && (await stat(modPath)).isDirectory()) {
-      manifest[mod] = [];
-      let moduleTitle = beautify(mod);
-      let moduleIcon: string | undefined = undefined;
-      let completionMessage: string | undefined = undefined;
-      let exercisesFromToml: any = {};
-      let modulePrerequisites: string[] = [];
+    const modLocalPath = join(absExercisesPath, mod);
+    const modRuntimePath = runtimeExercisesPath ? join(runtimeExercisesPath, mod) : null;
 
-      const infoTomlPath = join(modPath, "info.toml");
+    const existsLocally = await exists(modLocalPath) && (await stat(modLocalPath)).isDirectory();
+    const existsRuntime = modRuntimePath && await exists(modRuntimePath) && (await stat(modRuntimePath)).isDirectory();
+
+    if (!existsLocally && !existsRuntime) continue;
+
+    manifest[mod] = [];
+    let moduleTitle = beautify(mod);
+    let moduleIcon: string | undefined = undefined;
+    let completionMessage: string | undefined = undefined;
+    let exercisesFromToml: any = {};
+    let modulePrerequisites: string[] = [];
+
+    const loadInfo = async (dirPath: string) => {
+      const infoTomlPath = join(dirPath, "info.toml");
       if (await exists(infoTomlPath)) {
         try {
           const infoContent = await readFile(infoTomlPath, "utf-8");
@@ -285,136 +292,185 @@ export async function scanAndGenerateManifest(config: CourseConfig) {
             }
           }
         } catch (e) {
-          console.warn(`[WARN] Failed to parse info.toml: ${e}`);
+          console.warn(`[WARN] Failed to parse info.toml in ${dirPath}: ${e}`);
         }
       }
+    };
 
-      // Evaluate Module Prerequisites
-      let moduleLocked = false;
-      let moduleLockReason = "";
-      if (!bypassMode && modulePrerequisites.length > 0) {
-        for (const req of modulePrerequisites) {
-          const { met, reason } = checkPrerequisite(req, progress, manifest);
-          if (!met) {
-            moduleLocked = true;
-            moduleLockReason = reason || "Module prerequisites not met";
+    // Load from runtime first, then override with local
+    if (existsRuntime) await loadInfo(modRuntimePath!);
+    if (existsLocally) await loadInfo(modLocalPath);
+
+    // Evaluate Module Prerequisites
+    let moduleLocked = false;
+    let moduleLockReason = "";
+    if (!bypassMode && modulePrerequisites.length > 0) {
+      for (const req of modulePrerequisites) {
+        const { met, reason } = checkPrerequisite(req, progress, manifest);
+        if (!met) {
+          moduleLocked = true;
+          moduleLockReason = reason || "Module prerequisites not met";
+          break;
+        }
+      }
+    }
+
+    const entryMap = new Map<string, { local?: any, runtime?: any }>();
+    if (existsRuntime) {
+      const entries = await readdir(modRuntimePath!, { withFileTypes: true });
+      for (const entry of entries) {
+        if (entry.name.startsWith(".") || entry.name === "README.md" || entry.name === "mod.rs" || entry.name === "info.toml" || entry.name === "quiz.json") continue;
+        entryMap.set(entry.name.split('.')[0] || "", { runtime: entry });
+      }
+    }
+    if (existsLocally) {
+      const entries = await readdir(modLocalPath, { withFileTypes: true });
+      for (const entry of entries) {
+        if (entry.name.startsWith(".") || entry.name === "README.md" || entry.name === "mod.rs" || entry.name === "info.toml" || entry.name === "quiz.json") continue;
+        const key = entry.name.split('.')[0] || "";
+        const existing = entryMap.get(key) || {};
+        entryMap.set(key, { ...existing, local: entry });
+      }
+    }
+
+    let previousItemPassed = true;
+    const processedKeys = new Set<string>();
+
+    const addExerciseToManifest = async (exerciseKey: string, layeredEntry: { local?: any, runtime?: any }) => {
+      const entry = layeredEntry.local || layeredEntry.runtime;
+      if (!entry) return;
+
+      let friendlyName = beautify(exerciseKey);
+      if (exercisesFromToml[exerciseKey]?.title) friendlyName = exercisesFromToml[exerciseKey].title;
+
+      // Determine modPath and entryPath based on layering
+      const exLocalPath = layeredEntry.local ? join(modLocalPath, layeredEntry.local.name) : null;
+      const exRuntimePath = layeredEntry.runtime ? join(modRuntimePath!, layeredEntry.runtime.name) : null;
+
+      // Source of truth for exercise existence/type
+      const mainExPath = exLocalPath || exRuntimePath!;
+      const isDirectory = (await stat(mainExPath)).isDirectory();
+
+      let entryPoint: string | undefined;
+      let finalPath = relative(PROG_CWD, mainExPath);
+
+      if (isDirectory) {
+        const candidates = ["exercise.rs", "exercise.sql", "exercise.py", "exercise.ts", "exercise.js", "main.rs", "index.ts", "main.go", "index.js", "main.py"];
+
+        // Layered candidate resolution
+        for (const c of candidates) {
+          // Priority 1: Check in local folder
+          if (exLocalPath && await exists(join(exLocalPath, c))) {
+            entryPoint = c;
+            break;
+          }
+          // Priority 2: Check in runtime (artifact) folder
+          if (exRuntimePath && await exists(join(exRuntimePath, c))) {
+            entryPoint = c;
             break;
           }
         }
       }
 
-      const entries = await readdir(modPath, { withFileTypes: true });
-      const entryMap = new Map<string, any>();
-      for (const entry of entries) {
-        if (entry.name.startsWith(".") || entry.name === "README.md" || entry.name === "mod.rs" || entry.name === "info.toml" || entry.name === "quiz.json") continue;
-        entryMap.set(entry.name.split('.')[0] || "", entry);
+      const absEntryPointPath = entryPoint ? join(mainExPath, entryPoint) : mainExPath;
+
+      if (await exists(absEntryPointPath) && (await stat(absEntryPointPath)).isFile()) {
+        try {
+          const content = await readFile(absEntryPointPath, "utf-8");
+          const titleMatch = content.match(/\/\/\s*(?:Title|title):\s*(.+)/);
+          if (titleMatch && titleMatch[1]) friendlyName = titleMatch[1].trim();
+        } catch { }
       }
 
-      let previousItemPassed = true;
-      const processedKeys = new Set<string>();
+      let isLocked = moduleLocked;
+      let lockReason = moduleLockReason;
 
-      const addExerciseToManifest = async (exerciseKey: string, entry: any) => {
-        let friendlyName = beautify(exerciseKey);
-        if (exercisesFromToml[exerciseKey]?.title) friendlyName = exercisesFromToml[exerciseKey].title;
-
-        let entryPath = join(modPath, entry.name);
-        if (entry.isDirectory()) {
-          const candidates = ["exercise.rs", "exercise.sql", "exercise.py", "exercise.ts", "exercise.js", "main.rs", "index.ts", "main.go", "index.js", "main.py"];
-          for (const c of candidates) {
-            const p = join(entryPath, c);
-            if (await exists(p)) {
-              entryPath = p;
+      if (!isLocked && !bypassMode) {
+        const itemPrereqs = exercisesFromToml[exerciseKey]?.prerequisites;
+        if (Array.isArray(itemPrereqs)) {
+          for (const req of itemPrereqs) {
+            const { met, reason } = checkPrerequisite(req, progress, manifest);
+            if (!met) {
+              isLocked = true;
+              lockReason = reason || "Prerequisites not met";
               break;
             }
           }
         }
 
-        if (await exists(entryPath) && (await stat(entryPath)).isFile()) {
-          try {
-            const content = await readFile(entryPath, "utf-8");
-            const titleMatch = content.match(/\/\/\s*(?:Title|title):\s*(.+)/);
-            if (titleMatch && titleMatch[1]) friendlyName = titleMatch[1].trim();
-          } catch { }
-        }
-
-        let isLocked = moduleLocked;
-        let lockReason = moduleLockReason;
-
-        if (!isLocked && !bypassMode) {
-          const itemPrereqs = exercisesFromToml[exerciseKey]?.prerequisites;
-          if (Array.isArray(itemPrereqs)) {
-            for (const req of itemPrereqs) {
-              const { met, reason } = checkPrerequisite(req, progress, manifest);
-              if (!met) {
-                isLocked = true;
-                lockReason = reason || "Prerequisites not met";
-                break;
-              }
-            }
-          }
-
-          if (!isLocked && progressionMode === "sequential" && !previousItemPassed) {
-            isLocked = true;
-            lockReason = "Complete previous lesson";
-          }
-        }
-
-        const id = `${mod}/${entry.name}`;
-        const exMeta = exercisesFromToml[exerciseKey];
-
-        manifest[mod]?.push({
-          id,
-          module: mod,
-          moduleTitle,
-          moduleIcon,
-          completionMessage,
-          name: entry.name,
-          exerciseName: exerciseKey,
-          friendlyName,
-          path: relative(PROG_CWD, join(modPath, entry.name)),
-          entryPoint: entry.isDirectory() ? entryPath.split(/[\\/]/).pop() : undefined,
-          markdownPath: (entry.isDirectory() ? relative(PROG_CWD, join(modPath, entry.name, "README.md")) : (await exists(join(modPath, `${exerciseKey}.md`)) ? relative(PROG_CWD, join(modPath, `${exerciseKey}.md`)) : null)),
-          hasQuiz: (entry.isDirectory() ? await exists(join(modPath, entry.name, "quiz.json")) : false),
-          type: entry.isDirectory() ? "directory" : "file",
-          isLocked,
-          lockReason,
-          tags: exMeta?.tags,
-          difficulty: exMeta?.difficulty,
-          xp: exMeta?.xp
-        });
-
-        const isPassed = !!(progress.exercises[id]?.status === 'pass' || progress.quizzes[id]?.passed);
-        previousItemPassed = isPassed && !isLocked;
-      };
-
-      // 1. Ordered items from info.toml
-      const orderedNames = Object.keys(exercisesFromToml);
-      for (const exerciseKey of orderedNames) {
-        const entry = entryMap.get(exerciseKey);
-        if (entry) {
-          processedKeys.add(exerciseKey);
-          await addExerciseToManifest(exerciseKey, entry);
+        if (!isLocked && progressionMode === "sequential" && !previousItemPassed) {
+          isLocked = true;
+          lockReason = "Complete previous lesson";
         }
       }
 
-      // 2. Remaining items
-      const remainingEntries = Array.from(entryMap.entries())
-        .filter(([key]) => !processedKeys.has(key))
-        .map(([_, entry]) => entry);
+      const id = `${mod}/${entry.name}`;
+      const exMeta = exercisesFromToml[exerciseKey];
 
-      remainingEntries.sort((a, b) => {
-        const getWeight = (s: string) => {
-          const m = s.match(/^(\d+)_/);
-          return m ? parseInt(m[1] || "0") : 9999;
-        };
-        const wA = getWeight(a.name);
-        const wB = getWeight(b.name);
-        return wA !== wB ? wA - wB : a.name.localeCompare(b.name);
+      manifest[mod]?.push({
+        id,
+        module: mod,
+        moduleTitle,
+        moduleIcon,
+        completionMessage,
+        name: entry.name,
+        exerciseName: exerciseKey,
+        friendlyName,
+        path: finalPath,
+        entryPoint,
+        markdownPath: isDirectory ? (
+          (exLocalPath && await exists(join(exLocalPath, "README.md"))) ? relative(PROG_CWD, join(exLocalPath, "README.md")) :
+            (exRuntimePath && await exists(join(exRuntimePath, "README.md"))) ? relative(PROG_CWD, join(exRuntimePath, "README.md")) : null
+        ) : (
+          (exLocalPath && await exists(join(modLocalPath, `${exerciseKey}.md`))) ? relative(PROG_CWD, join(modLocalPath, `${exerciseKey}.md`)) :
+            (exRuntimePath && await exists(join(modRuntimePath!, `${exerciseKey}.md`))) ? relative(PROG_CWD, join(modRuntimePath!, `${exerciseKey}.md`)) : null
+        ),
+        hasQuiz: isDirectory ? (
+          !!(exLocalPath && await exists(join(exLocalPath, "quiz.json"))) ||
+          !!(exRuntimePath && await exists(join(exRuntimePath, "quiz.json")))
+        ) : false,
+        type: entry.isDirectory() ? "directory" : "file",
+        isLocked,
+        lockReason,
+        tags: exMeta?.tags,
+        difficulty: exMeta?.difficulty,
+        xp: exMeta?.xp
       });
 
-      for (const entry of remainingEntries) {
-        await addExerciseToManifest(entry.name.split('.')[0] || "", entry);
+      const isPassed = !!(progress.exercises[id]?.status === 'pass' || progress.quizzes[id]?.passed);
+      previousItemPassed = isPassed && !isLocked;
+    };
+
+    // 1. Ordered items from info.toml
+    const orderedNames = Object.keys(exercisesFromToml);
+    for (const exerciseKey of orderedNames) {
+      const entry = entryMap.get(exerciseKey);
+      if (entry) {
+        processedKeys.add(exerciseKey);
+        await addExerciseToManifest(exerciseKey, entry);
       }
+    }
+
+    // 2. Remaining items
+    const remainingEntries = Array.from(entryMap.entries())
+      .filter(([key]) => !processedKeys.has(key))
+      .map(([_, entry]) => entry);
+
+    remainingEntries.sort((a, b) => {
+      const getWeight = (s: string) => {
+        const m = s.match(/^(\d+)_/);
+        return m ? parseInt(m[1] || "0") : 9999;
+      };
+      const nameA = (a.local || a.runtime).name;
+      const nameB = (b.local || b.runtime).name;
+      const wA = getWeight(nameA);
+      const wB = getWeight(nameB);
+      return wA !== wB ? wA - wB : nameA.localeCompare(nameB);
+    });
+
+    for (const layeredEntry of remainingEntries) {
+      const entry = layeredEntry.local || layeredEntry.runtime;
+      await addExerciseToManifest(entry.name.split('.')[0] || "", layeredEntry);
     }
   }
 
@@ -443,7 +499,7 @@ export async function scanAndGenerateManifest(config: CourseConfig) {
 
   let totalEx = 0;
   for (const modExercises of Object.values(manifest)) {
-    totalEx += modExercises.length;
+    totalEx += (modExercises as any[]).length;
   }
 
   try {

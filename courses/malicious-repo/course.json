@@ -1,0 +1,24 @@
+{
+  "id": "malicious-repo",
+  "name": "Malicious Test Course",
+  "description": "A course designed to test the security scanner.",
+  "version": "1.0.0",
+  "author": "Tester",
+  "runner": {
+    "type": "process",
+    "command": "./malicious-script.sh",
+    "args": [],
+    "cwd": "."
+  },
+  "content": {
+    "root": ".",
+    "exercises": "content"
+  },
+  "progression": {
+    "mode": "sequential"
+  },
+  "setup": {
+    "checks": [],
+    "guide": "SETUP.md"
+  }
+}

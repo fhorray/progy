@@ -77,6 +77,8 @@ export type {
   SRPDiagnostic,
   SRPOutput,
   ServerType,
+  Notification,
+  NotificationType,
 } from "./types.ts";
 
 // Helpers (backend shared business logic)

@@ -1,51 +1,25 @@
 import type { BunRequest } from "bun";
+import { z } from "zod";
+import { CourseConfigSchema } from "./loader";
 
-export interface RunnerConfig {
-  command: string;
-  args: string[];
-  cwd?: string;
-  type?: 'process' | 'docker-local' | 'docker-compose';
-  dockerfile?: string;
-  image_tag?: string;
-  network_access?: boolean;
-  compose_file?: string;
-  service_to_run?: string;
-}
 
-export interface ContentConfig {
-  exercises: string;
-  root?: string;
-}
+export type RunnerConfig = z.infer<typeof CourseConfigSchema>['runner']
+
+export type ContentConfig = z.infer<typeof CourseConfigSchema>['content']
+
+export type SetupConfig = z.infer<typeof CourseConfigSchema>['setup']
+
+export type ProgressionConfig = z.infer<typeof CourseConfigSchema>['progression']
+
+export type BrandingConfig = z.infer<typeof CourseConfigSchema>['branding']
+
+export type Achievement = z.infer<typeof CourseConfigSchema>['achievements']
 
 export interface SetupCheck {
   name: string;
-  type: 'command';
-  command: string;
-}
-
-export interface SetupConfig {
-  checks: SetupCheck[];
-  guide?: string;
-}
-
-export interface ProgressionConfig {
-  mode?: 'sequential' | 'open';
-  strict_module_order?: boolean;
-  bypass_code?: string;
-}
-
-export interface BrandingConfig {
-  coverImage?: string;
-  primaryColor?: string;
-  layout?: 'vertical' | 'grid' | 'constellation';
-}
-
-export interface Achievement {
-  id: string;
-  icon: string;
-  name: string;
-  description: string;
-  trigger: string; // e.g. "complete_module_01"
+  status: 'pending' | 'checking' | 'pass' | 'fail' | 'warning';
+  message?: string;
+  solution?: string;
 }
 
 export interface CourseConfig {
@@ -74,6 +48,7 @@ export interface ExerciseProgress {
   status: 'pass' | 'fail';
   xpEarned: number;
   completedAt: string;
+  attempts?: number;
 }
 
 export interface QuizProgress {
@@ -89,6 +64,24 @@ export interface Progress {
   exercises: Record<string, ExerciseProgress>;
   quizzes: Record<string, QuizProgress>;
   achievements: string[];
+  tutorSuggestion?: {
+    exerciseId: string;
+    lesson: string;
+    timestamp: string;
+  };
+}
+
+export type NotificationType = 'tutor' | 'streak' | 'achievement' | 'system';
+
+export interface Notification {
+  id: string;
+  userId: string;
+  type: NotificationType;
+  title: string;
+  message: string;
+  read: boolean;
+  createdAt: string;
+  metadata?: Record<string, any>;
 }
 
 export interface ManifestEntry {

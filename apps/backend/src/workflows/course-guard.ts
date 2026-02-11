@@ -5,6 +5,7 @@ import * as schema from '../db/schema';
 import { eq } from 'drizzle-orm';
 import { generateText } from 'ai';
 import { getModel } from '../lib/ai';
+import { unzipSync } from 'fflate';
 
 type CourseGuardParams = {
   versionId: string;
@@ -17,43 +18,84 @@ export class CourseGuardWorkflow extends WorkflowEntrypoint<CloudflareBindings, 
     const { versionId, packageName, version } = event.payload;
     const db = drizzle(this.env.DB);
 
-    console.log(`[CourseGuard] Starting validation for ${packageName}@${version} (${versionId})`);
+    // 0. Fetch Artifact from R2 and Unzip
+    const unzippedFiles = await step.do('Unzip Artifact', async () => {
+      // Get storage key from DB first
+      const versionData = await db.select({
+        storageKey: schema.registryVersions.storageKey
+      })
+        .from(schema.registryVersions)
+        .where(eq(schema.registryVersions.id, versionId))
+        .get();
+
+      if (!versionData?.storageKey) throw new Error('Artifact storage key not found');
+
+      console.log(`[CourseGuard] Fetching artifact: ${versionData.storageKey}`);
+      const obj = await this.env.R2.get(versionData.storageKey);
+      if (!obj) throw new Error('Artifact not found in R2');
+
+      const buffer = await obj.arrayBuffer();
+      const files = unzipSync(new Uint8Array(buffer));
+
+      console.log(`[CourseGuard] Unzipped ${Object.keys(files).length} files`);
+
+      // Convert to a plain object with hex or text representation if needed, 
+      // but here we just need to know which ones are scripts and course.json
+      return Object.keys(files).reduce((acc: Record<string, string>, key) => {
+        // We only care about text files for validation
+        const content = new TextDecoder().decode(files[key]);
+        acc[key] = content;
+        return acc;
+      }, {});
+    });
 
     // 1. Static Analysis (Security Scan)
     const securityResult = await step.do('Security Scan', async () => {
-      // List files in R2 for this version to scan
-      const prefix = `packages/${packageName}/${version}/`;
-      const list = await this.env.R2.list({ prefix });
-      const filesToScan = list.objects.filter(obj =>
-        obj.key.endsWith('.py') ||
-        obj.key.endsWith('.sh') ||
-        obj.key.endsWith('.js') ||
-        obj.key.endsWith('Dockerfile')
+      const scriptExtensions = ['.py', '.sh', '.js', 'Dockerfile'];
+      const filesToScan = Object.keys(unzippedFiles).filter(key =>
+        scriptExtensions.some(ext => key.endsWith(ext))
       );
 
-      if (filesToScan.length === 0) return { passed: true, reason: 'No scripts to scan' };
+      console.log(`[CourseGuard-Security] Files matched for scanning: ${filesToScan.join(', ')}`);
 
-      // Sample a few files for AI review (or scan all if small)
-      // For now, let's scan the first few to avoid context limits in this demo logic
+      if (filesToScan.length === 0) {
+        console.log(`[CourseGuard-Security] No scripts found to scan. Skipping.`);
+        return { passed: true, reason: 'No scripts to scan' };
+      }
+
+      // Sample a few files for AI review
       const sample = filesToScan.slice(0, 5);
       let contextFiles = "";
 
-      for (const file of sample) {
-        const obj = await this.env.R2.get(file.key);
-        if (obj) {
-          const content = await obj.text();
-          contextFiles += `\n--- FILE: ${file.key} ---\n${content}\n`;
-        }
+      for (const key of sample) {
+        contextFiles += `\n--- FILE: ${key} ---\n${unzippedFiles[key]}\n`;
       }
 
-      // Use AI SDK to detect dangerous patterns
-      const model = getModel({ provider: 'openai', apiKey: this.env.OPENAI_API_KEY }); // Default to OpenAI for system tasks
+      console.log(`[CourseGuard-Security] Sending sample to AI for review...`);
+      const model = getModel({ provider: 'openai', apiKey: this.env.OPENAI_API_KEY });
 
       const { text } = await generateText({
         model,
-        system: "You are a cloud security expert. Scan the following scripts for high-risk patterns like hardcoded credentials, RCE, or malicious exfiltration. Respond with 'SAFE' or 'DANGEROUS: <reason>'.",
+        system: `You are a security auditor for an educational coding platform. 
+        Your goal is to detect MALICIOUS intent or CRITICAL risks that could harm a STUDENT'S local machine or Docker environment.
+        
+        ALLOWED (Educational Context):
+        - Hardcoded database credentials (e.g., DB_USER, DB_PASS) for local exercises.
+        - Simplified SQL interactions for learning purposes.
+        - Local network calls expected for the course.
+
+        FORBIDDEN (Actual Risks):
+        - Remote Code Execution (RCE) on the student's host machine (outside Docker).
+        - Malicious data exfiltration (sending user files to external servers).
+        - Exploits that target the student's personal files or system settings.
+        - Intentional malware or clear backdoor attempts.
+
+        Respond with 'SAFE' if the code is acceptable for a student to run.
+        Respond with 'DANGEROUS: <reason>' ONLY if there is a real threat to the student.`,
         prompt: contextFiles,
       });
+
+      console.log(`[CourseGuard-Security] AI detection result: ${text}`);
 
       return {
         passed: text.startsWith('SAFE'),
@@ -71,16 +113,23 @@ export class CourseGuardWorkflow extends WorkflowEntrypoint<CloudflareBindings, 
 
     // 2. Schema Validation
     const schemaResult = await step.do('Schema Validation', async () => {
-      const courseJsonPath = `packages/${packageName}/${version}/course.json`;
-      const obj = await this.env.R2.get(courseJsonPath);
-      if (!obj) return { passed: false, reason: 'Missing course.json' };
+      const courseJsonContent = unzippedFiles['course.json'];
+
+      if (!courseJsonContent) {
+        console.error(`[CourseGuard-Schema] course.json not found in ZIP`);
+        return { passed: false, reason: 'Missing course.json' };
+      }
 
       try {
-        const content = await obj.json() as any;
-        // Dynamic validation (basic check)
-        if (!content.title || !content.lessons) return { passed: false, reason: 'Invalid course.json structure' };
+        const content = JSON.parse(courseJsonContent);
+        console.log(`[CourseGuard-Schema] Successfully parsed course.json. Title: ${content.title}`);
+        if (!content.title || !content.lessons) {
+          console.error(`[CourseGuard-Schema] Invalid structure: title or lessons missing`);
+          return { passed: false, reason: 'Invalid course.json structure' };
+        }
         return { passed: true };
-      } catch (e) {
+      } catch (e: any) {
+        console.error(`[CourseGuard-Schema] Parse error: ${e.message}`);
         return { passed: false, reason: 'Malformed course.json' };
       }
     });

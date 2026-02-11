@@ -26,12 +26,12 @@ export const authServer = (env: CloudflareBindings) => {
       provider: "sqlite",
       usePlural: true,
       schema: {
-        user: schema.users,
-        session: schema.sessions,
-        account: schema.accounts,
-        verification: schema.verifications,
-        subscription: schema.subscription,
-        deviceCode: schema.devices,
+        users: schema.users,
+        sessions: schema.sessions,
+        accounts: schema.accounts,
+        verifications: schema.verifications,
+        subscriptions: schema.subscription,
+        deviceCodes: schema.devices,
       },
     }),
     user: {
@@ -48,7 +48,7 @@ export const authServer = (env: CloudflareBindings) => {
       },
     },
     secret: env.BETTER_AUTH_SECRET,
-    baseURL: env.BETTER_AUTH_URL ? `${env.BETTER_AUTH_URL.replace(/\/$/, "")}/auth` : "https://api.progy.dev/auth",
+    baseURL: env.BETTER_AUTH_URL || "https://api.progy.dev",
     trustedOrigins: [
       "http://localhost:3001",
       "https://api.progy.dev",

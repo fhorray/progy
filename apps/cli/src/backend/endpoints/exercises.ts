@@ -12,7 +12,9 @@ import {
   saveProgress,
   updateStreak,
   parseRunnerOutput,
-  exists as progyExists
+  exists as progyExists,
+  loadToken,
+  BACKEND_URL
 } from "@progy/core";
 
 async function resolveFile(relativePath: string): Promise<string | null> {
@@ -124,9 +126,22 @@ async function updateProgressForSuccess(exerciseId: string) {
   let saveError = null;
   try {
     const progress = await getProgress();
-    if (!progress.exercises[exerciseId]) {
-      progress.exercises[exerciseId] = { status: 'pass', xpEarned: 20, completedAt: new Date().toISOString() };
-      progress.stats.totalXp += 20;
+    const existing = progress.exercises[exerciseId];
+
+    if (!existing || existing.status !== 'pass') {
+      const attempts = existing?.attempts || 0;
+      progress.exercises[exerciseId] = {
+        status: 'pass',
+        xpEarned: 20,
+        completedAt: new Date().toISOString(),
+        attempts: 0 // Reset attempts on success
+      };
+
+      // Only award XP if it wasn't already passed
+      if (!existing || existing.status !== 'pass') {
+        progress.stats.totalXp += 20;
+      }
+
       progress.stats = updateStreak(progress.stats);
       await saveProgress(progress);
     }
@@ -136,6 +151,58 @@ async function updateProgressForSuccess(exerciseId: string) {
     saveError = "Failed to save progress (Auth/Network error)";
   }
   return { currentProgress, saveError };
+}
+
+/**
+ * Helper to track failed attempts and trigger tutor if needed.
+ */
+async function trackExerciseFailure(exerciseId: string, context: any) {
+  try {
+    const progress = await getProgress();
+    const exProgress = progress.exercises[exerciseId] || { status: 'fail', xpEarned: 0, completedAt: new Date().toISOString(), attempts: 0 };
+
+    // Update attempts
+    exProgress.attempts = (exProgress.attempts || 0) + 1;
+    exProgress.status = 'fail';
+    exProgress.completedAt = new Date().toISOString();
+
+    progress.exercises[exerciseId] = exProgress;
+    await saveProgress(progress);
+
+    console.log(`[TUTOR-DEBUG] Exercise ${exerciseId} failed. Attempts: ${exProgress.attempts}`);
+
+    if (exProgress.attempts === 3) {
+      console.log(`[TUTOR-TRIGGER] 3 Failures reached for ${exerciseId}. Calling tutor workflow...`);
+      const token = await loadToken();
+      if (!token) return;
+
+      const courseConfig = currentConfig;
+      if (!courseConfig) return;
+
+      // Trigger tutor agent workflow via backend
+      await fetch(`${BACKEND_URL}/tutor/trigger`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          courseId: courseConfig.id,
+          exerciseId,
+          context: {
+            courseName: courseConfig.name,
+            exerciseName: exerciseId.split('/').pop() || exerciseId,
+            ...context
+          }
+        })
+      });
+    }
+
+    return progress;
+  } catch (e) {
+    console.error(`[WARN] Could not track failure: ${e}`);
+    return null;
+  }
 }
 
 async function handleDockerLocalRunner(body: { exerciseName: string, id: string, entryPoint?: string }) {
@@ -152,11 +219,21 @@ async function handleDockerLocalRunner(body: { exerciseName: string, id: string,
 
   const config = currentConfig!;
   const imageTag = config.runner.image_tag || imgMgr.generateTag(config.id);
-  const dockerfile = config.runner.dockerfile || "Dockerfile";
+
+  let dockerfile = config.runner.dockerfile || "Dockerfile";
+  let dockerfilePath = join(PROG_CWD, dockerfile);
+
+  if (!(await progyExists(dockerfilePath)) && PROG_RUNTIME_ROOT) {
+    const runtimeDockerfile = join(PROG_RUNTIME_ROOT, dockerfile);
+    if (await progyExists(runtimeDockerfile)) {
+      dockerfilePath = runtimeDockerfile;
+    }
+  }
+
   const contextPath = PROG_CWD;
 
   try {
-    await imgMgr.ensureImage(imageTag, contextPath, dockerfile);
+    await imgMgr.ensureImage(imageTag, contextPath, dockerfilePath);
   } catch (e: any) {
     return {
       success: false,
@@ -183,7 +260,14 @@ async function handleDockerComposeRunner(body: { exerciseName: string, id: strin
   const client = new DockerComposeClient();
   const config = currentConfig!;
 
-  const composeFile = join(PROG_CWD, config.runner.compose_file || "docker-compose.yml");
+  let composeFile = join(PROG_CWD, config.runner.compose_file || "docker-compose.yml");
+  if (!(await progyExists(composeFile)) && PROG_RUNTIME_ROOT) {
+    const runtimeFile = join(PROG_RUNTIME_ROOT, config.runner.compose_file || "docker-compose.yml");
+    if (await progyExists(runtimeFile)) {
+      composeFile = runtimeFile;
+    }
+  }
+
   const service = config.runner.service_to_run || "app";
   // body.id is like "01_select/01_simple-query", we need to append entryPoint if folder
   const exercisePath = body.entryPoint ? `${config.content.exercises}/${body.id}/${body.entryPoint}` : `${config.content.exercises}/${body.id}`;
@@ -201,7 +285,7 @@ async function handleDockerComposeRunner(body: { exerciseName: string, id: strin
   }
 
   try {
-    const result = await client.runService(composeFile, service, command);
+    const result = await client.runService(composeFile, service, command, undefined, [`${PROG_CWD}:/workspace`]);
     return parseRunnerOutput(result.output, result.exitCode);
   } catch (e: any) {
     return {
@@ -256,7 +340,7 @@ const runHandler: ServerType<"/exercises/run"> = async (req) => {
     let result: { success: boolean, output: string, friendlyOutput?: string } | null = null;
     const runnerType = currentConfig!.runner.type || 'process';
 
-    if (runnerType === 'docker-local') {
+    if (runnerType === 'docker-file') {
       result = await handleDockerLocalRunner(body);
     } else if (runnerType === 'docker-compose') {
       result = await handleDockerComposeRunner(body);
@@ -268,6 +352,19 @@ const runHandler: ServerType<"/exercises/run"> = async (req) => {
     let progressData: any = {};
     if (result && result.success && body.id) {
       progressData = await updateProgressForSuccess(body.id);
+    } else if (result && !result.success && body.id) {
+      // Track failure and potentially trigger tutor
+      const desc = await resolveFile(body.entryPoint ? join(body.id, body.entryPoint) : body.id);
+      let code = "";
+      if (desc) {
+        try { code = await readFile(desc, "utf-8"); } catch { }
+      }
+
+      const progress = await trackExerciseFailure(body.id, {
+        code,
+        error: result.friendlyOutput || result.output,
+      });
+      if (progress) progressData.currentProgress = progress;
     }
 
     return Response.json({

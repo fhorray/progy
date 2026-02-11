@@ -1,82 +1,13 @@
-{
-  "title": "Variables & Types Quiz",
-  "questions": [
-    {
-      "question": "What does SELECT * do?",
-      "type": "multiple-choice",
-      "options": [
-        {
-          "id": "a",
-          "text": "Selects all rows and columns",
-          "isCorrect": true
-        },
-        {
-          "id": "b",
-          "text": "Selects only the ID column",
-          "isCorrect": false
-        },
-        {
-          "id": "c",
-          "text": "Deletes all rows",
-          "isCorrect": false
-        },
-        {
-          "id": "d",
-          "text": "Updates all rows",
-          "isCorrect": false
-        }
-      ]
-    },
-    {
-      "id": "gfqpnl4vl",
-      "type": "multiple-choice",
-      "question": "",
-      "options": [
-        {
-          "id": "a",
-          "text": "",
-          "isCorrect": true
-        },
-        {
-          "id": "b",
-          "text": "",
-          "isCorrect": false
-        }
-      ]
-    },
-    {
-      "id": "j3bdoyc61",
-      "type": "multiple-choice",
-      "question": "",
-      "options": [
-        {
-          "id": "a",
-          "text": "",
-          "isCorrect": true
-        },
-        {
-          "id": "b",
-          "text": "",
-          "isCorrect": false
-        }
-      ]
-    },
-    {
-      "id": "8o6cp1xeo",
-      "type": "multiple-choice",
-      "question": "",
-      "options": [
-        {
-          "id": "a",
-          "text": "",
-          "isCorrect": true
-        },
-        {
-          "id": "b",
-          "text": "",
-          "isCorrect": false
-        }
-      ]
-    }
-  ]
-}
+[
+  {
+    "question": "What does SELECT * do?",
+    "options": [
+      "Selects all rows and columns",
+      "Selects only the ID column",
+      "Deletes all rows",
+      "Updates all rows"
+    ],
+    "answer": 0,
+    "explanation": "The asterisk (*) is a wildcard that represents all columns in the table."
+  }
+]

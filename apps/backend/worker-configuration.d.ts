@@ -8,6 +8,7 @@ declare namespace Cloudflare {
     interface Env {
         R2: R2Bucket;
         DB: D1Database;
+        KV: KVNamespace;
         BETTER_AUTH_URL: "https://api.progy.dev";
         PROGY_API_URL: "https://api.progy.dev";
         STRIPE_PRICE_ID_PRO: "price_1SyByzGdycZGJETWXJft9raE";

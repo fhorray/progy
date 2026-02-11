@@ -9,6 +9,8 @@ import progressRouter from './modules/progress'
 import registryRouter from './modules/registry'
 import userRouter from './modules/user'
 import aiRouter from './modules/ai'
+import tutorRouter from './modules/tutor'
+import notificationRouter from './modules/notifications'
 
 // Middlewares
 import corsMiddleware from './middlewares/cors'
@@ -40,6 +42,10 @@ const app = new Hono<{
   .route('/packages', registryRouter)
   .route('/user', userRouter)
   .route('/ai', aiRouter)
+  .route('/tutor', tutorRouter)
+  .route('/notifications', notificationRouter)
+
+  // Better Auth Handler
   .all('/auth/:path{.*}', async (c) => {
     try {
       const auth = authServer(c.env)
@@ -63,20 +69,6 @@ const app = new Hono<{
   .notFound((c) => {
     console.log(`[404] Not Found: ${c.req.method} ${c.req.url}`)
     return c.text(`Route not found: ${c.req.method} ${c.req.path}`, 404)
-  })
-
-  // Better Auth Handler
-  .all('/auth/:path{.*}', async (c) => {
-    try {
-      const auth = authServer(c.env)
-      console.log(`[AUTH-DEBUG] Handling request for: ${c.req.path}`);
-      const res = await auth.handler(c.req.raw)
-      console.log(`[AUTH-DEBUG] Better-Auth response: ${res.status}`);
-      return res
-    } catch (err: any) {
-      console.error(`[AUTH-FATAL] ${err.message}`, err.stack)
-      return c.json({ error: 'Internal Auth Error', message: err.message }, 500)
-    }
   })
 
   // Device Verification UI

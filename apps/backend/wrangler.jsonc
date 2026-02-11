@@ -51,12 +51,12 @@
       }
     }
   },
-  // "kv_namespaces": [
-  //   {
-  //     "binding": "MY_KV_NAMESPACE",
-  //     "id": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
-  //   }
-  // ],
+  "kv_namespaces": [
+    {
+      "binding": "KV",
+      "id": "d65909524a05496d99bb404eb014d3c2"
+    }
+  ],
   "r2_buckets": [
     {
       "binding": "R2",

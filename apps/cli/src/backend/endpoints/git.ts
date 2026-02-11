@@ -9,6 +9,15 @@ const getStatus = async () => {
   // Check strict status with branch info
   const res = await GitUtils.exec(["status", "--porcelain", "-b"], cwd);
   if (!res.success) {
+    if (res.stderr.includes("not a git repository")) {
+      return Response.json({
+        changes: [],
+        ahead: 0,
+        behind: 0,
+        currentBranch: "unknown",
+        isGitRepo: false
+      });
+    }
     return Response.json({ error: res.stderr }, { status: 500 });
   }
 
@@ -66,7 +75,7 @@ const getStatus = async () => {
       return !isInternal && !isHidden && !isMetadata;
     });
 
-  return Response.json({ changes, ahead, behind, currentBranch });
+  return Response.json({ changes, ahead, behind, currentBranch, isGitRepo: true });
 };
 
 const commit = async (req: Request) => {
@@ -76,6 +85,12 @@ const commit = async (req: Request) => {
   try {
     const body = await req.json() as any;
     const message = body.message || "Update from Progy UI";
+
+    // 0. Ensure it is a git repo
+    const statusCheck = await GitUtils.exec(["rev-parse", "--is-inside-work-tree"], cwd);
+    if (!statusCheck.success) {
+      return Response.json({ error: "No git repository found. Please initialize git first." }, { status: 400 });
+    }
 
     if (!(await GitUtils.lock(cwd))) {
       return Response.json({ error: "Git is locked by another process" }, { status: 409 });
@@ -152,6 +167,12 @@ const commit = async (req: Request) => {
 const sync = async () => {
   const cwd = process.env.PROG_CWD;
   if (!cwd) return Response.json({ error: "No active course directory" }, { status: 500 });
+
+  // 0. Ensure it is a git repo
+  const statusCheck = await GitUtils.exec(["rev-parse", "--is-inside-work-tree"], cwd);
+  if (!statusCheck.success) {
+    return Response.json({ error: "No git repository found. Please initialize git first." }, { status: 400 });
+  }
 
   if (!(await GitUtils.lock(cwd))) {
     return Response.json({ error: "Git is locked by another process" }, { status: 409 });

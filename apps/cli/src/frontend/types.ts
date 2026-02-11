@@ -31,7 +31,12 @@ export interface ProgressStats {
 
 export interface Progress {
   stats: ProgressStats;
-  exercises: Record<string, { status: TestStatus; completedAt: string }>;
+  exercises: Record<string, { status: TestStatus; completedAt: string; attempts?: number }>;
   quizzes: Record<string, { passed: boolean; xpEarned: number; completedAt: string }>;
   achievements: string[];
+  tutorSuggestion?: {
+    exerciseId: string;
+    lesson: string;
+    timestamp: string;
+  };
 }

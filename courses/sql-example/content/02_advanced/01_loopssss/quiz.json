@@ -1,83 +1,8 @@
-{
-  "0": {
+[
+  {
     "question": "What is the result of 2 + 2?",
-    "options": [
-      "3",
-      "4",
-      "5",
-      "22"
-    ],
+    "options": ["3", "4", "5", "22"],
     "answer": 1,
     "explanation": "Basic math: 2 + 2 equals 4."
-  },
-  "questions": [
-    {
-      "id": "469bacve5",
-      "type": "multiple-choice",
-      "question": "",
-      "options": [
-        {
-          "id": "a",
-          "text": "",
-          "isCorrect": true
-        },
-        {
-          "id": "b",
-          "text": "",
-          "isCorrect": false
-        }
-      ]
-    },
-    {
-      "id": "kn141evnb",
-      "type": "multiple-choice",
-      "question": "",
-      "options": [
-        {
-          "id": "a",
-          "text": "",
-          "isCorrect": true
-        },
-        {
-          "id": "b",
-          "text": "",
-          "isCorrect": false
-        }
-      ]
-    },
-    {
-      "id": "soqc1xvyc",
-      "type": "multiple-choice",
-      "question": "",
-      "options": [
-        {
-          "id": "a",
-          "text": "",
-          "isCorrect": true
-        },
-        {
-          "id": "b",
-          "text": "",
-          "isCorrect": false
-        }
-      ]
-    },
-    {
-      "id": "toe24byxo",
-      "type": "multiple-choice",
-      "question": "",
-      "options": [
-        {
-          "id": "a",
-          "text": "",
-          "isCorrect": true
-        },
-        {
-          "id": "b",
-          "text": "",
-          "isCorrect": false
-        }
-      ]
-    }
-  ]
-}
+  }
+]
