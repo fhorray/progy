@@ -8,7 +8,8 @@ const ideOpenHandler: ServerType<"/ide/open"> = async (req) => {
   const { path } = await req.json() as { path: string };
   const absPath = join(PROG_CWD, path);
 
-  const ideCommand = currentConfig()?.editor?.ideCommand || "code";
+  const config = currentConfig as any;
+  const ideCommand = config?.editor?.ideCommand || "code";
 
   logger.info(`Opening ${path} with ${ideCommand}`);
 

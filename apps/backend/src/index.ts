@@ -6,6 +6,7 @@ import * as schema from './db/schema'
 import { eq, and } from 'drizzle-orm'
 import { authMiddleware, verifySession, type AuthVariables } from './auth-utils'
 import { streamText, generateText } from "ai";
+import { rateLimiter } from "hono-rate-limiter";
 import { getModel, constructSystemPrompt, constructExplanationPrompt, constructGeneratePrompt, type AIConfig, type AIContext } from "./ai/service";
 import billing from './endpoints/billing'
 import git from './endpoints/git'
@@ -59,40 +60,26 @@ app.route('/registry', registry)
 app.route('/packages', registry)
 app.route('/user', user)
 
-
-
 // --- Security & Rate Limiting ---
-const rateLimitMap = new Map<string, { count: number; lastReset: number }>();
-const RATELIMIT_WINDOW = 60 * 1000; // 1 minute
-const MAX_REQUESTS = 10; // 10 requests per minute
+const apiLimiter = rateLimiter({
+  windowMs: 60 * 1000, // 1 minute
+  limit: 10, // Limit each user to 10 requests per window
+  keyGenerator: (c) => {
+    // @ts-ignore - Variables type inference in rateLimiter config is generic
+    const user = c.get("user");
+    // @ts-ignore
+    return user ? user.id : c.req.header("cf-connecting-ip") || ""; // Use User ID or IP
+  },
+});
 
-function rateLimit(userId: string): boolean {
-  const now = Date.now();
-  const entry = rateLimitMap.get(userId) || { count: 0, lastReset: now };
 
-  if (now - entry.lastReset > RATELIMIT_WINDOW) {
-    entry.count = 1;
-    entry.lastReset = now;
-  } else {
-    entry.count++;
-  }
-
-  rateLimitMap.set(userId, entry);
-  return entry.count <= MAX_REQUESTS;
-}
-
-app.post('/ai/generate', async (c) => {
+app.post('/ai/generate', apiLimiter, async (c) => {
   try {
     const { prompt, difficulty, config: clientConfig } = await c.req.json() as { prompt: string; difficulty: string; config: AIConfig };
 
     // 1. Verify Session
     const user = c.get('user')
     if (!user) return c.json({ error: 'Unauthorized' }, 401);
-
-    // 2. Rate Limiting
-    if (!rateLimit(user.id)) {
-      return c.json({ error: 'Rate limit exceeded. Try again in a minute.' }, 429);
-    }
 
     const db = drizzle(c.env.DB);
     let finalConfig: AIConfig = {
@@ -149,18 +136,13 @@ app.post('/ai/generate', async (c) => {
 });
 
 
-app.post('/ai/hint', async (c) => {
+app.post('/ai/hint', apiLimiter, async (c) => {
   try {
     const { context, config: clientConfig } = await c.req.json() as { context: AIContext; config: AIConfig };
 
     // 1. Verify Session
     const user = c.get('user')
     if (!user) return c.json({ error: 'Unauthorized' }, 401);
-
-    // 2. Rate Limiting
-    if (!rateLimit(user.id)) {
-      return c.json({ error: 'Rate limit exceeded' }, 429);
-    }
 
     const db = drizzle(c.env.DB);
     let finalConfig: AIConfig = {
@@ -208,18 +190,13 @@ app.post('/ai/hint', async (c) => {
   }
 });
 
-app.post('/ai/explain', async (c) => {
+app.post('/ai/explain', apiLimiter, async (c) => {
   try {
     const { context, config: clientConfig } = await c.req.json() as { context: AIContext; config: AIConfig };
 
     // 1. Verify Session
     const user = c.get('user')
     if (!user) return c.json({ error: 'Unauthorized' }, 401);
-
-    // 2. Rate Limiting
-    if (!rateLimit(user.id)) {
-      return c.json({ error: 'Rate limit exceeded' }, 429);
-    }
 
     const db = drizzle(c.env.DB);
     let finalConfig: AIConfig = {

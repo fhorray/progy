@@ -14,7 +14,13 @@ user.post('/update-username', async (c) => {
   const sessionUser = c.get('user');
   if (!sessionUser) return c.json({ error: 'Unauthorized' }, 401);
 
-  const { username } = await c.req.json() as { username: string };
+  let username: string;
+  try {
+    const body = await c.req.json() as { username: string };
+    username = body.username;
+  } catch {
+    return c.json({ error: 'Invalid JSON body' }, 400);
+  }
 
   if (!username) {
     return c.json({ error: 'Username is required' }, 400);

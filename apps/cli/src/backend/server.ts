@@ -1,5 +1,5 @@
 import { serve } from "bun";
-import { join } from "node:path";
+import { join, sep } from "node:path";
 import { healthRoutes } from "./endpoints/health";
 import { progressRoutes } from "./endpoints/progress";
 import { configRoutes } from "./endpoints/config";
@@ -63,6 +63,13 @@ try {
       }
 
       const localFilePath = join(PUBLIC_DIR, url.pathname);
+
+      // Path Traversal Protection
+      // Ensure we don't match partial directories (e.g., /public_secret vs /public)
+      if (!localFilePath.startsWith(PUBLIC_DIR + sep)) {
+        return new Response("Forbidden", { status: 403 });
+      }
+
       const file = Bun.file(localFilePath);
 
       // 1. Try to serve static file if it exists

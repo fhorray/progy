@@ -27,6 +27,18 @@ mock.module("@progy/core", () => ({
     exists: mock(async () => true),
     BACKEND_URL: "https://api.progy.dev",
     FRONTEND_URL: "https://progy.dev",
+    // Add these just in case imports are weird
+    RUNNER_README: "# Runner",
+    COURSE_CONFIG_NAME: "course.json",
+    MODULE_INFO_TOML: "mock",
+    EXERCISE_README: "mock",
+    EXERCISE_STARTER: "mock",
+    QUIZ_TEMPLATE: "[]",
+    TEMPLATES: {},
+    CourseLoader: {},
+    CourseContainer: {},
+    SyncManager: {},
+    scanAndGenerateManifest: mock(async () => ({})),
 }));
 
 

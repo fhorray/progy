@@ -67,6 +67,8 @@ export async function loadFileTree(path: string = '.') {
     }
   } catch (e) {
     console.error('[EditorStore] Failed to load file tree:', e);
+    // @ts-ignore
+    if (typeof window !== 'undefined') alert("Failed to load course structure. Check console.");
   }
 }
 

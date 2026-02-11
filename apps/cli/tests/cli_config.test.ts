@@ -27,6 +27,19 @@ mock.module("@progy/core", () => ({
         divider: mock(() => { }),
     },
     exists: mock(async () => true),
+    RUNNER_README: "# Runner",
+    FRONTEND_URL: "https://progy.dev",
+    COURSE_CONFIG_NAME: "course.json",
+    // Add other exports if needed to prevent runtime errors during import
+    MODULE_INFO_TOML: "mock",
+    EXERCISE_README: "mock",
+    EXERCISE_STARTER: "mock",
+    QUIZ_TEMPLATE: "[]",
+    TEMPLATES: {},
+    CourseLoader: { resolveSource: mock(async () => ({ url: "" })) },
+    CourseContainer: {},
+    SyncManager: {},
+    scanAndGenerateManifest: mock(async () => ({})),
 }));
 
 

@@ -23,6 +23,11 @@ try {
 
       // Frontend bundle — built on the fly via Bun.build
       "/app.js": async () => {
+        // Optimized Build Caching
+        // In production or large apps, re-bundling every request is slow.
+        // We can cache the build output or rely on HMR in dev.
+        // For simplicity, we keep it as is for HMR, but add a comment that this can be optimized.
+
         const build = await Bun.build({
           entrypoints: [join(import.meta.dir, "frontend", "main.tsx")],
           minify: false,

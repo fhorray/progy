@@ -8,6 +8,7 @@ export interface DockerRunOptions {
   env?: Record<string, string>;
   network?: string;
   tty?: boolean;
+  timeout?: number;
 }
 
 export interface DockerRunResult {
@@ -139,9 +140,22 @@ export class DockerClient {
     args.push("sh", "-c", opts.command);
 
     let output = "";
+    const TIMEOUT_MS = opts.timeout || 30000;
 
     return new Promise((resolve) => {
       const child = spawn("docker", args, { stdio: ["ignore", "pipe", "pipe"] });
+      let timedOut = false;
+
+      // Timeout Handler
+      const timeoutId = setTimeout(() => {
+        timedOut = true;
+        child.kill();
+        resolve({
+          exitCode: 124, // Standard timeout exit code
+          output: output + "\n[ERROR] Execution timed out.",
+          error: "TIMEOUT"
+        });
+      }, TIMEOUT_MS);
 
       if (child.stdout) {
         child.stdout.on("data", (d) => { output += d.toString(); });
@@ -151,11 +165,17 @@ export class DockerClient {
       }
 
       child.on("close", (code) => {
-        resolve({ exitCode: code || 0, output });
+        if (!timedOut) {
+          clearTimeout(timeoutId);
+          resolve({ exitCode: code || 0, output });
+        }
       });
 
       child.on("error", (err) => {
-        resolve({ exitCode: 1, output: `Failed to spawn docker: ${err.message}`, error: err.message });
+        if (!timedOut) {
+          clearTimeout(timeoutId);
+          resolve({ exitCode: 1, output: `Failed to spawn docker: ${err.message}`, error: err.message });
+        }
       });
     });
   }

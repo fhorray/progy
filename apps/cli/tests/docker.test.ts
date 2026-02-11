@@ -5,8 +5,17 @@ import { DockerComposeClient } from "../src/docker/compose-client";
 // Mock spawn
 const mockSpawn = mock(() => {
   return {
-    stdout: { on: (event: string, cb: any) => { if (event === 'data') cb("output"); } },
-    stderr: { on: (event: string, cb: any) => { } },
+    stdout: {
+      on: (event: string, cb: any) => {
+        if (event === 'data') cb("output");
+        if (event === 'end') cb();
+      }
+    },
+    stderr: {
+      on: (event: string, cb: any) => {
+        if (event === 'end') cb();
+      }
+    },
     on: (event: string, cb: any) => { if (event === 'close') cb(0); }, // Default success
     kill: () => {},
   };
@@ -102,22 +111,22 @@ describe("DockerComposeClient", () => {
   test("detectExecutable fallback to docker-compose", async () => {
       // Mock failure for version check
       mockSpawn.mockImplementationOnce(() => ({
-          stdout: { on: () => {} },
-          stderr: { on: () => {} },
+          stdout: { on: (evt: string, cb: any) => { if (evt === 'end') cb(); } },
+          stderr: { on: (evt: string, cb: any) => { if (evt === 'end') cb(); } },
           on: (event: string, cb: any) => { if (event === 'close') cb(1); }, // Exit 1
           kill: () => {},
       }));
       // Mock success for runService
       mockSpawn.mockImplementationOnce(() => ({
-          stdout: { on: () => {} },
-          stderr: { on: () => {} },
+          stdout: { on: (evt: string, cb: any) => { if (evt === 'end') cb(); } },
+          stderr: { on: (evt: string, cb: any) => { if (evt === 'end') cb(); } },
           on: (event: string, cb: any) => { if (event === 'close') cb(0); },
           kill: () => {},
       }));
        // Mock success for down
        mockSpawn.mockImplementationOnce(() => ({
-          stdout: { on: () => {} },
-          stderr: { on: () => {} },
+          stdout: { on: (evt: string, cb: any) => { if (evt === 'end') cb(); } },
+          stderr: { on: (evt: string, cb: any) => { if (evt === 'end') cb(); } },
           on: (event: string, cb: any) => { if (event === 'close') cb(0); },
           kill: () => {},
       }));

@@ -137,7 +137,21 @@ mock.module("@progy/core", () => ({
       introFilename: "",
       introCode: ""
     }
-  }
+  },
+  // Add missing exports to fix "Export named ... not found" errors
+  SyncManager: {
+    loadConfig: mock(async () => null),
+    ensureOfficialCourse: mock(async () => ""),
+    applyLayering: mock(async () => { }),
+    saveConfig: mock(async () => { }),
+    generateGitIgnore: mock(async () => { }),
+  },
+  scanAndGenerateManifest: mock(async () => ({})),
+  MODULE_INFO_TOML: "mock",
+  EXERCISE_README: "mock",
+  EXERCISE_STARTER: "mock",
+  QUIZ_TEMPLATE: "[]",
+  RUNNER_README: "# Runner",
 }));
 
 

@@ -124,6 +124,8 @@ mock.module("@progy/core", () => ({
     EXERCISE_STARTER: "mock",
     QUIZ_TEMPLATE: "[]",
     RUNNER_README: "mock",
+    COURSE_CONFIG_NAME: "course.json",
+    scanAndGenerateManifest: mock(async () => ({})),
 }));
 
 

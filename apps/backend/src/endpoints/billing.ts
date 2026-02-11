@@ -14,14 +14,14 @@ const billing = new Hono<{
 billing.post("/checkout", async (c) => {
   const session = await verifySession(c);
 
-  if (!session || !user) {
+  if (!session || !session.user) {
     return c.json({ error: "Unauthorized" }, 401);
   }
 
   const plan = c.req.query("plan") || "pro";
 
   const stripe = new Stripe(c.env.STRIPE_SECRET_KEY || "", {
-    apiVersion: "2026-01-28.clover" as any,
+    apiVersion: "2025-01-27.acacia" as any,
     httpClient: Stripe.createFetchHttpClient()
   });
 
@@ -29,7 +29,7 @@ billing.post("/checkout", async (c) => {
   const origin = c.req.header("origin") || "https://progy.dev";
   const redirectBase = origin.includes("localhost") ? origin : "https://progy.dev";
 
-  let priceId = c.env.STRIPE_PRICE_ID_PRO;
+  let priceId = c.env.STRIPE_PRICE_ID_PRO as string;
   let mode: Stripe.Checkout.SessionCreateParams.Mode = "subscription";
 
   // DISCOUNT LOGIC: If buying Pro but already Lifetime, use Coupon
