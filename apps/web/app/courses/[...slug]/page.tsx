@@ -19,6 +19,7 @@ import {
 } from 'lucide-react';
 import Link from 'next/link';
 import { toast } from 'sonner';
+import { MEDIA_URL } from '@consts';
 
 interface Lesson {
   id: string;
@@ -59,9 +60,8 @@ export default function CourseDetailPage() {
   const getAssetUrl = (path: string) => {
     if (!path) return null;
     if (path.startsWith('http')) return path;
-    const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'https://api.progy.dev';
     // Path might be e.g. "assets/cover.jpg"
-    return `${apiUrl}/registry/asset/${course?.scope}/${course?.slug}/${course?.latest}/${path}`;
+    return `${MEDIA_URL}/packages/@${course?.scope}/${course?.slug}/${course?.latest}/${path}`;
   };
 
   const coverImageUrl = getAssetUrl(branding?.coverImage);
