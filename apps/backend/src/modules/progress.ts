@@ -89,6 +89,42 @@ const progress = new Hono<{
         return c.json({ error: "Failed to reset progress" }, 500);
       }
     }
-  );
+  )
+  .post("/upload", async (c) => {
+    const user = c.get("user");
+    if (!user) return c.json({ error: "Unauthorized" }, 401);
+
+    const body = await c.req.parseBody();
+    const courseId = body['courseId'] as string;
+    const file = body['file'] as File;
+
+    if (!courseId || !file) {
+      return c.json({ error: "Missing courseId or file" }, 400);
+    }
+
+    const progressService = new ProgressService(c.env);
+    await progressService.uploadProgressFile(user.id, courseId, await file.arrayBuffer());
+
+    return c.json({ success: true });
+  })
+  .get("/download", async (c) => {
+    const user = c.get("user");
+    if (!user) return c.json({ error: "Unauthorized" }, 401);
+
+    const courseId = c.req.query("courseId");
+    if (!courseId) return c.json({ error: "Missing courseId" }, 400);
+
+    const progressService = new ProgressService(c.env);
+    const stream = await progressService.downloadProgressFile(user.id, courseId);
+
+    if (!stream) {
+      return c.text("Not found", 404);
+    }
+
+    return c.body(stream, 200, {
+      "Content-Type": "application/zip",
+      "Content-Disposition": `attachment; filename="progress.progy"`
+    });
+  });
 
 export default progress;

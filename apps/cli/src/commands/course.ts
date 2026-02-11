@@ -1,11 +1,19 @@
-import { join, resolve, basename } from "node:path";
+import { join, resolve, basename, dirname } from "node:path";
 import { mkdir, writeFile, readFile, readdir, stat, rm } from "node:fs/promises";
 import { spawn } from "node:child_process";
 import { tmpdir } from "node:os";
 import pkg from "../../package.json";
 import { GitUtils, SyncManager, CourseLoader, CourseContainer, RegistryCache, loadToken, getCourseCachePath, BACKEND_URL, COURSE_CONFIG_NAME, TEMPLATES, RUNNER_README, logger, exists } from "@progy/core";
 
-async function runServer(runtimeCwd: string, isOffline: boolean, containerFile: string | null, bypass: boolean = false, isEditor: boolean = false, cliEnv: "student" | "instructor" = "student") {
+async function runServer(
+  runtimeCwd: string,
+  isOffline: boolean,
+  containerFile: string | null,
+  bypass: boolean = false,
+  isEditor: boolean = false,
+  cliEnv: "student" | "instructor" = "student",
+  courseIdForSync: string | null = null
+) {
   const isTs = import.meta.file.endsWith(".ts");
   const serverExt = isTs ? "ts" : "js";
   const serverPath = isTs
@@ -45,6 +53,33 @@ async function runServer(runtimeCwd: string, isOffline: boolean, containerFile: 
       watcher.close();
       CourseContainer.sync(runtimeCwd, containerFile).then(() => process.exit(0));
     });
+  } else if (courseIdForSync) {
+     logger.info("☁️  Cloud Sync: Active (every 2m & on exit)", "SYNC");
+     const { watch } = await import("node:fs");
+     let hasChanges = false;
+
+     const watcher = watch(runtimeCwd, { recursive: true }, (event, filename) => {
+        if (!filename || filename.includes(".git") || filename.includes("node_modules") || filename.includes(".DS_Store")) return;
+        hasChanges = true;
+     });
+
+     const syncInterval = setInterval(async () => {
+         if (hasChanges) {
+             logger.info("Auto-syncing to cloud...", "SYNC");
+             const buffer = await SyncManager.packProgress(runtimeCwd);
+             await SyncManager.uploadProgress(courseIdForSync, buffer);
+             hasChanges = false;
+         }
+     }, 2 * 60 * 1000); // 2 minutes
+
+     child.on("close", async (code) => {
+         clearInterval(syncInterval);
+         watcher.close();
+         logger.info("Saving final progress...", "SYNC");
+         const buffer = await SyncManager.packProgress(runtimeCwd);
+         await SyncManager.uploadProgress(courseIdForSync, buffer);
+         process.exit(code ?? 0);
+     });
   } else {
     child.on("close", (code) => process.exit(code ?? 0));
   }
@@ -76,37 +111,47 @@ export async function init(options: { course?: string; offline?: boolean }) {
     if (source.isRegistry) {
       logger.info(`Resolving ${courseId} from Registry...`, "REGISTRY");
 
+      // 0. Check for Cloud Progress
+      logger.info(`Checking for existing progress...`, "SYNC");
+      const progressBuffer = await SyncManager.downloadProgress(courseId!);
+
+      if (progressBuffer) {
+        logger.info(`Progress found! Restoring...`, "SYNC");
+        await SyncManager.restoreProgress(progressBuffer, cwd);
+        logger.success("Resumed course from cloud progress!");
+        logger.info(`Run 'progy' to continue learning.`, "INFO");
+        return;
+      }
+
+      // 1. If no progress, Download Course Artifact to Cache
       const artifactName = `${basename(courseId!)}.progy`;
       const cacheDir = getCourseCachePath(courseId!);
       await mkdir(cacheDir, { recursive: true });
       const artifactPath = join(cacheDir, artifactName);
 
-      // 1. Download artifact to local folder
-      logger.info(`Downloading course artifact...`, "SYNC");
+      logger.info(`Downloading course content...`, "SYNC");
       const resp = await fetch(source.url);
       if (!resp.ok) throw new Error(`Download failed: ${resp.statusText}`);
       await writeFile(artifactPath, Buffer.from(await resp.arrayBuffer()));
 
       // 2. Provisioning: Extract only 'content/' to local CWD if not present
-      logger.info(`Provisioning exercise files...`, "LAYER");
+      logger.info(`Provisioning workspace...`, "LAYER");
       const tempDir = join(tmpdir(), `progy-init-${Date.now()}`);
       await CourseContainer.unpackTo(artifactPath, tempDir);
 
       const contentSrc = join(tempDir, "content");
       if (await exists(contentSrc)) {
-        // We want to copy content from artifact's content/ to local content/
         const localContent = join(cwd, "content");
-        // applyLayering(dest, cacheDir, force, [optional] sourcePathInCache)
         await SyncManager.applyLayering(localContent, tempDir, false, "content");
       }
 
       await rm(tempDir, { recursive: true, force: true });
 
-      // 3. Save progy.toml pointing to this artifact
+      // 3. Save progy.toml pointing to this course ID
       await SyncManager.saveConfig(cwd, {
         course: {
           id: courseId!,
-          repo: artifactPath, // Absolute path to global cache
+          repo: courseId!, // Store ID instead of absolute path for portability
           branch: "registry",
           path: "."
         }
@@ -117,11 +162,8 @@ export async function init(options: { course?: string; offline?: boolean }) {
       logger.info(`Run 'progy' to start learning.`, "INFO");
 
     } else {
-      // --- LEGACY GIT FLOW (Keeping for manual Git cloning) ---
-      logger.info(`Resolved ${courseId} to Git repository.`, "GIT");
-      // ... existing git flow ...
-      // (Simplified for now, user mainly wants Registry fix)
-      logger.info("Git-based init is deprecated. Please use official registry packages.");
+       logger.error("Git-based init is removed. Please use official registry packages (e.g. @scope/course).");
+       process.exit(1);
     }
   } catch (e: any) {
     logger.error(`Init failed`, e.message);
@@ -279,6 +321,7 @@ export async function start(file: string | undefined, options: { offline?: boole
   let runtimeCwd = cwd;
   let containerFile: string | null = null;
   let isOffline = !!options.offline;
+  let courseIdForSync: string | null = null;
 
   const env = await detectEnvironment(cwd);
   const config = await SyncManager.loadConfig(cwd);
@@ -288,9 +331,37 @@ export async function start(file: string | undefined, options: { offline?: boole
     // Manually opening a .progy file
     containerFile = resolve(file);
     runtimeCwd = await CourseContainer.unpack(containerFile);
-  } else if (config && config.course.repo.endsWith(".progy")) {
-    // Running a course initialized via registry (layered flow)
-    const artifactPath = resolve(cwd, config.course.repo); // config.course.repo holds the absolute path to global cache
+  } else if (config && config.course.id) {
+    // Running a managed course (Cloud Flow)
+    courseIdForSync = config.course.id;
+    let artifactPath = "";
+
+    // Resolve cache path
+    if (config.course.repo.endsWith(".progy") || config.course.repo.includes("/") || config.course.repo.includes("\\")) {
+         // Legacy/Local absolute path
+         artifactPath = resolve(cwd, config.course.repo);
+    } else {
+         // ID-based lookup
+         const artifactName = `${basename(config.course.id)}.progy`;
+         artifactPath = join(getCourseCachePath(config.course.id), artifactName);
+    }
+
+    // Hydration Check
+    if (!(await exists(artifactPath))) {
+        logger.info(`Course assets missing. Redownloading...`, "SYNC");
+        try {
+            const source = await CourseLoader.resolveSource(config.course.id);
+            const resp = await fetch(source.url);
+            if (!resp.ok) throw new Error(`Download failed: ${resp.statusText}`);
+            await mkdir(dirname(artifactPath), { recursive: true });
+            await writeFile(artifactPath, Buffer.from(await resp.arrayBuffer()));
+            logger.success("Course assets restored.");
+        } catch (e: any) {
+            logger.error(`Failed to restore course assets`, e.message);
+            process.exit(1);
+        }
+    }
+
     if (await exists(artifactPath)) {
       logger.info(`Extracting course artifact...`, "RUNTIME");
       const runtimeRoot = await CourseContainer.unpack(artifactPath);
@@ -301,9 +372,6 @@ export async function start(file: string | undefined, options: { offline?: boole
       runtimeCwd = cwd;
       logger.success(`Runtime environment ready.`);
     }
-  } else if (file && !file.endsWith(".progy") && !await exists(file)) {
-    // Alias resolution (keeping for one-off start)
-    // ... similar to before but potentially updated for registry fix ...
   } else if (env === "instructor") {
     isOffline = true;
   } else {
@@ -321,7 +389,7 @@ export async function start(file: string | undefined, options: { offline?: boole
     logger.brand("✨ Instructor Environment: Running in persistent GUEST mode.");
   }
 
-  await runServer(runtimeCwd, isOffline, containerFile, false, false, env);
+  await runServer(runtimeCwd, isOffline, containerFile, false, false, env, courseIdForSync);
 }
 
 export async function testExercise(path: string) {

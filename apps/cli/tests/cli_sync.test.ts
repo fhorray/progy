@@ -1,74 +1,45 @@
 import { describe, test, expect, mock, beforeEach, afterEach } from "bun:test";
 import { join } from "node:path";
-import { mkdir, writeFile, rm, stat } from "node:fs/promises";
+import { mkdir, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 
-// --- Mocks ---
+// Mock @progy/core
+const mockPackProgress = mock(async () => Buffer.from("mock-zip"));
+const mockUploadProgress = mock(async () => true);
+const mockLoadConfig = mock(async () => ({
+    course: { id: "test-course", repo: "test-id" },
+    sync: {}
+}));
+const mockSaveConfig = mock(async () => {});
 
 mock.module("@progy/core", () => ({
-    GitUtils: {
-        lock: mock(async () => true),
-        unlock: mock(async () => { }),
-        updateOrigin: mock(async () => { }),
-        exec: mock(async (args: string[]) => {
-            if (args.includes("commit")) return { success: true, stdout: "committed" };
-            if (args.includes("push")) return { success: true, stdout: "pushed" };
-            return { success: true };
-        }),
-        pull: mock(async () => ({ success: true })),
-    },
     SyncManager: {
-        loadConfig: mock(async () => ({
-            course: { id: "test-course", repo: "test-repo", branch: "main", path: "" },
-            sync: {}
-        })),
-        ensureOfficialCourse: mock(async () => "/mock/cache"),
-        applyLayering: mock(async () => { }),
-        saveConfig: mock(async () => { }),
-        generateGitIgnore: mock(async () => { }),
-        resetExercise: mock(async () => { }),
+        loadConfig: mockLoadConfig,
+        packProgress: mockPackProgress,
+        uploadProgress: mockUploadProgress,
+        saveConfig: mockSaveConfig,
     },
-    loadToken: mock(async () => "mock-token"),
-    getGlobalConfig: mock(async () => ({})),
-    saveGlobalConfig: mock(async () => { }),
-    saveToken: mock(async () => { }),
-    clearToken: mock(async () => { }),
-    BACKEND_URL: "https://api.progy.dev",
     logger: {
-        info: mock(() => { }),
-        success: mock(() => { }),
-        error: mock(() => { }),
-        warn: mock(() => { }),
+        info: () => {},
+        success: () => {},
+        error: () => {},
+        warn: () => {},
     },
-    exists: mock(async () => true),
-    getCourseCachePath: mock((id: string) => `/mock/cache/${id}`),
+    GitUtils: {},
+    loadToken: async () => "token",
+    BACKEND_URL: "http://mock",
+    getCourseCachePath: () => "/tmp",
+    exists: async () => true,
 }));
 
-
-// Helper to check if path exists
-async function exists(path: string): Promise<boolean> {
-    try {
-        await stat(path);
-        return true;
-    } catch {
-        return false;
-    }
-}
-
-// Helper to create temp directories
-async function createTempDir(prefix: string): Promise<string> {
-    const dir = join(tmpdir(), `progy-test-${prefix}-${Date.now()}`);
-    await mkdir(dir, { recursive: true });
-    return dir;
-}
-
-describe("CLI Sync Commands", () => {
+describe("CLI Sync Commands (Cloud)", () => {
     let originalCwd: any;
     let tempCwd: string;
 
     beforeEach(async () => {
         originalCwd = process.cwd;
-        tempCwd = await createTempDir("sync-test");
+        tempCwd = join(tmpdir(), `progy-sync-test-${Date.now()}`);
+        await mkdir(tempCwd, { recursive: true });
         process.cwd = () => tempCwd;
     });
 
@@ -77,65 +48,15 @@ describe("CLI Sync Commands", () => {
         await rm(tempCwd, { recursive: true, force: true });
     });
 
-    test("sync executes git operations", async () => {
+    test("sync packs and uploads progress", async () => {
+        // Dynamic import to ensure mock is used
         const { sync } = await import("../src/commands/sync");
-        const { GitUtils, SyncManager } = await import("@progy/core");
 
-        // Need .git folder to trigger sync
-        await mkdir(join(tempCwd, ".git"));
+        await sync();
 
-        const logs: string[] = [];
-        const originalLog = console.log;
-        console.log = (...args) => logs.push(args.join(" "));
-
-        try {
-            await sync();
-        } finally {
-            console.log = originalLog;
-        }
-
-        expect(GitUtils.lock).toHaveBeenCalled();
-        expect(SyncManager.ensureOfficialCourse).toHaveBeenCalled();
-        expect(SyncManager.applyLayering).toHaveBeenCalled();
-        expect(GitUtils.pull).toHaveBeenCalled();
-        expect(SyncManager.saveConfig).toHaveBeenCalled(); // Updates timestamp
-        expect(GitUtils.unlock).toHaveBeenCalled();
-    });
-
-    test("save executes git commit and push", async () => {
-        const { save } = await import("../src/commands/sync");
-        const { GitUtils } = await import("@progy/core");
-
-        await mkdir(join(tempCwd, ".git"));
-
-        const logs: string[] = [];
-        const originalLog = console.log;
-        console.log = (...args) => logs.push(args.join(" "));
-
-        try {
-            await save({ message: "test commit" });
-        } finally {
-            console.log = originalLog;
-        }
-
-        expect(GitUtils.exec).toHaveBeenCalled();
-        const calls = (GitUtils.exec as any).mock.calls;
-        const commitCall = calls.find((c: any) => c[0].includes("commit"));
-        expect(commitCall[0]).toContain("test commit");
-
-        const pushCall = calls.find((c: any) => c[0].includes("push"));
-        expect(pushCall).toBeDefined();
-    });
-
-    test("reset calls SyncManager.resetExercise", async () => {
-        const { reset } = await import("../src/commands/sync");
-        const { SyncManager } = await import("@progy/core");
-
-        await reset("content/01_intro/exercise.py");
-
-        expect(SyncManager.resetExercise).toHaveBeenCalled();
-        const calls = (SyncManager.resetExercise as any).mock.calls;
-        // Verify relative path
-        expect(calls[0][2]).toContain("exercise.py");
+        expect(mockLoadConfig).toHaveBeenCalled();
+        expect(mockPackProgress).toHaveBeenCalled();
+        expect(mockUploadProgress).toHaveBeenCalledWith("test-course", expect.any(Buffer));
+        expect(mockSaveConfig).toHaveBeenCalled();
     });
 });

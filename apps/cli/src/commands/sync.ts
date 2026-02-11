@@ -64,61 +64,25 @@ export async function save(options: { message: string }) {
 
 export async function sync() {
   const cwd = process.cwd();
-  if (!(await exists(join(cwd, ".git")))) {
-    logger.error("Not a synced course", "No .git directory found.");
-    return;
-  }
-
   const config = await SyncManager.loadConfig(cwd);
+
   if (!config) {
-    logger.error("Configuration missing", "No course configuration found in this directory.");
+    logger.error("Not a Progy course", "Missing progy.toml.");
     return;
   }
 
-  if (!(await GitUtils.lock(cwd))) {
-    logger.warn("Sync Lock: Another process is using the workspace. Waiting...");
-    return;
-  }
+  logger.info("Packing progress...", "SYNC");
+  const buffer = await SyncManager.packProgress(cwd);
 
-  try {
-    const token = await loadToken();
-    if (token) {
-      try {
-        const res = await fetch(`${BACKEND_URL}/git/credentials`, {
-          headers: { "Authorization": `Bearer ${token}` }
-        });
-        if (res.ok) {
-          const gitCreds = await res.json() as any;
-          await GitUtils.updateOrigin(cwd, gitCreds.token);
-        }
-      } catch { }
-    }
+  logger.info("Uploading to cloud...", "SYNC");
+  const success = await SyncManager.uploadProgress(config.course.id, buffer);
 
-    logger.info("Checking for official course updates...", "SYNC");
-    const cacheDir = await SyncManager.ensureOfficialCourse(
-      config.course.id,
-      config.course.repo,
-      config.course.branch,
-      config.course.path
-    );
-
-    logger.info("Merging latest instructor changes...", "SYNC");
-    await SyncManager.applyLayering(cwd, cacheDir, false, config.course.path);
-
-    logger.info("Downloading your persistent progress...", "SYNC");
-    const res = await GitUtils.pull(cwd);
-
-    if (res.success) {
-      config.sync = { last_sync: new Date().toISOString() };
-      await SyncManager.saveConfig(cwd, config);
-      logger.success("Workspace fully synchronized with cloud.");
-    } else {
-      logger.error("Sync pull failed", res.stderr);
-    }
-  } catch (e: any) {
-    logger.error("Sync error", e.message);
-  } finally {
-    await GitUtils.unlock(cwd);
+  if (success) {
+    config.sync = { last_sync: new Date().toISOString() };
+    await SyncManager.saveConfig(cwd, config);
+    logger.success("Progress successfully synced to cloud!");
+  } else {
+    logger.error("Sync failed", "Could not upload progress to server.");
   }
 }
 

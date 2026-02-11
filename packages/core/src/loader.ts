@@ -82,67 +82,42 @@ export type LoaderCourseConfig = z.infer<typeof CourseConfigSchema>;
 
 export class CourseLoader {
   static async resolveSource(courseInput: string): Promise<{ url: string; branch?: string; path?: string; isRegistry?: boolean }> {
-    // 1. Direct URLs
-    if (courseInput.startsWith("http://") || courseInput.startsWith("https://") || courseInput.startsWith("git@")) {
-      const parts = courseInput.split("#");
-      const url = parts[0] as string;
-      const branch = parts[1];
-      return { url, branch };
-    }
-
-    // 2. Local Paths
+    // 1. Local Paths
     const resolvedLocal = resolve(courseInput);
     if (await exists(resolvedLocal)) {
       return { url: resolvedLocal };
     }
 
-    // 3. Registry Packages (@scope/slug or simple slug)
-    if (courseInput.startsWith("@") || !courseInput.includes("/")) {
-      let query = courseInput;
+    // 2. Registry Packages (@scope/slug or simple slug)
+    // We implicitly treat anything else as a registry package request.
+    let query = courseInput;
 
-      // If no scope is provided, default to official username
-      if (!courseInput.startsWith("@") && !courseInput.includes("/")) {
-        const { OFICIAL_USERNAME } = await import("./paths.ts");
-        query = `${OFICIAL_USERNAME}/${courseInput}`;
-        console.log(`[INFO] Resolving official course '${courseInput}' as '${query}'...`);
-      } else {
-        console.log(`[INFO] Resolving registry package '${courseInput}'...`);
-      }
-
-      try {
-        const url = `${getBackendUrl()}/registry/resolve/${encodeURIComponent(query)}`;
-        const response = await fetch(url);
-        if (response.ok) {
-          const data: any = await response.json();
-          // Registry packages point to download endpoint
-          return {
-            url: data.downloadUrl || `${getBackendUrl()}/registry/download/${data.scope}/${data.slug}/${data.latest}`,
-            isRegistry: true
-          };
-        }
-      } catch (e) {
-        console.warn(`[WARN] Registry resolution failed for ${query}:`, (e as Error).message);
-      }
+    // If no scope is provided, default to official username
+    if (!courseInput.startsWith("@") && !courseInput.includes("/")) {
+      const { OFICIAL_USERNAME } = await import("./paths.ts");
+      query = `${OFICIAL_USERNAME}/${courseInput}`;
+      console.log(`[INFO] Resolving official course '${courseInput}' as '${query}'...`);
+    } else {
+      console.log(`[INFO] Resolving registry package '${courseInput}'...`);
     }
 
-    // 4. Legacy/Alias Fallback (keeping for compatibility)
-    console.log(`[INFO] Resolving alias '${courseInput}'...`);
     try {
-      const url = `${getBackendUrl()}/registry`;
+      const url = `${getBackendUrl()}/registry/resolve/${encodeURIComponent(query)}`;
       const response = await fetch(url);
       if (response.ok) {
         const data: any = await response.json();
-        const course = data.courses?.[courseInput];
-        if (course) {
-          return { url: course.repo, branch: course.branch, path: course.path };
-        }
+        // Registry packages point to download endpoint
+        return {
+          url: data.downloadUrl || `${getBackendUrl()}/registry/download/${data.scope}/${data.slug}/${data.latest}`,
+          isRegistry: true
+        };
+      } else {
+        throw new Error(`Registry resolution failed: ${response.status} ${response.statusText}`);
       }
     } catch (e) {
-      // Legacy alias lookup failed
+      console.warn(`[WARN] Registry resolution failed for ${query}:`, (e as Error).message);
+      throw new Error(`Could not resolve course '${courseInput}'. Git URLs are no longer supported. Please use a valid registry package (e.g. @scope/course).`);
     }
-
-    // 5. Default Organization Fallback
-    return { url: `https://github.com/progy-dev/${courseInput}.git` };
   }
 
   static async validateCourse(path: string): Promise<LoaderCourseConfig> {

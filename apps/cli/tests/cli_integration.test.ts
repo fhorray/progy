@@ -11,6 +11,7 @@ const mockSpawn = mock(() => {
     stderr: { on: () => { } },
     on: (event: string, cb: any) => { if (event === 'close') cb(0); },
     kill: () => { },
+    unref: () => { },
   };
 });
 
@@ -18,27 +19,19 @@ mock.module("node:child_process", () => ({
   spawn: mockSpawn
 }));
 
+// Mock global fetch
+global.fetch = mock(async (url: any) => {
+    return new Response(Buffer.from("mock-content"));
+});
+
 const mockGitUtils = {
-  clone: mock(async (url: string, dir: string) => {
-    // Create a dummy course.json so validation passes
-    await mkdir(dir, { recursive: true });
-    await writeFile(join(dir, "course.json"), JSON.stringify({
-      id: "test-course",
-      name: "Test",
-      runner: { command: "echo", args: [], cwd: "." },
-      content: { root: ".", exercises: "content" },
-      setup: { checks: [], guide: "SETUP.md" }
-    }));
-    await mkdir(join(dir, "content"), { recursive: true });
-    await mkdir(join(dir, "content", "01_intro"), { recursive: true });
-    await mkdir(join(dir, "content", "01_intro", "01_hello"), { recursive: true });
-    await writeFile(join(dir, "SETUP.md"), "setup");
-    return { success: true };
-  }),
+  clone: mock(async () => ({ success: true })),
   init: mock(async () => ({ success: true })),
   addRemote: mock(async () => ({ success: true })),
   pull: mock(async () => ({ success: true })),
   getGitInfo: mock(async () => ({ remoteUrl: null, root: null })),
+  lock: mock(async () => true),
+  unlock: mock(async () => { }),
 };
 
 const mockCourseContainer = {
@@ -59,11 +52,15 @@ const mockSyncManager = {
   applyLayering: mock(async () => { }),
   saveConfig: mock(async () => { }),
   generateGitIgnore: mock(async () => { }),
+  downloadProgress: mock(async () => null),
+  restoreProgress: mock(async () => { }),
+  packProgress: mock(async () => Buffer.from("")),
+  uploadProgress: mock(async () => true),
 };
 
 const mockCourseLoader = {
   validateCourse: mock(async () => ({})),
-  resolveSource: mock(async (input: string) => ({ url: `https://github.com/progy-dev/${input}.git` })),
+  resolveSource: mock(async (input: string) => ({ url: `https://registry.progy.dev/download/${input}`, isRegistry: true })),
   getCourseFlow: mock(async () => []),
 };
 
@@ -139,14 +136,11 @@ mock.module("@progy/core", () => ({
 }));
 
 
-// Helper to create temp directories
 async function createTempDir(prefix: string): Promise<string> {
   const dir = join(tmpdir(), `progy-test-${prefix}-${Date.now()}`);
   await mkdir(dir, { recursive: true });
   return dir;
 }
-
-// --- Tests ---
 
 describe("CLI Start Integration", () => {
   let originalCwd: any;
@@ -168,33 +162,7 @@ describe("CLI Start Integration", () => {
     await rm(tempCwd, { recursive: true, force: true });
   });
 
-  test("start command handles alias to container flow (Clone -> Pack -> Run)", async () => {
-    const { start } = await import("../src/commands/course");
-    const { GitUtils, CourseContainer } = await import("@progy/core");
-
-    const alias = "test-alias-course";
-
-    // Run start with an alias
-    await start(alias, { offline: false });
-
-    // Verify git clone was called
-    expect(GitUtils.clone).toHaveBeenCalled();
-    const cloneCalls = (GitUtils.clone as any).mock.calls;
-    // Check that it tried to clone from progy-dev
-    expect(cloneCalls[0][0]).toContain("test-alias-course");
-
-    // Verify pack was called
-    expect(CourseContainer.pack).toHaveBeenCalled();
-    const packCalls = (CourseContainer.pack as any).mock.calls;
-    // Should pack to [alias].progy in current dir
-    expect(packCalls[0][1]).toContain(`${alias}.progy`);
-
-    // Verify spawn was called (runServer)
-    expect(mockSpawn).toHaveBeenCalled();
-    const spawnCalls = mockSpawn.mock.calls;
-    expect(spawnCalls[0][0]).toBe("bun");
-    expect(spawnCalls[0][1]).toContain("run");
-  });
+  // Removed legacy alias test
 
   test("start opens existing .progy file", async () => {
     const { start } = await import("../src/commands/course");

@@ -1,8 +1,10 @@
 import { join, dirname } from "node:path";
 import { mkdir, writeFile, readFile, copyFile, readdir, rm } from "node:fs/promises";
+import AdmZip from "adm-zip";
 import { GitUtils } from "./git.ts";
-import { getCourseCachePath } from "./paths.ts";
+import { getCourseCachePath, BACKEND_URL } from "./paths.ts";
 import { exists } from "./utils.ts";
+import { loadToken } from "./config.ts";
 
 export interface ProgyConfig {
   course: {
@@ -116,16 +118,26 @@ last_sync = "${new Date().toISOString()}"
       }
     }
 
-    let content = `*
-!.gitignore
+    let content = `# Progy Course Ignore File
+# This file ensures only your solutions are tracked in Git.
+
+# System & Dependencies
+.DS_Store
+node_modules/
+dist/
+.env
+
+# Course Metadata (Do not commit these)
+**/README.md
+**/info.toml
+**/quiz.json
+**/solution.*
+**/.progy/
+
+# Keep these
 !progy.toml
-!*.progy
-!content/
-!content/**
+!.gitignore
 `;
-    // We don't necessarily need to add extension specific ignores if we are un-ignoring the whole content/ dir,
-    // but keeping it as a safeguard for very large hidden files if desired. 
-    // However, the user wants 'content/' to just work.
     await writeFile(join(cwd, ".gitignore"), content);
   }
 
@@ -177,5 +189,64 @@ last_sync = "${new Date().toISOString()}"
     } else {
       throw new Error(`File ${relativePath} not found in official course.`);
     }
+  }
+
+  static async packProgress(cwd: string): Promise<Buffer> {
+    const zip = new AdmZip();
+    const contentPath = join(cwd, "content");
+    if (await exists(contentPath)) {
+      zip.addLocalFolder(contentPath, "content");
+    }
+    const configPath = join(cwd, "progy.toml");
+    if (await exists(configPath)) {
+      zip.addLocalFile(configPath);
+    }
+    return zip.toBuffer();
+  }
+
+  static async uploadProgress(courseId: string, buffer: Buffer): Promise<boolean> {
+    const token = await loadToken();
+    if (!token) return false;
+
+    const formData = new FormData();
+    formData.append("courseId", courseId);
+    formData.append("file", new Blob([buffer]), "progress.progy");
+
+    try {
+      const response = await fetch(`${BACKEND_URL}/progress/upload`, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${token}`
+        },
+        body: formData
+      });
+      return response.ok;
+    } catch (e) {
+      console.error("Upload failed", e);
+      return false;
+    }
+  }
+
+  static async downloadProgress(courseId: string): Promise<Buffer | null> {
+    const token = await loadToken();
+    if (!token) return null;
+
+    try {
+      const response = await fetch(`${BACKEND_URL}/progress/download?courseId=${courseId}`, {
+         headers: { Authorization: `Bearer ${token}` }
+      });
+      if (response.ok) {
+        const arrayBuffer = await response.arrayBuffer();
+        return Buffer.from(arrayBuffer);
+      }
+    } catch (e) {
+      // console.warn("Download progress failed (likely no progress exists)", e);
+    }
+    return null;
+  }
+
+  static async restoreProgress(buffer: Buffer, cwd: string) {
+      const zip = new AdmZip(buffer);
+      zip.extractAllTo(cwd, true);
   }
 }

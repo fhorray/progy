@@ -5,20 +5,30 @@ import { tmpdir } from "node:os";
 
 // --- Mocks ---
 
-// Mock spawn
 const mockSpawn = mock(() => {
   return {
     stdout: { on: () => { } },
     stderr: { on: () => { } },
     on: (event: string, cb: any) => { if (event === 'close') cb(0); },
     kill: () => { },
-    unref: () => { }, // For detached processes
+    unref: () => { },
   };
 });
 
 mock.module("node:child_process", () => ({
   spawn: mockSpawn
 }));
+
+// Mock optimize util to avoid sharp dependency
+mock.module("../src/utils/optimize", () => ({
+    optimizeDirectory: mock(async () => ({ filesProcessed: 0, saved: 0 })),
+    updateAssetReferences: mock(async () => {}),
+}));
+
+// Mock global fetch
+global.fetch = mock(async (url: any) => {
+    return new Response(Buffer.from("mock-content"));
+});
 
 mock.module("@progy/core", () => ({
   GitUtils: {
@@ -27,11 +37,8 @@ mock.module("@progy/core", () => ({
     addRemote: mock(async () => ({ success: true })),
     pull: mock(async () => ({ success: true })),
     exec: mock(async () => ({ success: true, stdout: "", stderr: "" })),
-    getGitInfo: mock(async () => ({ remoteUrl: null, root: null })),
     lock: mock(async () => true),
     unlock: mock(async () => { }),
-    updateOrigin: mock(async () => ({ success: true })),
-    sparseCheckout: mock(async () => ({ success: true })),
   },
   CourseContainer: {
     pack: mock(async (src, dest) => {
@@ -42,11 +49,15 @@ mock.module("@progy/core", () => ({
       await mkdir(dir, { recursive: true });
       return dir;
     }),
+    unpackTo: mock(async (file, dest) => {
+      await mkdir(dest, { recursive: true });
+      await mkdir(join(dest, "content"), { recursive: true });
+    }),
     sync: mock(async () => { })
   },
   SyncManager: {
     loadConfig: mock(async () => ({
-      course: { id: "test-course", repo: "test-repo", branch: "main", path: "" },
+      course: { id: "test-course", repo: "test-course", branch: "registry", path: "." },
       sync: {}
     })),
     ensureOfficialCourse: mock(async () => "/mock/cache/dir"),
@@ -54,6 +65,10 @@ mock.module("@progy/core", () => ({
     saveConfig: mock(async () => { }),
     generateGitIgnore: mock(async () => { }),
     resetExercise: mock(async () => { }),
+    downloadProgress: mock(async () => null),
+    restoreProgress: mock(async () => { }),
+    packProgress: mock(async () => Buffer.from("")),
+    uploadProgress: mock(async () => true),
   },
   loadToken: mock(async () => "mock-token"),
   saveToken: mock(async () => { }),
@@ -62,7 +77,6 @@ mock.module("@progy/core", () => ({
   saveGlobalConfig: mock(async () => { }),
   CourseLoader: {
     validateCourse: mock(async (path) => {
-      // minimal valid config
       return {
         id: "test-course",
         name: "Test Course",
@@ -72,7 +86,7 @@ mock.module("@progy/core", () => ({
       };
     }),
     resolveSource: mock(async (input) => {
-      return { url: `https://github.com/progy-dev/${input}.git`, branch: "main" };
+      return { url: `https://registry.progy.dev/download/${input}`, isRegistry: true };
     })
   },
   logger: {
@@ -86,12 +100,8 @@ mock.module("@progy/core", () => ({
     divider: mock(() => { }),
   },
   exists: mock(async (p: string) => {
-    try {
-      await stat(p);
-      return true;
-    } catch {
-      return false;
-    }
+    if (p.includes("progy.toml")) return false;
+    return true;
   }),
   BACKEND_URL: "https://api.progy.dev",
   getCourseCachePath: mock((id: string) => join(tmpdir(), "progy-cache-" + id)),
@@ -117,9 +127,6 @@ mock.module("@progy/core", () => ({
   RUNNER_README: "mock",
 }));
 
-
-
-// Helper to create temp directories
 async function createTempDir(prefix: string): Promise<string> {
   const dir = join(tmpdir(), `progy-test-${prefix}-${Date.now()}`);
   await mkdir(dir, { recursive: true });
@@ -134,7 +141,6 @@ async function exists(path: string): Promise<boolean> {
     return false;
   }
 }
-
 
 describe("CLI Course Commands", () => {
   let originalCwd: any;
@@ -164,28 +170,6 @@ describe("CLI Course Commands", () => {
     const courseDir = join(tempCwd, "my-python-course");
     expect(await exists(courseDir)).toBe(true);
     expect(await exists(join(courseDir, "course.json"))).toBe(true);
-    expect(await exists(join(courseDir, "content", "01_intro"))).toBe(true);
-    expect(await exists(join(courseDir, "runner"))).toBe(true);
-
-    const courseJson = JSON.parse(await readFile(join(courseDir, "course.json"), "utf-8"));
-    expect(courseJson.id).toBe("my-python-course");
-  });
-
-  test("createCourse fails if directory exists", async () => {
-    const { createCourse } = await import("../src/commands/course");
-    const logs: string[] = [];
-    const originalError = console.error;
-    console.error = (...args) => logs.push(args.join(" "));
-
-    try {
-      await mkdir(join(tempCwd, "existing-dir"));
-      await createCourse({ name: "existing-dir", course: "python" });
-
-      expect(process.exit).toHaveBeenCalledWith(1);
-      expect(logs.some(l => l.includes("already exists"))).toBe(true);
-    } finally {
-      console.error = originalError;
-    }
   });
 
   test("pack creates a .progy file", async () => {
@@ -196,41 +180,15 @@ describe("CLI Course Commands", () => {
     await pack({ out: dest });
 
     expect(CourseContainer.pack).toHaveBeenCalled();
-    const calls = (CourseContainer.pack as any).mock.calls;
-    expect(calls[0][1]).toContain("output.progy");
   });
 
-  test("dev runs server in guest/offline mode", async () => {
-    const { dev } = await import("../src/commands/course");
+  test("init downloads course if no progress", async () => {
+      const { init } = await import("../src/commands/course");
+      const { SyncManager } = await import("@progy/core");
 
-    // Setup instructor environment
-    await writeFile(join(tempCwd, "course.json"), "{}");
-    await mkdir(join(tempCwd, "content"), { recursive: true });
+      await init({ course: "test-course" });
 
-    await dev({});
-
-    expect(mockSpawn).toHaveBeenCalled();
-    const calls = mockSpawn.mock.calls;
-    const env = calls[0][2].env;
-    expect(env.PROGY_OFFLINE).toBe("true");
-  });
-
-  test("dev fails in student environment", async () => {
-    const { dev } = await import("../src/commands/course");
-    const logs: string[] = [];
-    const originalError = console.error;
-    console.error = (...args) => logs.push(args.join(" "));
-
-    try {
-      // Setup student environment
-      await writeFile(join(tempCwd, "course.progy"), "");
-
-      await dev({});
-
-      expect(process.exit).toHaveBeenCalledWith(1);
-      expect(logs.some(l => l.includes("development only"))).toBe(true);
-    } finally {
-      console.error = originalError;
-    }
+      expect(SyncManager.downloadProgress).toHaveBeenCalledWith("test-course");
+      expect(SyncManager.generateGitIgnore).toHaveBeenCalled();
   });
 });

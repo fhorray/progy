@@ -68,6 +68,25 @@ export class ProgressService {
   async resetProgress(userId: string, courseId: string) {
     const syncId = `${userId}:${courseId}`;
     await this.db.delete(schema.courseProgress).where(eq(schema.courseProgress.id, syncId));
+    // Also delete from R2
+    const key = `users/${userId}/courses/${courseId}/progress.progy`;
+    await this.env.R2.delete(key);
     return { success: true, message: "Course progress reset successfully" };
+  }
+
+  async uploadProgressFile(userId: string, courseId: string, fileBuffer: ArrayBuffer) {
+    // Sanitize courseId to ensure safe path (remove leading @ if present in path, but keep for structure?)
+    // User requested path: users/courses/course_scope/{content...}
+    // courseId usually looks like "@scope/course".
+    // We'll use the ID as is, but ensure it's safe for R2 keys (slashes are fine).
+    const key = `users/${userId}/courses/${courseId}/progress.progy`;
+    await this.env.R2.put(key, fileBuffer);
+    return { success: true };
+  }
+
+  async downloadProgressFile(userId: string, courseId: string) {
+    const key = `users/${userId}/courses/${courseId}/progress.progy`;
+    const object = await this.env.R2.get(key);
+    return object ? object.body : null;
   }
 }
