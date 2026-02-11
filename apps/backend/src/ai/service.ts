@@ -106,3 +106,40 @@ Return a JSON object with the following structure:
 Ensure the code has at least one logical or syntax error for the student to fix, consistent with the difficulty.
 Return ONLY the JSON object, no other text.`;
 }
+
+import { tool } from 'ai';
+import { z } from 'zod';
+
+export function createTutorTools(context: AIContext) {
+  return {
+    getExerciseContext: tool({
+      description: 'Get the current student code, instructions, and error for the exercise',
+      inputSchema: z.object({}),
+      execute: async () => ({
+        code: context.code,
+        instructions: context.instructions,
+        error: context.error,
+        lastOutput: context.lastOutput,
+      })
+    }),
+    fetchCourseRoadmap: tool({
+      description: 'Fetch the course roadmap to see upcoming lessons and concepts',
+      inputSchema: z.object({}),
+      execute: async () => {
+        return `Current: ${context.courseName} > ${context.exerciseName}. Upcoming: More advanced patterns in ${context.courseName}.`;
+      }
+    }),
+    recommendExercise: tool({
+      description: 'Recommend a specific sub-topic or micro-lesson to the student',
+      inputSchema: z.object({
+        topic: z.string().describe('The topic the student is struggling with'),
+        reason: z.string().describe('Why this specific topic is recommended'),
+      }),
+      execute: async ({ topic, reason }: { topic: string; reason: string }) => ({
+        topic,
+        reason,
+        status: 'recommended'
+      })
+    })
+  };
+}

@@ -173,13 +173,75 @@ export async function pack(options: { out?: string }) {
   try {
     const config = await CourseLoader.validateCourse(cwd);
     const filename = options.out || `${config.id}.progy`;
-    await CourseContainer.pack(cwd, resolve(filename));
+    const destPath = resolve(filename);
+
+    logger.info(`📦 Preparing package for ${config.id}...`, "PACK");
+
+    // 1. Create a temporary packaging directory
+    const tempPackDir = join(tmpdir(), `progy-pack-${Date.now()}`);
+    await mkdir(tempPackDir, { recursive: true });
+
+    // 2. Copy the whole course to temp (native Bun.write / cp is better here)
+    // We'll use a simplified copy for now, including only what's needed
+    const filesToCopy = await readdir(cwd);
+    for (const file of filesToCopy) {
+      if (file === ".progy" || file.endsWith(".progy") || file === "node_modules" || file === ".git") continue;
+
+      const src = join(cwd, file);
+      const dst = join(tempPackDir, file);
+      const s = await stat(src);
+
+      if (s.isDirectory()) {
+        // Simple recursive copy (native on modern node, but let's be safe or use a helper)
+        await cpRecursive(src, dst);
+      } else {
+        await Bun.write(dst, await Bun.file(src).arrayBuffer());
+      }
+    }
+
+    // 3. Optimize Assets in the Temp Directory
+    const tempAssetsDir = join(tempPackDir, "assets");
+    if (await exists(tempAssetsDir)) {
+      const { optimizeDirectory, updateAssetReferences } = await import("../utils/optimize");
+      logger.info("🎨 Optimizing assets...", "ASSETS");
+      const result = await optimizeDirectory(tempAssetsDir, tempAssetsDir);
+      if (result.filesProcessed > 0) {
+        const savedMb = (result.saved / 1024 / 1024).toFixed(2);
+        logger.success(`Optimized ${result.filesProcessed} images. Saved ${savedMb}MB.`);
+
+        // Update references in the temp directory files
+        await updateAssetReferences(tempPackDir);
+      }
+    }
+
+
+    // 4. Pack from Temp Directory
+    await CourseContainer.pack(tempPackDir, destPath);
+
+    // 5. Cleanup
+    await rm(tempPackDir, { recursive: true, force: true });
+
     logger.success(`Created: ${filename}`);
   } catch (e: any) {
     logger.error(`Packaging Failed`, e.message);
     process.exit(1);
   }
 }
+
+async function cpRecursive(src: string, dst: string) {
+  await mkdir(dst, { recursive: true });
+  const entries = await readdir(src, { withFileTypes: true });
+  for (const entry of entries) {
+    const srcPath = join(src, entry.name);
+    const dstPath = join(dst, entry.name);
+    if (entry.isDirectory()) {
+      await cpRecursive(srcPath, dstPath);
+    } else {
+      await Bun.write(dstPath, await Bun.file(srcPath).arrayBuffer());
+    }
+  }
+}
+
 
 export async function detectEnvironment(cwd: string): Promise<"student" | "instructor"> {
   const hasCourseJson = await exists(join(cwd, "course.json"));

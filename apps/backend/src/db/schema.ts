@@ -139,6 +139,8 @@ export const registryVersions = sqliteTable(
     changelog: text('changelog'),
     engineVersion: text('engine_version'), // Added for compatibility tracking
     manifest: text('manifest'), // JSON index of course content
+    status: text('status', { enum: ['pending', 'active', 'rejected'] }).notNull().default('pending'),
+    statusMessage: text('status_message'),
     createdAt: integer('created_at', { mode: 'timestamp' })
       .notNull()
       .$defaultFn(() => new Date()),
@@ -160,4 +162,11 @@ export const registryDownloads = sqliteTable('registry_downloads', {
   downloadedAt: integer('downloaded_at', { mode: 'timestamp' })
     .notNull()
     .$defaultFn(() => new Date()),
+});
+
+export const registryStats = sqliteTable('registry_stats', {
+  id: text('id').primaryKey(),
+  packageId: text('package_id').notNull(),
+  date: text('date').notNull(), // YYYY-MM-DD
+  downloadCount: integer('download_count').notNull().default(0),
 });

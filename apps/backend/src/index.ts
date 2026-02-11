@@ -61,51 +61,69 @@ app.route('/user', user)
 
 
 
+// --- Security & Rate Limiting ---
+const rateLimitMap = new Map<string, { count: number; lastReset: number }>();
+const RATELIMIT_WINDOW = 60 * 1000; // 1 minute
+const MAX_REQUESTS = 10; // 10 requests per minute
+
+function rateLimit(userId: string): boolean {
+  const now = Date.now();
+  const entry = rateLimitMap.get(userId) || { count: 0, lastReset: now };
+
+  if (now - entry.lastReset > RATELIMIT_WINDOW) {
+    entry.count = 1;
+    entry.lastReset = now;
+  } else {
+    entry.count++;
+  }
+
+  rateLimitMap.set(userId, entry);
+  return entry.count <= MAX_REQUESTS;
+}
+
 app.post('/ai/generate', async (c) => {
   try {
     const { prompt, difficulty, config: clientConfig } = await c.req.json() as { prompt: string; difficulty: string; config: AIConfig };
 
-    // 1. Verify Session & Subscription
+    // 1. Verify Session
     const user = c.get('user')
     if (!user) return c.json({ error: 'Unauthorized' }, 401);
 
+    // 2. Rate Limiting
+    if (!rateLimit(user.id)) {
+      return c.json({ error: 'Rate limit exceeded. Try again in a minute.' }, 429);
+    }
+
     const db = drizzle(c.env.DB);
-    let finalConfig = { ...clientConfig };
+    let finalConfig: AIConfig = {
+      provider: clientConfig?.provider || 'openai',
+      model: clientConfig?.model
+    };
 
-    // Check for Pro Plan (via better-auth subscription table or user metadata)
-    const activePro = await db.select().from(schema.subscription)
+    // Check for Pro/Lifetime Plan
+    const subscription = await db.select().from(schema.subscription)
       .where(and(
         eq(schema.subscription.referenceId, user.id),
-        eq(schema.subscription.status, 'active'),
-        eq(schema.subscription.plan, 'pro')
-      )).get();
+        eq(schema.subscription.status, 'active')
+      )).all();
 
-    // Check for Lifetime Plan
-    const activeLifetime = await db.select().from(schema.subscription)
-      .where(and(
-        eq(schema.subscription.referenceId, user.id),
-        eq(schema.subscription.status, 'active'),
-        eq(schema.subscription.plan, 'lifetime')
-      )).get();
-
-    // @ts-ignore
-    const isPro = !!activePro || user.subscription === 'pro';
-    // @ts-ignore
-    const isLifetime = !!activeLifetime || user.subscription === 'lifetime';
+    const isPro = subscription.some(s => s.plan === 'pro') || (user as any).subscription === 'pro';
+    const isLifetime = subscription.some(s => s.plan === 'lifetime') || (user as any).subscription === 'lifetime';
 
     if (isPro) {
-      // Pro users use backend key
+      // Pro users ALWAYS use backend key, ignore client-provided key for security
       finalConfig.apiKey = c.env.OPENAI_API_KEY;
       finalConfig.provider = 'openai';
     } else if (isLifetime) {
-      // Lifetime users must provide key
-      if (!finalConfig.apiKey) return c.json({ error: 'Lifetime plan requires your own API Key. Configure it in Settings.' }, 403);
+      // Lifetime users must provide their own key
+      if (!clientConfig?.apiKey) return c.json({ error: 'Lifetime plan requires your own API Key. Configure it in Settings.' }, 403);
+      finalConfig.apiKey = clientConfig.apiKey;
+      finalConfig.provider = clientConfig.provider || 'openai';
     } else {
-      // Free users
       return c.json({ error: 'AI features require a Lifetime or Pro subscription' }, 403);
     }
 
-    if (!finalConfig.apiKey || !finalConfig.provider) {
+    if (!finalConfig.apiKey) {
       return c.json({ error: 'Missing AI configuration' }, 400);
     }
 
@@ -130,48 +148,47 @@ app.post('/ai/generate', async (c) => {
   }
 });
 
+
 app.post('/ai/hint', async (c) => {
   try {
     const { context, config: clientConfig } = await c.req.json() as { context: AIContext; config: AIConfig };
 
-    // 1. Verify Session & Subscription
+    // 1. Verify Session
     const user = c.get('user')
     if (!user) return c.json({ error: 'Unauthorized' }, 401);
 
+    // 2. Rate Limiting
+    if (!rateLimit(user.id)) {
+      return c.json({ error: 'Rate limit exceeded' }, 429);
+    }
+
     const db = drizzle(c.env.DB);
-    let finalConfig = { ...clientConfig };
+    let finalConfig: AIConfig = {
+      provider: clientConfig?.provider || 'openai',
+      model: clientConfig?.model
+    };
 
-    // Check for Pro Plan
-    const activePro = await db.select().from(schema.subscription)
+    const subscription = await db.select().from(schema.subscription)
       .where(and(
         eq(schema.subscription.referenceId, user.id),
-        eq(schema.subscription.status, 'active'),
-        eq(schema.subscription.plan, 'pro')
-      )).get();
+        eq(schema.subscription.status, 'active')
+      )).all();
 
-    // Check for Lifetime Plan
-    const activeLifetime = await db.select().from(schema.subscription)
-      .where(and(
-        eq(schema.subscription.referenceId, user.id),
-        eq(schema.subscription.status, 'active'),
-        eq(schema.subscription.plan, 'lifetime')
-      )).get();
-
-    // @ts-ignore
-    const isPro = !!activePro || user.subscription === 'pro';
-    // @ts-ignore
-    const isLifetime = !!activeLifetime || user.subscription === 'lifetime';
+    const isPro = subscription.some(s => s.plan === 'pro') || (user as any).subscription === 'pro';
+    const isLifetime = subscription.some(s => s.plan === 'lifetime') || (user as any).subscription === 'lifetime';
 
     if (isPro) {
       finalConfig.apiKey = c.env.OPENAI_API_KEY;
       finalConfig.provider = 'openai';
     } else if (isLifetime) {
-      if (!finalConfig.apiKey) return c.json({ error: 'Lifetime plan requires your own API Key. Configure it in Settings.' }, 403);
+      if (!clientConfig?.apiKey) return c.json({ error: 'Lifetime plan requires your own API Key. Configure it in Settings.' }, 403);
+      finalConfig.apiKey = clientConfig.apiKey;
+      finalConfig.provider = clientConfig.provider || 'openai';
     } else {
       return c.json({ error: 'AI features require a Lifetime or Pro subscription' }, 403);
     }
 
-    if (!finalConfig.apiKey || !finalConfig.provider) {
+    if (!finalConfig.apiKey) {
       return c.json({ error: 'Missing AI configuration' }, 400);
     }
 
@@ -195,55 +212,55 @@ app.post('/ai/explain', async (c) => {
   try {
     const { context, config: clientConfig } = await c.req.json() as { context: AIContext; config: AIConfig };
 
-    // 1. Verify Session & Subscription
+    // 1. Verify Session
     const user = c.get('user')
     if (!user) return c.json({ error: 'Unauthorized' }, 401);
 
+    // 2. Rate Limiting
+    if (!rateLimit(user.id)) {
+      return c.json({ error: 'Rate limit exceeded' }, 429);
+    }
+
     const db = drizzle(c.env.DB);
-    let finalConfig = { ...clientConfig };
+    let finalConfig: AIConfig = {
+      provider: clientConfig?.provider || 'openai',
+      model: clientConfig?.model
+    };
 
-    const activePro = await db.select().from(schema.subscription)
+    const subscription = await db.select().from(schema.subscription)
       .where(and(
         eq(schema.subscription.referenceId, user.id),
-        eq(schema.subscription.status, 'active'),
-        eq(schema.subscription.plan, 'pro')
-      )).get();
+        eq(schema.subscription.status, 'active')
+      )).all();
 
-    const activeLifetime = await db.select().from(schema.subscription)
-      .where(and(
-        eq(schema.subscription.referenceId, user.id),
-        eq(schema.subscription.status, 'active'),
-        eq(schema.subscription.plan, 'lifetime')
-      )).get();
-
-    // @ts-ignore
-    const isPro = !!activePro || user.subscription === 'pro';
-    // @ts-ignore
-    const isLifetime = !!activeLifetime || user.subscription === 'lifetime';
+    const isPro = subscription.some(s => s.plan === 'pro') || (user as any).subscription === 'pro';
+    const isLifetime = subscription.some(s => s.plan === 'lifetime') || (user as any).subscription === 'lifetime';
 
     if (isPro) {
       finalConfig.apiKey = c.env.OPENAI_API_KEY;
       finalConfig.provider = 'openai';
     } else if (isLifetime) {
-      if (!finalConfig.apiKey) return c.json({ error: 'Lifetime plan requires your own API Key. Configure it in Settings.' }, 403);
+      if (!clientConfig?.apiKey) return c.json({ error: 'Lifetime plan requires your own API Key. Configure it in Settings.' }, 403);
+      finalConfig.apiKey = clientConfig.apiKey;
+      finalConfig.provider = clientConfig.provider || 'openai';
     } else {
       return c.json({ error: 'AI features require a Lifetime or Pro subscription' }, 403);
     }
 
-    if (!finalConfig.apiKey || !finalConfig.provider) {
+    if (!finalConfig.apiKey) {
       return c.json({ error: 'Missing AI configuration' }, 400);
     }
 
     const model = getModel(finalConfig);
     const system = constructExplanationPrompt(context);
 
-    const result = streamText({
+    const { text } = await generateText({
       model,
       system,
-      prompt: "Explain the concepts in this code/exercise clearly.",
+      prompt: "Explain the concepts involved in this exercise comprehensively but concisely.",
     });
 
-    return result.toTextStreamResponse();
+    return c.json({ explanation: text });
   } catch (e: any) {
     console.error("[AI-EXPLAIN-ERROR]", e);
     return c.json({ error: e.message }, 500);
@@ -777,4 +794,10 @@ app.get('/', (c) => {
   return c.html(html);
 });
 
+// Workflow Exports
+export { CourseGuardWorkflow } from './workflows/course-guard';
+export { TutorAgentWorkflow } from './workflows/tutor-agent';
+export { AggregationWorkflow } from './workflows/aggregation';
+
 export default app
+

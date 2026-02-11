@@ -15,6 +15,11 @@ declare global {
     DB: D1Database;
     R2: R2Bucket;
     COURSES: string; // Keep compatibility if needed
+    COURSE_GUARD: Workflow;
+    TUTOR_AGENT: Workflow;
+    AGGREGATION: Workflow;
+    OPENAI_API_KEY: string;
+    PROGY_API_URL: string;
   }
 }
 
@@ -307,8 +312,9 @@ registry.post('/publish', async (c) => {
     runner: metadata.runner,
   };
 
+  const versionId = crypto.randomUUID();
   await db.insert(schema.registryVersions).values({
-    id: crypto.randomUUID(),
+    id: versionId,
     packageId: pkg.id,
     version: metadata.version,
     storageKey: mainKey,
@@ -317,10 +323,26 @@ registry.post('/publish', async (c) => {
     changelog: metadata.changelog,
     engineVersion: metadata.engineVersion, // New field from CLI
     manifest: JSON.stringify(manifestData),
+    status: 'pending',
     createdAt: new Date(),
   });
 
-  // 7. Update Package Head
+  // 7. Trigger Course Guard Workflow
+  try {
+    const workflow = await c.env.COURSE_GUARD.create({
+      id: `cg-${versionId}`,
+      params: {
+        versionId,
+        packageName: metadata.name,
+        version: metadata.version,
+      }
+    });
+    console.log(`[Registry] Triggered Course Guard for ${metadata.name}@${metadata.version}: ${workflow.id}`);
+  } catch (e) {
+    console.error(`[Registry] Failed to trigger Course Guard for ${metadata.name}:`, e);
+  }
+
+  // 8. Update Package Head
   await db
     .update(schema.registryPackages)
     .set({ latestVersion: metadata.version, updatedAt: new Date() })

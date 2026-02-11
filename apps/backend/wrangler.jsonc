@@ -70,6 +70,23 @@
       "database_id": "1917a7dd-630d-4f20-bad7-789bc45f0c26"
     }
   ],
+  "workflows": [
+    {
+      "name": "course-guard",
+      "binding": "COURSE_GUARD",
+      "class_name": "CourseGuardWorkflow"
+    },
+    {
+      "name": "tutor-agent",
+      "binding": "TUTOR_AGENT",
+      "class_name": "TutorAgentWorkflow"
+    },
+    {
+      "name": "aggregation",
+      "binding": "AGGREGATION",
+      "class_name": "AggregationWorkflow"
+    }
+  ],
   // "ai": {
   //   "binding": "AI"
   // },

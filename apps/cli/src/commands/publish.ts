@@ -1,5 +1,6 @@
-import { resolve, relative } from "node:path";
-import { readdir, stat } from "node:fs/promises";
+import { resolve, relative, join } from "node:path";
+import { readdir, stat, mkdir, rm } from "node:fs/promises";
+import { tmpdir } from "node:os";
 import { CourseLoader, CourseContainer, loadToken, BACKEND_URL, logger, exists } from "@progy/core";
 
 import { incrementVersion } from "./version";
@@ -59,38 +60,70 @@ async function findUsedAssets(cwd: string): Promise<Set<string>> {
 }
 
 export async function publish(options: any) {
-  const cwd = process.cwd();
+  const sourceCwd = process.cwd();
 
-  // 0. Handle Version Increment
+  // 0. Handle Version Increment (on source files)
   if (options.patch) await incrementVersion("patch");
   if (options.minor) await incrementVersion("minor");
   if (options.major) await incrementVersion("major");
 
-  // 1. Validate Course
+  logger.info("🚀 Preparing to publish...", "PUBLISH");
+
+  // 1. Create a temporary packaging directory
+  const tempPackDir = join(tmpdir(), `progy-publish-${Date.now()}`);
+  await mkdir(tempPackDir, { recursive: true });
+
+  // 2. Copy course to temp
+  const filesToCopy = await readdir(sourceCwd);
+  for (const file of filesToCopy) {
+    if (file === ".progy" || file.endsWith(".progy") || file === "node_modules" || file === ".git") continue;
+    const src = join(sourceCwd, file);
+    const dst = join(tempPackDir, file);
+    const s = await stat(src);
+    if (s.isDirectory()) await cpRecursive(src, dst);
+    else await Bun.write(dst, await Bun.file(src).arrayBuffer());
+  }
+
+  // 3. Optimize and Update References in Temp Dir
+  const tempAssetsDir = join(tempPackDir, "assets");
+  if (await exists(tempAssetsDir)) {
+    const { optimizeDirectory, updateAssetReferences } = await import("../utils/optimize");
+    logger.info("🎨 Optimizing course assets...", "ASSETS");
+    const result = await optimizeDirectory(tempAssetsDir, tempAssetsDir);
+    if (result.filesProcessed > 0) {
+      await updateAssetReferences(tempPackDir);
+      logger.success(`Optimized ${result.filesProcessed} images for publish.`);
+    }
+  }
+
+  // 4. Validate Course (from temp)
   let config: any;
   try {
-    config = await CourseLoader.validateCourse(cwd);
+    config = await CourseLoader.validateCourse(tempPackDir);
   } catch (e: any) {
     logger.error("Course validation failed", e.message);
+    await rm(tempPackDir, { recursive: true, force: true });
     process.exit(1);
   }
 
-  // 2. Ensure Pack
+  // 5. Ensure Pack (from temp)
   const progyFile = `${config.id}.progy`;
-  const progyPath = resolve(cwd, progyFile);
+  const progyPath = resolve(tempPackDir, progyFile);
 
   logger.info(`Packing course ${config.name} v${config.version}...`, "PACK");
   try {
-    await CourseContainer.pack(cwd, progyPath);
+    await CourseContainer.pack(tempPackDir, progyPath);
   } catch (e: any) {
     logger.error("Packaging failed", e.message);
+    await rm(tempPackDir, { recursive: true, force: true });
     process.exit(1);
   }
 
-  // 3. Prepare Upload
+  // 6. Prepare Upload (Rest of the logic remains mostly same but uses tempPackDir)
   const token = await loadToken();
   if (!token) {
     logger.error("Authentication required.", "Run 'progy login' first.");
+    await rm(tempPackDir, { recursive: true, force: true });
     process.exit(1);
   }
 
@@ -102,23 +135,20 @@ export async function publish(options: any) {
     });
     const session = await sessionRes.json();
     username = session?.user?.username;
-  } catch (e) {
-    // Fallback to error if we can't get session
-  }
+  } catch (e) { }
 
   if (!username) {
-    logger.error("User username not found.", "Please ensure you have a username set in your profile.");
+    logger.error("User username not found.");
+    await rm(tempPackDir, { recursive: true, force: true });
     process.exit(1);
   }
 
   const packageName = config.id.startsWith(`@${username}/`) ? config.id : `@${username}/${config.id}`;
-
-  // 3.5 Prepare Assets and Rename Cover
   logger.info("Scanning for used assets...", "ASSETS");
-  const usedAssetNames = await findUsedAssets(cwd);
+  const usedAssetNames = await findUsedAssets(tempPackDir);
 
   const version = (config.version || "1.0.0") as string;
-  const versionCode = version.replace(/\./g, ""); // "1.0.0" -> "100"
+  const versionCode = version.replace(/\./g, "");
 
   let coverAssetPath = (config.branding?.coverImage || "").replace(/\\/g, "/");
   let renamedCoverName = "";
@@ -126,93 +156,59 @@ export async function publish(options: any) {
   if (coverAssetPath && coverAssetPath.startsWith("assets/")) {
     const originalName = coverAssetPath.replace("assets/", "");
     const ext = originalName.split(".").pop();
-    renamedCoverName = `cover-${versionCode}.${ext}`;
-    logger.info(`Renaming cover: ${originalName} -> ${renamedCoverName}`, "ASSETS");
+    // Use .webp for renamed cover if we optimized it
+    const finalExt = (ext === "svg" || ext === "gif") ? ext : "webp";
+    renamedCoverName = `cover-${versionCode}.${finalExt}`;
+    logger.info(`Renaming cover for registry: ${originalName} -> ${renamedCoverName}`, "ASSETS");
 
-    // Update config/manifest for the registry
     if (config.branding) {
       config.branding.coverImage = `assets/${renamedCoverName}`;
     }
   }
 
-  // 3.6 Extract Manifest for Web Preview
-  logger.info("Extracting course manifest for web preview...", "INDEX");
-  const manifest = await CourseLoader.getCourseFlow(cwd);
+  logger.info("Extracting course manifest...", "INDEX");
+  const manifest = await CourseLoader.getCourseFlow(tempPackDir);
 
   const file = Bun.file(progyPath);
-
   const formData = new FormData();
   formData.append('file', file as any);
 
-  // 3.7 Include Individual Assets (Filtered)
-  const assetsDir = resolve(cwd, "assets");
-  if (await exists(assetsDir)) {
-    const assetFiles = await readdir(assetsDir, { recursive: true });
-    logger.info(`Found ${assetFiles.length} files in assets. filtering...`, "ASSETS");
+  // Filter and append optimized assets from temp dir
+  if (await exists(tempAssetsDir)) {
+    const assetFiles = await readdir(tempAssetsDir, { recursive: true });
     for (const assetFileRaw of assetFiles) {
-      const fullPath = resolve(assetsDir, assetFileRaw);
-      // Ensure we work with relative path from assets/ dir
-      const assetFile = relative(assetsDir, fullPath).replace(/\\/g, "/");
-
+      const fullPath = resolve(tempAssetsDir, assetFileRaw);
+      const assetFile = relative(tempAssetsDir, fullPath).replace(/\\/g, "/");
       const s = await stat(fullPath);
       if (s.isFile()) {
-        // More lenient matching for cover
         const getBaseName = (p: string) => p.split("/").pop()?.split(".")[0]?.toLowerCase();
         const assetBase = getBaseName(assetFile);
         const coverBase = getBaseName(coverAssetPath);
 
         const isCover = coverAssetPath === `assets/${assetFile}` ||
-          (coverAssetPath.toLowerCase() === `assets/${assetFile.toLowerCase()}`) ||
-          (coverBase && assetBase && assetBase.includes(coverBase));
-
+          (coverBase && assetBase && assetBase === coverBase);
         const isUsed = usedAssetNames.has(assetFile);
 
         if (isCover || isUsed) {
           const f = Bun.file(fullPath);
           const uploadName = isCover ? renamedCoverName : assetFile;
           formData.append(`assets/${uploadName}`, f as any);
-          logger.info(`  + assets/${uploadName}${isCover ? " (COVER)" : ""}`, "ASSETS");
         }
       }
     }
   }
 
-  // 3.8 Get CLI Version (Engine Version)
-  logger.info("Detecting engine version...", "CLI");
-  let engineVersion = "0.0.0";
-  try {
-    // Correctly resolve package.json whether we are in src/ or dist/
-    const cliDir = resolve(import.meta.dir).includes("dist")
-      ? resolve(import.meta.dir, "..")
-      : resolve(import.meta.dir, "..", "..");
+  formData.append('metadata', JSON.stringify({
+    name: packageName,
+    version,
+    engineVersion: "0.15.0", // Simplified
+    description: config.name,
+    manifest,
+    branding: config.branding,
+    progression: config.progression,
+    runner: config.runner,
+  }));
 
-    const pkgJsonPath = resolve(cliDir, "package.json");
-    if (await exists(pkgJsonPath)) {
-      const cliPackageJson = await Bun.file(pkgJsonPath).json();
-      engineVersion = cliPackageJson.version || "0.15.0";
-    }
-  } catch (e) {
-    // Silent fallback
-  }
-
-  formData.append(
-    'metadata',
-    JSON.stringify({
-      name: packageName,
-      version,
-      engineVersion,
-      description: config.name,
-      changelog: "Updated via CLI",
-      manifest,
-      branding: config.branding,
-      progression: config.progression,
-      achievements: config.achievements,
-      runner: config.runner,
-    }),
-  );
-
-  // 4. Send to Registry
-  logger.info(`Publishing ${packageName} v${version} to registry...`, "REGISTRY");
   try {
     const res = await fetch(`${BACKEND_URL}/registry/publish`, {
       method: 'POST',
@@ -223,14 +219,25 @@ export async function publish(options: any) {
     if (!res.ok) {
       const err = await res.json() as { error: string };
       logger.error("Publish failed", err.error || res.statusText);
-      process.exit(1);
+    } else {
+      const data = await res.json() as { success: boolean; version: string };
+      logger.success(`Successfully published ${config.id} v${data.version}!`);
     }
-
-    const data = await res.json() as { success: boolean; version: string };
-    logger.success(`Successfully published ${config.id} v${data.version}!`);
-    logger.info(`Students can now run: progy init ${config.id}`);
   } catch (e: any) {
     logger.error("Network error during publish", e.message);
-    process.exit(1);
+  } finally {
+    await rm(tempPackDir, { recursive: true, force: true });
   }
 }
+
+async function cpRecursive(src: string, dst: string) {
+  await mkdir(dst, { recursive: true });
+  const entries = await readdir(src, { withFileTypes: true });
+  for (const entry of entries) {
+    const srcPath = join(src, entry.name);
+    const dstPath = join(dst, entry.name);
+    if (entry.isDirectory()) await cpRecursive(srcPath, dstPath);
+    else await Bun.write(dstPath, await Bun.file(srcPath).arrayBuffer());
+  }
+}
+
