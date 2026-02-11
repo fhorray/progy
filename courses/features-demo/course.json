@@ -1,7 +1,7 @@
 {
   "id": "features-demo",
   "name": "Platforms Features Demo",
-  "version": "1.4.1",
+  "version": "1.7.0",
   "runner": {
     "command": "echo",
     "args": [
@@ -18,7 +18,7 @@
     "guide": "README.md"
   },
   "branding": {
-    "coverImage": "assets/cover.jpg",
+    "coverImage": "assets/1770812888880_Screenshot_2026-02-11_091654.png",
     "primaryColor": "#ff4400",
     "layout": "grid"
   },

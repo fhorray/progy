@@ -87,6 +87,7 @@ registry.get('/resolve/:query', async (c) => {
     versions: versions.map((v) => v.v),
     description: pkg.description,
     manifest: pkg.latestVersion ? (await db.select({ m: schema.registryVersions.manifest }).from(schema.registryVersions).where(and(eq(schema.registryVersions.packageId, pkg.id), eq(schema.registryVersions.version, pkg.latestVersion))).get())?.m : null,
+    engineVersion: pkg.latestVersion ? (await db.select({ ev: schema.registryVersions.engineVersion }).from(schema.registryVersions).where(and(eq(schema.registryVersions.packageId, pkg.id), eq(schema.registryVersions.version, pkg.latestVersion))).get())?.ev : null,
     downloadUrl: `${getBackendUrl(c)}/registry/download/${scope}/${slug}/${pkg.latestVersion}`
   });
 });

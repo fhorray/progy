@@ -37,6 +37,13 @@ const CourseConfigSchema = z.object({
   progression: z.object({
     mode: z.string().optional().default("open"),
   }).optional(),
+  achievements: z.array(z.object({
+    id: z.string(),
+    icon: z.string(),
+    name: z.string(),
+    description: z.string(),
+    trigger: z.string(),
+  })).optional(),
 });
 
 export type LoaderCourseConfig = z.infer<typeof CourseConfigSchema>;
@@ -217,11 +224,32 @@ export class CourseLoader {
       const modulePath = join(exercisesDir, entry.name);
       const moduleInfoPath = join(modulePath, "info.toml");
       let moduleTitle = entry.name.replace(/^\d{2}_/, "");
+      let exMetadata: Record<string, any> = {};
 
       if (await exists(moduleInfoPath)) {
         const content = await readFile(moduleInfoPath, "utf-8");
         const titleMatch = content.match(/title\s*=\s*"([^"]+)"/);
         if (titleMatch) moduleTitle = titleMatch[1]!;
+
+        // Parse [[exercises]] blocks
+        const blocks = content.split('[[exercises]]').slice(1);
+        for (const block of blocks) {
+          const nameMatch = block.match(/name\s*=\s*"([^"]+)"/);
+          if (nameMatch) {
+            const name = nameMatch[1]!;
+            const titleMatch = block.match(/title\s*=\s*"([^"]+)"/);
+            const tagsMatch = block.match(/tags\s*=\s*\[([^\]]+)\]/);
+            const difficultyMatch = block.match(/difficulty\s*=\s*"([^"]+)"/);
+            const xpMatch = block.match(/xp\s*=\s*(\d+)/);
+
+            exMetadata[name] = {
+              title: titleMatch ? titleMatch[1] : undefined,
+              tags: tagsMatch ? tagsMatch[1]!.split(',').map(t => t.trim().replace(/"/g, '')) : undefined,
+              difficulty: difficultyMatch ? difficultyMatch[1] : undefined,
+              xp: xpMatch ? parseInt(xpMatch[1]!) : undefined
+            };
+          }
+        }
       }
 
       const exercises: any[] = [];
@@ -231,9 +259,14 @@ export class CourseLoader {
         .sort((a, b) => a.name.localeCompare(b.name));
 
       for (const exEntry of sortedExEntries) {
+        const meta = exMetadata[exEntry.name] || {};
         exercises.push({
           id: exEntry.name,
           name: exEntry.name.replace(/^\d{2}_/, ""),
+          title: meta.title || exEntry.name.replace(/^\d{2}_/, ""),
+          tags: meta.tags,
+          difficulty: meta.difficulty,
+          xp: meta.xp,
           path: join(config.content.exercises, entry.name, exEntry.name)
         });
       }

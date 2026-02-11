@@ -6,21 +6,21 @@ import { incrementVersion } from "./version";
 
 async function findUsedAssets(cwd: string): Promise<Set<string>> {
   const used = new Set<string>();
-  const contentDir = resolve(cwd, "content");
-  if (!(await exists(contentDir))) return used;
+
+  // Skip directories that we know don't contain content or references
+  const skipDirs = [".git", "node_modules", "assets", "dist", "target", ".progy"];
 
   const scanFile = async (path: string) => {
     try {
       const content = await Bun.file(path).text();
-      // Improved regex to find assets/* references including subdirectories
-      // It matches assets/ followed by alphanumeric, dot, underscore, hyphen or forward slash
+      // Refined regex: matches assets/ followed by alphanumeric, dot, underscore, hyphen, 
+      // forward slash, space or percent (for URL encoding)
+      // Stops at common delimiters: whitespace, quotes, parentheses, brackets, backticks
       const matches = content.matchAll(/assets\/([a-zA-Z0-9\._\-\/ %]+)/g);
       for (const match of matches) {
         if (match[1]) {
-          // Normalize potential backslashes if any (though regex expects /) 
-          // and remove trailing dots or typical markdown punctuation that might be caught
-          // Also trim() and decodeURIComponent() to handle spaces and encoded characters
-          const rawPath = match[1].split(/[\)\x60\>\n]/)[0]?.trim();
+          // Clean up delimiters that might be caught
+          const rawPath = match[1].split(/[\"\'\)\(\x60\>\s\n\[\]]/)[0]?.trim();
           if (rawPath) {
             const assetPath = decodeURIComponent(rawPath.replace(/\\/g, "/"));
             used.add(assetPath);
@@ -32,14 +32,28 @@ async function findUsedAssets(cwd: string): Promise<Set<string>> {
     }
   };
 
-  const files = await readdir(contentDir, { recursive: true });
-  for (const file of files) {
-    const fullPath = resolve(contentDir, file);
-    const s = await stat(fullPath);
-    if (s.isFile()) {
-      await scanFile(fullPath);
+  const scanDir = async (dir: string) => {
+    const files = await readdir(dir);
+    for (const file of files) {
+      const fullPath = resolve(dir, file);
+      const s = await stat(fullPath);
+
+      if (s.isDirectory()) {
+        if (!skipDirs.includes(file)) {
+          await scanDir(fullPath);
+        }
+      } else {
+        // Scan common text files
+        const ext = file.split(".").pop()?.toLowerCase();
+        const scannableExtensions = ["md", "toml", "json", "ts", "js", "rs", "c", "cpp", "py", "sh", "html", "css"];
+        if (ext && scannableExtensions.includes(ext)) {
+          await scanFile(fullPath);
+        }
+      }
     }
-  }
+  };
+
+  await scanDir(cwd);
 
   return used;
 }
@@ -142,9 +156,14 @@ export async function publish(options: any) {
 
       const s = await stat(fullPath);
       if (s.isFile()) {
-        // Case insensitive fallback for cover (since we rename it anyway)
+        // More lenient matching for cover
+        const getBaseName = (p: string) => p.split("/").pop()?.split(".")[0]?.toLowerCase();
+        const assetBase = getBaseName(assetFile);
+        const coverBase = getBaseName(coverAssetPath);
+
         const isCover = coverAssetPath === `assets/${assetFile}` ||
-          (coverAssetPath.toLowerCase() === `assets/${assetFile.toLowerCase()}`);
+          (coverAssetPath.toLowerCase() === `assets/${assetFile.toLowerCase()}`) ||
+          (coverBase && assetBase && assetBase.includes(coverBase));
 
         const isUsed = usedAssetNames.has(assetFile);
 
@@ -187,6 +206,7 @@ export async function publish(options: any) {
       manifest,
       branding: config.branding,
       progression: config.progression,
+      achievements: config.achievements,
       runner: config.runner,
     }),
   );

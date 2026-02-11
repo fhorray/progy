@@ -12,7 +12,7 @@ import {
 } from 'lucide-react';
 import { Button } from '../ui/button';
 import { Input } from '../ui/input';
-import { updateTabContent, type EditorTab } from '../../stores/editor-store';
+import { updateTabContent, saveFile, type EditorTab } from '../../stores/editor-store';
 
 interface CourseSettingsProps {
   tab: EditorTab;
@@ -45,6 +45,7 @@ export function CourseSettings({ tab }: CourseSettingsProps) {
 
   const handleSave = () => {
     updateTabContent(tab.path, JSON.stringify(config, null, 2));
+    saveFile(tab.path);
     setIsDirty(false);
   };
 

@@ -33,6 +33,7 @@ import { Button } from '../ui/button';
 import { Input } from '../ui/input';
 import {
   updateTabContent,
+  saveFile,
   type EditorTab,
   loadFileTree,
 } from '../../stores/editor-store';
@@ -288,6 +289,7 @@ export function ModuleSettings({ tab }: ModuleSettingsProps) {
     updateField('completion_message', completionMessage);
 
     updateTabContent(tab.path, newContent);
+    saveFile(tab.path);
     setIsDirty(false);
   };
 

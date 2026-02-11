@@ -24,7 +24,19 @@ import { MEDIA_URL } from '@consts';
 interface Lesson {
   id: string;
   name: string;
+  title?: string;
+  tags?: string[];
+  difficulty?: 'easy' | 'medium' | 'hard';
+  xp?: number;
   path: string;
+}
+
+interface Achievement {
+  id: string;
+  icon: string;
+  name: string;
+  description: string;
+  trigger: string;
 }
 
 interface Module {
@@ -40,6 +52,7 @@ interface CourseData {
   latest: string;
   description: string;
   manifest: string | null;
+  engineVersion?: string | null;
   downloadUrl: string;
 }
 
@@ -55,6 +68,7 @@ export default function CourseDetailPage() {
 
   const fullManifest = course?.manifest ? JSON.parse(course.manifest) : null;
   const branding = fullManifest?.branding;
+  const achievements: Achievement[] = fullManifest?.achievements || [];
   const parsedManifest: Module[] = fullManifest?.modules || [];
 
   const getAssetUrl = (path: string) => {
@@ -196,6 +210,14 @@ export default function CourseDetailPage() {
                   >
                     COURSE v{course.latest}
                   </Badge>
+                  {course.engineVersion && (
+                    <Badge
+                      variant="outline"
+                      className="border-blue-500/20 text-blue-400 py-0.5 px-3 bg-blue-500/5 text-[9px] font-black tracking-widest uppercase"
+                    >
+                      ENGINE v{course.engineVersion}
+                    </Badge>
+                  )}
                   {course.name.startsWith('@progy/') && (
                     <Badge className="bg-primary/20 text-primary border-primary/20 text-[9px] font-black tracking-widest uppercase"
                       style={branding?.primaryColor ? { backgroundColor: `${branding.primaryColor}33`, color: branding.primaryColor, borderColor: `${branding.primaryColor}33` } : {}}>
@@ -280,9 +302,27 @@ export default function CourseDetailPage() {
                             >
                               <div className="flex items-center gap-4">
                                 <div className="w-1.5 h-1.5 rounded-full bg-white/10 group-hover:bg-primary transition-colors"></div>
-                                <span className="text-xs font-bold text-muted-foreground group-hover:text-foreground transition-colors">
-                                  {ex.name}
-                                </span>
+                                <div className="flex flex-col">
+                                  <span className="text-xs font-bold text-muted-foreground group-hover:text-foreground transition-colors">
+                                    {ex.title || ex.name}
+                                  </span>
+                                  {ex.tags && ex.tags.length > 0 && (
+                                    <div className="flex gap-1 mt-1">
+                                      {ex.tags.map(tag => (
+                                        <span key={tag} className="text-[8px] font-medium uppercase tracking-tighter opacity-40">
+                                          #{tag}
+                                        </span>
+                                      ))}
+                                    </div>
+                                  )}
+                                </div>
+                              </div>
+                              <div className="flex items-center gap-3">
+                                {ex.xp && (
+                                  <span className="text-[10px] font-bold text-primary/40 group-hover:text-primary/60 transition-colors">
+                                    +{ex.xp} XP
+                                  </span>
+                                )}
                               </div>
                             </div>
                           ))}
@@ -299,6 +339,57 @@ export default function CourseDetailPage() {
                   </div>
                 )}
               </section>
+
+              {/* Achievements */}
+              {achievements.length > 0 && (
+                <section className="reveal" style={{ transitionDelay: '0.2s' }}>
+                  <div className="flex items-center gap-3 mb-8">
+                    <ShieldCheck className="w-5 h-5 text-primary" />
+                    <h2 className="text-sm font-black uppercase tracking-[0.3em]">
+                      Course Achievements
+                    </h2>
+                  </div>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {achievements.map((ach) => {
+                      const Icon = {
+                        Zap: Zap,
+                        Rocket: Rocket,
+                        Shield: ShieldCheck,
+                        Footprints: (props: any) => (
+                          <svg
+                            {...props}
+                            xmlns="http://www.w3.org/2000/svg"
+                            width="24"
+                            height="24"
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="currentColor"
+                            strokeWidth="2"
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                          >
+                            <path d="M4 16v-2.38C4 11.5 5.81 10.5 8 10.5s4 1 4 3.12V16" />
+                            <path d="M18 20v-2.38c0-2.12-1.81-3.12-4-3.12s-4 1-4 3.12V20" />
+                            <circle cx="12" cy="7" r="3" />
+                          </svg>
+                        ),
+                      }[ach.icon] || Rocket;
+
+                      return (
+                        <div key={ach.id} className="p-4 bg-white/5 border border-white/5 rounded-2xl flex items-center gap-4 group hover:border-primary/20 transition-colors">
+                          <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center text-primary group-hover:scale-110 transition-transform">
+                            <Icon size={20} />
+                          </div>
+                          <div>
+                            <h4 className="text-xs font-black uppercase tracking-widest">{ach.name}</h4>
+                            <p className="text-[10px] text-muted-foreground mt-1 leading-relaxed">{ach.description}</p>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </section>
+              )}
             </div>
 
             {/* Right: Sidebar / Sticky Actions */}
