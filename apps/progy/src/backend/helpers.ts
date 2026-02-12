@@ -1,6 +1,7 @@
 import { readdir, readFile, writeFile, mkdir, stat } from "node:fs/promises";
 import { join } from "node:path";
 import { spawn } from "node:child_process";
+import { logger } from "../core/logger";
 import type { Progress, CourseConfig, SRPOutput, ProgressStats, SetupConfig } from "./types";
 import {
   PROG_CWD,
@@ -55,7 +56,7 @@ export async function getCourseConfig(): Promise<CourseConfig | null> {
     }
     return null;
   } catch (e) {
-    console.warn(`[WARN] Failed to read course.json: ${e}`);
+    logger.warn(`Failed to read course.json: ${e}`);
     return null;
   }
 }
@@ -73,11 +74,11 @@ export async function getProgress(): Promise<Progress> {
       if (await exists(PROGRESS_PATH)) {
         const text = await readFile(PROGRESS_PATH, "utf-8");
         const localProgress = JSON.parse(text);
-        console.log(`[OFFLINE] Loaded local progress. XP: ${localProgress?.stats.totalXp}`);
+        logger.offline(`Loaded local progress. XP: ${localProgress?.stats.totalXp}`);
         return localProgress;
       }
     } catch (e) {
-      console.warn(`[WARN] Failed to read ${PROGRESS_PATH}: ${e}`);
+      logger.warn(`Failed to read ${PROGRESS_PATH}: ${e}`);
     }
     return JSON.parse(JSON.stringify(DEFAULT_PROGRESS));
   }
@@ -87,18 +88,18 @@ export async function getProgress(): Promise<Progress> {
   const token = await loadToken();
 
   if (token && currentConfig?.id) {
-    console.log(`[ONLINE] Fetching progress for ${currentConfig.id}...`);
+    logger.online(`Fetching progress for ${currentConfig.id}...`);
     try {
       const cloudProgress = await fetchProgressFromCloud(currentConfig.id, token);
       if (cloudProgress) {
-        console.log(`[ONLINE] Loaded cloud progress. XP: ${cloudProgress.stats.totalXp}`);
+        logger.online(`Loaded cloud progress. XP: ${cloudProgress.stats.totalXp}`);
         return cloudProgress;
       } else {
-        console.log(`[ONLINE] No existing cloud progress found. Returning default.`);
+        logger.online(`No existing cloud progress found. Returning default.`);
         return JSON.parse(JSON.stringify(DEFAULT_PROGRESS));
       }
     } catch (e) {
-      console.error(`[CRITICAL] Failed to fetch cloud progress: ${e}`);
+      logger.critical(`Failed to fetch cloud progress: ${e}`);
       throw e;
     }
   }
@@ -112,7 +113,7 @@ export async function saveProgress(progress: Progress) {
       await mkdir(PROG_DIR, { recursive: true });
       await writeFile(PROGRESS_PATH, JSON.stringify(progress, null, 2));
     } catch (e) {
-      console.error(`[ERROR] Failed to save local progress: ${e}`);
+      logger.error(`Failed to save local progress: ${e}`);
     }
     return;
   }
@@ -136,12 +137,12 @@ async function syncProgressWithCloud(courseId: string, progress: Progress, token
       body: JSON.stringify({ courseId, data: progress })
     });
     if (res.ok) {
-      console.log(`[ONLINE] Successfully saved to cloud.`);
+      logger.online(`Successfully saved to cloud.`);
     } else {
-      console.warn(`[ONLINE] Cloud save failed: ${res.status}`);
+      logger.warn(`[ONLINE] Cloud save failed: ${res.status}`);
     }
   } catch (e) {
-    console.error(`[ONLINE] Connection error during save: ${e}`);
+    logger.error(`[ONLINE] Connection error during save: ${e}`);
   }
 }
 
@@ -277,7 +278,7 @@ export async function scanAndGenerateManifest(config: CourseConfig) {
               exercisesFromToml[name] = typeof meta === 'string' ? { title: meta } : meta;
             }
           }
-        } catch (e) { console.warn(`[WARN] Failed to parse info.toml: ${e}`); }
+        } catch (e) { logger.warn(`Failed to parse info.toml: ${e}`); }
       }
 
       const getSortWeight = (s: string) => {
@@ -350,7 +351,7 @@ export async function scanAndGenerateManifest(config: CourseConfig) {
       await saveProgress(progress);
     }
   } catch (e) {
-    console.warn(`[WARN] Failed to update total exercises in progress: ${e}`);
+    logger.warn(`Failed to update total exercises in progress: ${e}`);
   }
 
   await mkdir(PROG_DIR, { recursive: true });
