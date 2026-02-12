@@ -16,6 +16,21 @@ const billing = new Hono<{
   .use(rateLimiterMiddleware)
 
   // Routes
+  .get(
+    '/usage',
+    async (c) => {
+      const user = c.get('user');
+      if (!user) return c.json({ error: 'Unauthorized' }, 401);
+
+      const aiService = new AIService(c.env);
+      try {
+        const usage = await aiService.getUsage(user);
+        return c.json(usage);
+      } catch (e: any) {
+        return c.json({ error: e.message }, 500);
+      }
+    }
+  )
   .post(
     '/generate',
     zValidator('json', z.object({
@@ -34,7 +49,8 @@ const billing = new Hono<{
         const result = await aiService.generate(user, prompt, difficulty, config);
         return c.json(result);
       } catch (e: any) {
-        return c.json({ error: e.message }, e.message.includes('subscription') ? 403 : 500);
+        const isAuthError = e.message.includes('subscription') || e.message.includes('Daily AI limit');
+        return c.json({ error: e.message }, isAuthError ? 403 : 500);
       }
     }
   )
@@ -55,7 +71,8 @@ const billing = new Hono<{
         const result = await aiService.hint(user, context, config);
         return result.toTextStreamResponse();
       } catch (e: any) {
-        return c.json({ error: e.message }, 500);
+        const isAuthError = e.message.includes('subscription') || e.message.includes('Daily AI limit');
+        return c.json({ error: e.message }, isAuthError ? 403 : 500);
       }
     }
   )
@@ -76,7 +93,8 @@ const billing = new Hono<{
         const result = await aiService.explain(user, context, config);
         return result.toTextStreamResponse();
       } catch (e: any) {
-        return c.json({ error: e.message }, 500);
+        const isAuthError = e.message.includes('subscription') || e.message.includes('Daily AI limit');
+        return c.json({ error: e.message }, isAuthError ? 403 : 500);
       }
     }
   )
@@ -98,7 +116,8 @@ const billing = new Hono<{
         const result = await aiService.chat(user, messages, context, config);
         return result.toTextStreamResponse();
       } catch (e: any) {
-        return c.json({ error: e.message }, 500);
+        const isAuthError = e.message.includes('subscription') || e.message.includes('Daily AI limit');
+        return c.json({ error: e.message }, isAuthError ? 403 : 500);
       }
     }
   )

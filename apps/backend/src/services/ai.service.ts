@@ -34,14 +34,55 @@ export class AIService {
       finalConfig.apiKey = clientConfig.apiKey;
       finalConfig.provider = clientConfig.provider || 'openai';
     } else {
-      throw new Error('AI features require a Lifetime or Pro subscription');
+      // Free Tier
+      finalConfig.apiKey = this.env.OPENAI_API_KEY;
+      finalConfig.provider = 'openai';
     }
 
     if (!finalConfig.apiKey) throw new Error('Missing AI configuration');
     return finalConfig;
   }
 
+  async checkAndIncrementUsage(user: any) {
+    const subscription = await this.db.select().from(schema.subscription)
+      .where(and(
+        eq(schema.subscription.referenceId, user.id),
+        eq(schema.subscription.status, 'active')
+      )).all();
+
+    const isPro = subscription.some(s => s.plan === 'pro') || (user as any).subscription === 'pro';
+    const isLifetime = subscription.some(s => s.plan === 'lifetime') || (user as any).subscription === 'lifetime';
+
+    if (isPro || isLifetime) return;
+
+    const date = new Date().toISOString().split('T')[0];
+    const key = `ai_usage:${user.id}:${date}`;
+    const usedStr = await this.env.KV.get(key);
+    const used = usedStr ? parseInt(usedStr) : 0;
+
+    if (used >= 3) {
+      throw new Error('Daily AI limit reached (3/3). Upgrade to Pro for unlimited access.');
+    }
+
+    // Expire in 24 hours (86400 seconds)
+    await this.env.KV.put(key, (used + 1).toString(), { expirationTtl: 86400 });
+  }
+
+  async getUsage(user: any) {
+    const date = new Date().toISOString().split('T')[0];
+    const key = `ai_usage:${user.id}:${date}`;
+    const usedStr = await this.env.KV.get(key);
+    const used = usedStr ? parseInt(usedStr) : 0;
+
+    return {
+      used,
+      limit: 3,
+      remaining: Math.max(0, 3 - used)
+    };
+  }
+
   async generate(user: any, prompt: string, difficulty: string, clientConfig: AIConfig) {
+    await this.checkAndIncrementUsage(user);
     const config = await this.getFinalConfig(user, clientConfig);
     const model = getModel(config);
     const system = constructGeneratePrompt(prompt, difficulty);
@@ -56,6 +97,7 @@ export class AIService {
   }
 
   async hint(user: any, context: AIContext, clientConfig: AIConfig) {
+    await this.checkAndIncrementUsage(user);
     const config = await this.getFinalConfig(user, clientConfig);
     const model = getModel(config);
     const system = constructSystemPrompt(context);
@@ -68,6 +110,7 @@ export class AIService {
   }
 
   async explain(user: any, context: AIContext, clientConfig: AIConfig) {
+    await this.checkAndIncrementUsage(user);
     const config = await this.getFinalConfig(user, clientConfig);
     const model = getModel(config);
     const system = constructExplanationPrompt(context);
@@ -80,6 +123,7 @@ export class AIService {
   }
 
   async chat(user: any, messages: any[], context: AIContext, clientConfig: AIConfig) {
+    await this.checkAndIncrementUsage(user);
     const config = await this.getFinalConfig(user, clientConfig);
     const model = getModel(config);
     const system = constructSystemPrompt(context);

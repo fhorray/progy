@@ -91,15 +91,41 @@ export const $showFriendly = atom<boolean>(true);
 // --- Computed Proxies (to maintain component compatibility) ---
 import { callAi } from '../lib/ai-client';
 import { $activeContentTab, setActiveContentTab } from './ui-store';
-import { $user, $isOffline, $localSettings } from './user-store';
+import { $user, $isOffline, $localSettings, $remoteApiUrl } from './user-store';
 import { persistentAtom } from '@nanostores/persistent';
+
+export const $aiUsage = atom<{ used: number; limit: number; remaining: number } | null>(null);
+
+export const fetchAiUsage = async () => {
+  const remoteUrl = $remoteApiUrl.get();
+  if (!remoteUrl) return;
+
+  try {
+    const tokenRes = await fetch('/auth/token');
+    const { token } = await tokenRes.json();
+    if (!token) return;
+
+    const res = await fetch(`${remoteUrl}/ai/usage`, {
+      headers: { Authorization: `Bearer ${token}` }
+    });
+
+    if (res.ok) {
+      const data = await res.json();
+      $aiUsage.set(data);
+    }
+  } catch (e) {
+    console.error('Failed to fetch AI usage', e);
+  }
+};
 
 /**
  * Computed property that determines if AI features are locked.
  * 
  * @returns {boolean} True if AI features are locked, false otherwise.
  */
-export const $isAiLocked = computed([$user, $isOffline, $localSettings], (user, isOffline, settings) => {
+export const $isAiLocked = computed([$user, $isOffline, $localSettings, $aiUsage], (user, isOffline, settings, usage) => {
+  if (isOffline) return true;
+
   // If Pro, never locked (includes AI access)
   if (user?.subscription === null || user?.subscription === '') return false;
   if (user?.subscription === 'pro') return false;
@@ -118,6 +144,14 @@ export const $isAiLocked = computed([$user, $isOffline, $localSettings], (user, 
   // If user has Lifetime access, they MUST provide a key to unlock AI
   // Logic: Lifetime + Key = Unlocked
   if (hasLifetime && hasKey) return false;
+
+  // Free Tier with Daily Limit
+  if (!hasLifetime) {
+    // If usage limit reached, lock it
+    if (usage && usage.used >= usage.limit) return true;
+    // Otherwise unlocked
+    return false;
+  }
 
   // Otherwise, if Free, Offline, or Lifetime-without-key, it's locked
   return true;
@@ -180,11 +214,18 @@ export const getAiHint = async () => {
       };
       $aiHistory.set([...$aiHistory.get(), newInteraction]);
 
+      // Update Usage
+      fetchAiUsage().catch(console.error);
+
       // Background Sync to GitHub
       syncAiToGithub(selected, 'hint', finalHint).catch(console.error);
     }
   } catch (err: any) {
     $aiResponse.set(`Error: ${err.message || 'Failed to get AI hint.'}`);
+    // If error is limit reached, fetch usage to lock UI
+    if (err.message?.includes('limit')) {
+      fetchAiUsage().catch(console.error);
+    }
   } finally {
     $isAiLoading.set(false);
   }
@@ -253,11 +294,18 @@ export const explainExercise = async () => {
     };
     $aiHistory.set([...$aiHistory.get(), newInteraction]);
 
+    // Update Usage
+    fetchAiUsage().catch(console.error);
+
     // Background Sync to GitHub
     syncAiToGithub(selected, 'explanation', final).catch(console.error);
 
   } catch (err: any) {
     $aiResponse.set(`Error: ${err.message || 'Failed to get explanation.'}`);
+    // If error is limit reached, fetch usage to lock UI
+    if (err.message?.includes('limit')) {
+      fetchAiUsage().catch(console.error);
+    }
   } finally {
     $isAiLoading.set(false);
   }

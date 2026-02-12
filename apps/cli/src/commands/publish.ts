@@ -143,6 +143,36 @@ export async function publish(options: any) {
     process.exit(1);
   }
 
+  // Check if first publish
+  try {
+    const packagesRes = await fetch(`${BACKEND_URL}/registry/my-packages`, {
+      headers: { Authorization: `Bearer ${token}` }
+    });
+    if (packagesRes.ok) {
+      const { packages } = await packagesRes.json();
+      if (Array.isArray(packages) && packages.length === 0) {
+        const { createInterface } = await import("node:readline/promises");
+        const rl = createInterface({ input: process.stdin, output: process.stdout });
+
+        console.log("\n\x1b[33m⚠️  IMPORTANT WARNING:\x1b[0m");
+        console.log(`You are about to publish your first package to the Progy Registry.`);
+        console.log(`Once published, your username \x1b[1m@${username}\x1b[0m will be \x1b[31mLOCKED\x1b[0m.`);
+        console.log(`You will NOT be able to change your username afterwards.\n`);
+
+        const answer = await rl.question("Do you want to continue? (y/N) ");
+        rl.close();
+
+        if (answer.toLowerCase() !== 'y' && answer.toLowerCase() !== 'yes') {
+          logger.error("Publish cancelled by user.");
+          await rm(tempPackDir, { recursive: true, force: true });
+          process.exit(0);
+        }
+      }
+    }
+  } catch (e) {
+    // Ignore network errors here, fail open or warn
+  }
+
   const packageName = config.id.startsWith(`@${username}/`) ? config.id : `@${username}/${config.id}`;
   logger.info("Scanning for used assets...", "ASSETS");
   const usedAssetNames = await findUsedAssets(tempPackDir);

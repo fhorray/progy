@@ -23,30 +23,26 @@ export class UserService {
       throw new Error('Username is already taken');
     }
 
-    // 2. Update user
+    // 2. Check if user has published packages
+    const existingPackage = await this.db
+      .select()
+      .from(schema.registryPackages)
+      .where(eq(schema.registryPackages.userId, userId))
+      .limit(1)
+      .get();
+
+    if (existingPackage) {
+      throw new Error('Username cannot be changed after publishing packages');
+    }
+
+    // 3. Update user
     await this.db.update(schema.users)
       .set({ username, updatedAt: new Date() })
       .where(eq(schema.users.id, userId));
 
-    // 3. Migrate packages
-    const packages = await this.db
-      .select()
-      .from(schema.registryPackages)
-      .where(eq(schema.registryPackages.userId, userId))
-      .all();
-
-    for (const pkg of packages) {
-      const newName = `@${username}/${pkg.slug}`;
-      await this.db
-        .update(schema.registryPackages)
-        .set({ name: newName, updatedAt: new Date() })
-        .where(eq(schema.registryPackages.id, pkg.id));
-    }
-
     return {
       success: true,
       username,
-      packagesMigrated: packages.length
     };
   }
 }

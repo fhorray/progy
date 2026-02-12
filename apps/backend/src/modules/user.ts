@@ -30,6 +30,9 @@ const user = new Hono<{
         if (e.message === 'Username is already taken') {
           return c.json({ error: e.message }, 409);
         }
+        if (e.message === 'Username cannot be changed after publishing packages') {
+          return c.json({ error: e.message }, 403);
+        }
         return c.json({ error: 'Failed to update username' }, 500);
       }
     }
