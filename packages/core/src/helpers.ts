@@ -382,10 +382,16 @@ export async function scanAndGenerateManifest(config: CourseConfig) {
         } catch { }
       }
 
+      const id = `${mod}/${entry.name}`;
+      const isPassed = !!(progress.exercises[id]?.status === 'pass' || progress.quizzes[id]?.passed);
+
       let isLocked = moduleLocked;
       let lockReason = moduleLockReason;
 
-      if (!isLocked && !bypassMode) {
+      if (isPassed) {
+        isLocked = false;
+        lockReason = "";
+      } else if (!isLocked && !bypassMode) {
         const itemPrereqs = exercisesFromToml[exerciseKey]?.prerequisites;
         if (Array.isArray(itemPrereqs)) {
           for (const req of itemPrereqs) {
@@ -404,7 +410,6 @@ export async function scanAndGenerateManifest(config: CourseConfig) {
         }
       }
 
-      const id = `${mod}/${entry.name}`;
       const exMeta = exercisesFromToml[exerciseKey];
 
       manifest[mod]?.push({
@@ -437,8 +442,7 @@ export async function scanAndGenerateManifest(config: CourseConfig) {
         xp: exMeta?.xp
       });
 
-      const isPassed = !!(progress.exercises[id]?.status === 'pass' || progress.quizzes[id]?.passed);
-      previousItemPassed = isPassed && !isLocked;
+      previousItemPassed = isPassed;
     };
 
     // 1. Ordered items from info.toml
@@ -547,8 +551,32 @@ export function parseRunnerOutput(rawOutput: string, exitCode: number): { succes
     if (match && match[1]) {
       jsonStr = match[1].trim();
     } else {
-      const matches = rawOutput.match(/\{[\s\S]*\}/g);
-      if (matches && matches.length > 0) jsonStr = matches[matches.length - 1]?.trim() ?? null;
+      let searchEnd = rawOutput.lastIndexOf('}');
+      while (searchEnd !== -1 && !jsonStr) {
+        let depth = 0;
+        let foundStart = -1;
+        for (let i = searchEnd; i >= 0; i--) {
+          if (rawOutput[i] === '}') depth++;
+          else if (rawOutput[i] === '{') depth--;
+
+          if (depth === 0) {
+            foundStart = i;
+            break;
+          }
+        }
+
+        if (foundStart !== -1) {
+          const candidate = rawOutput.substring(foundStart, searchEnd + 1);
+          try {
+            JSON.parse(candidate);
+            jsonStr = candidate;
+          } catch {
+            searchEnd = rawOutput.lastIndexOf('}', searchEnd - 1);
+          }
+        } else {
+          searchEnd = rawOutput.lastIndexOf('}', searchEnd - 1);
+        }
+      }
     }
 
     if (jsonStr) {

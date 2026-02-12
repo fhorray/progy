@@ -20,15 +20,15 @@ export const $expandedModule = persistentAtom<string | undefined>('progy:expande
 // Reactive chain for exercise details (Description)
 export const $descriptionQuery = createFetcherStore<{ code: string; markdown: string }>([
   '/exercises/code?path=',
-  computed($selectedExercise, (ex) => ex?.path || null),
+  computed($selectedExercise, (ex) => ex?.path ? encodeURIComponent(ex.path) : null),
   '&markdownPath=',
-  computed($selectedExercise, (ex) => ex?.markdownPath || null),
+  computed($selectedExercise, (ex) => ex?.markdownPath ? encodeURIComponent(ex.markdownPath) : ''),
 ]);
 
 // Reactive chain for quizzes
 export const $quizQuery = createFetcherStore<any>([
   '/exercises/quiz?path=',
-  computed($selectedExercise, (ex) => (ex?.hasQuiz ? ex.path : null)),
+  computed($selectedExercise, (ex) => (ex?.hasQuiz && ex.path ? encodeURIComponent(ex.path) : null)),
 ]);
 
 
@@ -296,8 +296,10 @@ async function syncAiToGithub(exercise: Exercise, type: 'hint' | 'explanation', 
     if (!syncRes.ok) throw new Error('Failed to push note');
 
     console.log('[AI] Synced to GitHub:', filename);
-  } catch (err) {
+  } catch (err: any) {
     console.error('[AI] GitHub Sync failed:', err);
+    setError(`Failed to sync AI notes to GitHub: ${err.message || 'Unknown error'}`);
+    setTimeout(() => setError(null), 5000);
   }
 }
 
