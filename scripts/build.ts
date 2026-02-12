@@ -71,6 +71,6 @@ async function buildApp(appName: string, entryPoints: string[], hasFrontend: boo
 await buildApp("cli", ["src/cli.ts", "src/backend/server.ts"]);
 
 // Build Editor
-await buildApp("editor", ["src/cli.ts", "src/server.ts"]);
+await buildApp("studio", ["src/cli.ts", "src/server.ts"]);
 
 console.log("\n[BUILD] All apps built successfully!");

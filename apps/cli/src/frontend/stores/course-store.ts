@@ -153,31 +153,35 @@ export const getAiHint = async () => {
   }
 
   $isAiLoading.set(true);
-  $aiResponse.set(null);
+  $aiResponse.set(''); // Start with empty string for streaming
   try {
-    const data = await callAi({
+    await callAi({
       endpoint: 'hint',
       context: {
         exerciseName: selected.friendlyName || selected.name,
         code: desc.data?.code || '',
         error: $friendlyOutput.get() || $output.get()
+      },
+      onChunk: (chunk) => {
+        const current = $aiResponse.get() || '';
+        $aiResponse.set(current + chunk);
       }
     });
 
-    if (data.hint) {
-      $aiResponse.set(data.hint);
+    const finalHint = $aiResponse.get() || '';
+    if (finalHint) {
       // Add to history
       const newInteraction: AiInteraction = {
         id: crypto.randomUUID(),
         type: 'hint',
-        content: data.hint,
+        content: finalHint,
         timestamp: Date.now(),
         exerciseId: selected.id
       };
       $aiHistory.set([...$aiHistory.get(), newInteraction]);
 
       // Background Sync to GitHub
-      syncAiToGithub(selected, 'hint', data.hint).catch(console.error);
+      syncAiToGithub(selected, 'hint', finalHint).catch(console.error);
     }
   } catch (err: any) {
     $aiResponse.set(`Error: ${err.message || 'Failed to get AI hint.'}`);
@@ -202,6 +206,15 @@ export const explainExercise = async () => {
     return;
   }
 
+  // Guard: Limit to 2 explanations per exercise
+  const history = $aiHistory.get() || [];
+  const explanationCount = history.filter(h => h.exerciseId === selected.id && h.type === 'explain').length;
+
+  if (explanationCount >= 2) {
+    $aiResponse.set('Error: Maximum of 2 explanations reached for this exercise.');
+    return;
+  }
+
   $isAiLoading.set(true);
   $aiResponse.set(''); // Start with empty string for streaming
   try {
@@ -214,14 +227,7 @@ export const explainExercise = async () => {
       },
       onChunk: (chunk) => {
         const current = $aiResponse.get() || '';
-        let newContent = current + chunk;
-
-        // Fallback for JSON wrapper (older backend versions)
-        if (newContent.startsWith('{"explanation":"')) {
-          newContent = newContent.replace('{"explanation":"', '');
-          // Basic unescape for streaming (handle quotes and newlines)
-          newContent = newContent.replace(/\\n/g, '\n').replace(/\\"/g, '"');
-        }
+        const newContent = current + chunk;
 
         $aiResponse.set(newContent);
 
@@ -232,24 +238,8 @@ export const explainExercise = async () => {
       }
     });
 
-    // Final comprehensive cleanup
-    let final = $aiResponse.get() || '';
-    if (final.startsWith('{"explanation":"')) {
-      final = final.replace('{"explanation":"', '');
-    }
-    if (final.endsWith('"}')) {
-      final = final.substring(0, final.length - 2);
-    }
-
-    // Unescape common JSON characters
-    final = final
-      .replace(/\\n/g, '\n')
-      .replace(/\\"/g, '"')
-      .replace(/\\\\/g, '\\')
-      .replace(/\\t/g, '\t')
-      .replace(/\\r/g, '\r');
-
-    final = final.trim();
+    // Final clean up (trim whitespace)
+    const final = ($aiResponse.get() || '').trim();
     $aiResponse.set(final);
     setActiveContentTab('ai');
 

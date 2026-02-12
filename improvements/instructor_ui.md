@@ -27,7 +27,7 @@ graph TD
     LocalServer -->|Serves| SPA[React Frontend]
 
     subgraph Frontend
-        SPA -->|Route: /editor| EditorUI
+        SPA -->|Route: /studio| EditorUI
         EditorUI -->|Store: Nanostores| UIStore
         EditorUI -->|Component| FileTree
         EditorUI -->|Component| TiptapEditor
@@ -269,7 +269,7 @@ We will use Nanostores to manage the editor state, as requested. This is lightwe
 ### 4.1. `editorStore.ts`
 
 ```typescript
-// apps/web/src/stores/editorStore.ts
+// apps/web/src/stores/studioStore.ts
 
 import { atom, map, computed } from 'nanostores';
 
@@ -344,11 +344,11 @@ export async function saveActiveFile() {
 Using `react-resizable-panels` for a flexible IDE-like layout.
 
 ```tsx
-// apps/web/src/components/editor/EditorLayout.tsx
+// apps/web/src/components/studio/studioLayout.tsx
 
 import { Panel, PanelGroup, PanelResizeHandle } from "react-resizable-panels";
 import { useStore } from '@nanostores/react';
-import { $activeTabPath, $openTabs } from '../../stores/editorStore';
+import { $activeTabPath, $openTabs } from '../../stores/studioStore';
 import { FileTree } from "./FileTree";
 import { MarkdownEditor } from "./MarkdownEditor";
 import { ConfigForm } from "./ConfigForm";
@@ -402,11 +402,11 @@ export function EditorLayout() {
 A recursive component that visualizes the file structure.
 
 ```tsx
-// apps/web/src/components/editor/FileTree.tsx
+// apps/web/src/components/studio/FileTree.tsx
 
 import { useState, useEffect } from 'react';
 import { Folder, File, ChevronRight, ChevronDown } from 'lucide-react';
-import { openFile } from '../../stores/editorStore';
+import { openFile } from '../../stores/studioStore';
 
 type FileNode = { name: string; path: string; type: 'file' | 'dir' };
 
@@ -470,12 +470,12 @@ export function FileTree() {
 Integrating Tiptap for a rich Markdown editing experience.
 
 ```tsx
-// apps/web/src/components/editor/MarkdownEditor.tsx
+// apps/web/src/components/studio/MarkdownEditor.tsx
 
 import { useEditor, EditorContent, BubbleMenu } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
 import { Markdown } from 'tiptap-markdown';
-import { updateTabContent } from '../../stores/editorStore';
+import { updateTabContent } from '../../stores/studioStore';
 import { AIAssistant } from './AIAssistant';
 
 export function MarkdownEditor({ initialContent, path }: { initialContent: string, path: string }) {
@@ -533,7 +533,7 @@ export function MarkdownEditor({ initialContent, path }: { initialContent: strin
 Using **TanStack Form** for robust form management, validation, and reactivity.
 
 ```tsx
-// apps/web/src/components/editor/ConfigForm.tsx
+// apps/web/src/components/studio/ConfigForm.tsx
 
 import { useForm } from '@tanstack/react-form';
 import type { FieldApi } from '@tanstack/react-form';
@@ -695,7 +695,7 @@ export function ConfigForm() {
 A floating or embedded panel to interact with the LLM backend.
 
 ```tsx
-// apps/web/src/components/editor/AIAssistant.tsx
+// apps/web/src/components/studio/AIAssistant.tsx
 
 import { useState } from 'react';
 import { Sparkles } from 'lucide-react';
@@ -791,7 +791,7 @@ The UI relies on standard Tailwind CSS classes. Ensure `tailwind.config.js` in `
 module.exports = {
   content: [
     "./src/**/*.{js,ts,jsx,tsx}",
-    "./src/components/editor/**/*.{js,ts,jsx,tsx}" // Ensure editor components are scanned
+    "./src/components/studio/**/*.{js,ts,jsx,tsx}" // Ensure editor components are scanned
   ],
   theme: {
     extend: {

@@ -53,7 +53,7 @@ const registry = new Hono<{
 
     if (!assetPath) return c.json({ error: 'Asset path missing' }, 400);
 
-    const key = `packages/@${scope}/${slug}/${version}/${assetPath}`;
+    const key = `packages/${scope}/${slug}/${version}/${assetPath}`;
     const object = await c.env.R2.get(key);
     if (!object) return c.json({ error: 'Asset not found' }, 404);
 

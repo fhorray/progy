@@ -29,66 +29,66 @@ export function MapView() {
 
   // Initialize refs to avoid spam on load
   React.useEffect(() => {
-      if (progress && !initializedRef.current && Object.keys(exerciseGroups).length > 0) {
-          prevAchievementsRef.current = progress.achievements || [];
+    if (progress && !initializedRef.current && Object.keys(exerciseGroups).length > 0) {
+      prevAchievementsRef.current = progress.achievements || [];
 
-          const completed: string[] = [];
-          Object.keys(exerciseGroups).forEach(modName => {
-             const exercises = exerciseGroups[modName] || [];
-             if (exercises.length > 0 && exercises.every(ex => results[ex.id] === 'pass')) {
-                 completed.push(modName);
-             }
-          });
-          prevCompletedModulesRef.current = completed;
+      const completed: string[] = [];
+      Object.keys(exerciseGroups).forEach(modName => {
+        const exercises = exerciseGroups[modName] || [];
+        if (exercises.length > 0 && exercises.every(ex => results[ex.id] === 'pass')) {
+          completed.push(modName);
+        }
+      });
+      prevCompletedModulesRef.current = completed;
 
-          initializedRef.current = true;
-      }
+      initializedRef.current = true;
+    }
   }, [progress, exerciseGroups, results]);
 
   // Check for updates
   React.useEffect(() => {
-      if (!progress || !config || !initializedRef.current) return;
+    if (!progress || !config || !initializedRef.current) return;
 
-      // 1. Achievements
-      const currentAch = progress.achievements || [];
-      const newAchIds = currentAch.filter(id => !prevAchievementsRef.current.includes(id));
+    // 1. Achievements
+    const currentAch = progress.achievements || [];
+    const newAchIds = currentAch.filter(id => !prevAchievementsRef.current.includes(id));
 
-      if (newAchIds.length > 0) {
-          const achDef = config.achievements?.find((a: any) => a.id === newAchIds[0]);
-          if (achDef) {
-              setNotification({
-                  icon: achDef.icon,
-                  title: `Achievement Unlocked: ${achDef.name}`,
-                  message: achDef.description
-              });
-          }
-          prevAchievementsRef.current = currentAch;
+    if (newAchIds.length > 0) {
+      const achDef = config.achievements?.find((a: any) => a.id === newAchIds[0]);
+      if (achDef) {
+        setNotification({
+          icon: achDef.icon,
+          title: `Achievement Unlocked: ${achDef.name}`,
+          message: achDef.description
+        });
       }
+      prevAchievementsRef.current = currentAch;
+    }
 
-      // 2. Module Completion
-      const currentCompletedMods: string[] = [];
-      Object.keys(exerciseGroups).forEach(modName => {
-          const exercises = exerciseGroups[modName] || [];
-          if (exercises.length === 0) return;
-          const allPassed = exercises.every(ex => results[ex.id] === 'pass');
-          if (allPassed) currentCompletedMods.push(modName);
-      });
+    // 2. Module Completion
+    const currentCompletedMods: string[] = [];
+    Object.keys(exerciseGroups).forEach(modName => {
+      const exercises = exerciseGroups[modName] || [];
+      if (exercises.length === 0) return;
+      const allPassed = exercises.every(ex => results[ex.id] === 'pass');
+      if (allPassed) currentCompletedMods.push(modName);
+    });
 
-      const newCompletedMods = currentCompletedMods.filter(m => !prevCompletedModulesRef.current.includes(m));
-      if (newCompletedMods.length > 0) {
-          const modName = newCompletedMods[0]!;
-          const ex = exerciseGroups[modName]?.[0];
+    const newCompletedMods = currentCompletedMods.filter(m => !prevCompletedModulesRef.current.includes(m));
+    if (newCompletedMods.length > 0) {
+      const modName = newCompletedMods[0]!;
+      const ex = exerciseGroups[modName]?.[0];
 
-          if (ex?.completionMessage) {
-              const msg = ex.completionMessage.replace(/{{user.name}}/g, user?.name || 'Student');
-              setNotification({
-                  icon: ex.moduleIcon || 'CheckCircle',
-                  title: `Module Completed: ${ex.moduleTitle || modName}`,
-                  message: msg
-              });
-          }
-          prevCompletedModulesRef.current = currentCompletedMods;
+      if (ex?.completionMessage) {
+        const msg = ex.completionMessage.replace(/{{user.name}}/g, user?.name || 'Student');
+        setNotification({
+          icon: ex.moduleIcon || 'CheckCircle',
+          title: `Module Completed: ${ex.moduleTitle || modName}`,
+          message: msg
+        });
       }
+      prevCompletedModulesRef.current = currentCompletedMods;
+    }
   }, [progress, config, exerciseGroups, results, user]);
 
   return (
@@ -98,17 +98,17 @@ export function MapView() {
         results={results}
         selectedExerciseId={selectedExercise?.id}
         onSelectExercise={(ex) => {
-          $router.open(`/editor/${ex.id}`);
+          $router.open(`/studio/${ex.id}`);
         }}
         config={config}
       />
       {notification && (
         <AchievementModal
-            isOpen={!!notification}
-            onClose={() => setNotification(null)}
-            icon={notification.icon}
-            title={notification.title}
-            message={notification.message}
+          isOpen={!!notification}
+          onClose={() => setNotification(null)}
+          icon={notification.icon}
+          title={notification.title}
+          message={notification.message}
         />
       )}
     </div>

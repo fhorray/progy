@@ -75,7 +75,7 @@ export default function CourseDetailPage() {
     if (!path) return null;
     if (path.startsWith('http')) return path;
     // Path might be e.g. "assets/cover.jpg"
-    return `${MEDIA_URL}/packages/@${course?.scope}/${course?.slug}/${course?.latest}/${path}`;
+    return `${MEDIA_URL}/packages/${course?.scope}/${course?.slug}/${course?.latest}/${path}`;
   };
 
   const coverImageUrl = getAssetUrl(branding?.coverImage);

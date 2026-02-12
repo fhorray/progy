@@ -4,81 +4,12 @@ import { join, resolve } from "node:path";
 import { spawn } from "node:child_process";
 import { CONFIG_DIR, COURSE_CONFIG_NAME, BACKEND_URL as DEFAULT_BACKEND_URL } from "./paths.ts";
 import { exists } from "./utils.ts";
+import { CourseConfigSchema, ModuleInfoSchema, QuizSchema, type CourseConfig, } from "./types.ts";
 
 const getBackendUrl = () => process.env.PROGY_API_URL || DEFAULT_BACKEND_URL;
 
-export const CourseConfigSchema = z.object({
-  id: z.string(),
-  name: z.string(),
-  version: z.string().optional().default("1.0.0"), // Add versioning
-  runner: z.object({
-    type: z.enum(["process", "docker-file", "docker-compose"]).optional().default("process"),
-    command: z.string(),
-    args: z.array(z.string()),
-    cwd: z.string(),
-    dockerfile: z.string().optional(),
-    image_tag: z.string().optional(),
-    network_access: z.boolean().optional().default(false),
-    compose_file: z.string().optional(),
-    service_to_run: z.string().optional(),
-  }),
-  content: z.object({
-    root: z.string(),
-    exercises: z.string(),
-  }),
-  setup: z.object({
-    checks: z.array(z.object({
-      name: z.string(),
-      type: z.string(),
-      command: z.string(),
-    })),
-    guide: z.string(),
-  }),
-  branding: z.object({
-    coverImage: z.string().optional(),
-    primaryColor: z.string().optional(),
-    layout: z.string().optional().default("grid"),
-  }).optional(),
-  progression: z.object({
-    mode: z.string().optional().default("open"),
-  }).optional(),
-  achievements: z.array(z.object({
-    id: z.string(),
-    icon: z.string(),
-    name: z.string(),
-    description: z.string(),
-    trigger: z.string(),
-  })).optional(),
-});
 
-export const ModuleInfoSchema = z.object({
-  module: z.object({
-    title: z.string().optional(),
-    message: z.string().optional(),
-    icon: z.string().optional(),
-    completion_message: z.string().optional(),
-    prerequisites: z.array(z.string()).optional(),
-  }).optional(),
-  exercises: z.record(z.string(), z.union([
-    z.string(),
-    z.object({
-      title: z.string().optional(),
-      xp: z.number().optional(),
-      prerequisites: z.array(z.string()).optional(),
-      tags: z.array(z.string()).optional(),
-      difficulty: z.enum(["easy", "medium", "hard"]).optional(),
-    })
-  ])).optional(),
-});
 
-export const QuizSchema = z.array(z.object({
-  question: z.string(),
-  options: z.array(z.string()),
-  answer: z.number(),
-  explanation: z.string().optional(),
-}));
-
-export type LoaderCourseConfig = z.infer<typeof CourseConfigSchema>;
 
 export class CourseLoader {
   static async resolveSource(courseInput: string): Promise<{ url: string; branch?: string; path?: string; isRegistry?: boolean }> {
@@ -120,7 +51,7 @@ export class CourseLoader {
     }
   }
 
-  static async validateCourse(path: string): Promise<LoaderCourseConfig> {
+  static async validateCourse(path: string): Promise<CourseConfig> {
     const configPath = join(path, COURSE_CONFIG_NAME);
 
     if (!(await exists(configPath))) {
@@ -159,9 +90,9 @@ export class CourseLoader {
       throw new Error(`Invalid structure: Exercises directory must be named 'content' (got '${result.data.content.exercises}').`);
     }
 
-    const setupGuide = join(path, result.data.setup.guide);
-    if (!(await exists(setupGuide))) {
-      throw new Error(`Setup guide '${result.data.setup.guide}' not found.`);
+    const setupGuide = result.data.setup?.guide ? join(path, result.data.setup.guide) : undefined;
+    if (setupGuide && !(await exists(setupGuide))) {
+      throw new Error(`Setup guide '${result.data.setup?.guide}' not found.`);
     }
 
     // --- Strict Requirement: Runner & Docker ---

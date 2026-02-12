@@ -37,7 +37,7 @@ import { Label } from './ui/label';
 import { ScrollArea } from './ui/scroll-area';
 import { Switch } from './ui/switch';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from './ui/tabs';
-import { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { $activeContentTab, setActiveContentTab } from '@/stores/ui-store';
 import { $hasUnread } from '../stores/notification-store';
 
@@ -63,9 +63,13 @@ export function ContentTabs() {
   const progress = useStore($progress);
   const hasUnread = useStore($hasUnread);
 
+  const explanationCount = (Array.isArray(history) ? history : [])
+    .filter((h: any) => h.exerciseId === selectedExercise?.id && h.type === 'explain').length;
+  const isExplainDisabled = explanationCount >= 2;
+
   const handleQuizComplete = async (score: number) => {
     if (!selectedExercise) return;
-    const questions = quizData?.questions.length || 1;
+    const questions = Array.isArray(quizData) ? quizData.length : (quizData?.questions?.length || 1);
     const passed = score / questions >= 0.7;
 
     if (passed) {
@@ -121,6 +125,58 @@ export function ContentTabs() {
     );
   };
 
+  const hasDescription = !!selectedExercise?.markdownPath;
+  const hasOutput = !!selectedExercise?.entryPoint;
+  const hasQuiz = !!selectedExercise?.hasQuiz;
+
+  // Special case: Quiz-only exercise (only quiz.json, no README or Code)
+  const isQuizOnly = hasQuiz && !hasDescription && !hasOutput;
+
+  // Auto-switch tab if current one becomes unavailable
+  React.useEffect(() => {
+    if (!selectedExercise) return;
+
+    if (activeTab === 'description' && !hasDescription) {
+      if (hasOutput) setActiveContentTab('output');
+      else if (hasQuiz) setActiveContentTab('quiz');
+      else setActiveContentTab('ai');
+    } else if (activeTab === 'output' && !hasOutput) {
+      if (hasDescription) setActiveContentTab('description');
+      else if (hasQuiz) setActiveContentTab('quiz');
+      else setActiveContentTab('ai');
+    } else if (activeTab === 'quiz' && !hasQuiz) {
+      if (hasDescription) setActiveContentTab('description');
+      else if (hasOutput) setActiveContentTab('output');
+      else setActiveContentTab('ai');
+    }
+  }, [selectedExercise?.id, hasDescription, hasOutput, hasQuiz, activeTab]);
+
+  if (isQuizOnly) {
+    return (
+      <div className="flex-1 flex flex-col min-h-0 bg-[#0a0a0a] rounded-xl border border-zinc-800/50 overflow-hidden">
+        {quizQuery.loading ? (
+          <div className="flex flex-col items-center justify-center h-full text-zinc-500 gap-3">
+            <Loader2 className="w-6 h-6 animate-spin text-rust" />
+            <span className="text-sm">Carregando Quiz...</span>
+          </div>
+        ) : quizData ? (
+          <QuizView
+            id={selectedExercise?.id}
+            quiz={quizData}
+            onComplete={handleQuizComplete}
+          />
+        ) : (
+          <div className="flex flex-col items-center justify-center h-full text-zinc-500 gap-4 flex-1">
+            <div className="w-12 h-12 bg-zinc-900 rounded-full flex items-center justify-center">
+              <Brain className="w-6 h-6 text-zinc-700" />
+            </div>
+            <p className="text-sm">Quiz not available.</p>
+          </div>
+        )}
+      </div>
+    );
+  }
+
   return (
     <Tabs
       value={activeTab}
@@ -130,20 +186,24 @@ export function ContentTabs() {
       <div className="flex-none px-4 py-2 border-b border-zinc-800/50 bg-zinc-900/40 flex items-center justify-between">
         <TabsList className="bg-zinc-800/30 p-0.5 h-9">
           {/* Description Tab */}
-          <TabsTrigger
-            value="description"
-            className="px-4 py-1.5 text-xs data-[state=active]:bg-zinc-700 data-[state=active]:text-zinc-100"
-          >
-            <Book className="w-3.5 h-3.5 mr-2" /> Description
-          </TabsTrigger>
+          {hasDescription && (
+            <TabsTrigger
+              value="description"
+              className="px-4 py-1.5 text-xs data-[state=active]:bg-zinc-700 data-[state=active]:text-zinc-100"
+            >
+              <Book className="w-3.5 h-3.5 mr-2" /> Description
+            </TabsTrigger>
+          )}
 
           {/* Output Tab */}
-          <TabsTrigger
-            value="output"
-            className="px-4 py-1.5 text-xs data-[state=active]:bg-zinc-700 data-[state=active]:text-zinc-100"
-          >
-            <Terminal className="w-3.5 h-3.5 mr-2" /> Output
-          </TabsTrigger>
+          {hasOutput && (
+            <TabsTrigger
+              value="output"
+              className="px-4 py-1.5 text-xs data-[state=active]:bg-zinc-700 data-[state=active]:text-zinc-100"
+            >
+              <Terminal className="w-3.5 h-3.5 mr-2" /> Output
+            </TabsTrigger>
+          )}
 
           {/* AI Mentor Tab */}
           <TabsTrigger
@@ -160,7 +220,7 @@ export function ContentTabs() {
           </TabsTrigger>
 
           {/* Quiz Tab */}
-          {selectedExercise?.hasQuiz && (
+          {hasQuiz && (
             <TabsTrigger
               value="quiz"
               className="px-4 py-1.5 text-xs data-[state=active]:bg-zinc-700 data-[state=active]:text-zinc-100"
@@ -263,7 +323,11 @@ export function ContentTabs() {
             <span className="text-sm">Carregando Quiz...</span>
           </div>
         ) : quizData ? (
-          <QuizView quiz={quizData} onComplete={handleQuizComplete} />
+          <QuizView
+            id={selectedExercise?.id}
+            quiz={quizData}
+            onComplete={handleQuizComplete}
+          />
         ) : selectedExercise?.hasQuiz ? (
           <div className="flex flex-col items-center justify-center h-full text-zinc-500 gap-4 flex-1">
             <div className="w-12 h-12 bg-zinc-900 rounded-full flex items-center justify-center">
@@ -312,10 +376,10 @@ export function ContentTabs() {
               {/* TUTOR SUGGESTION (AUTOMATED) */}
               {progress?.tutorSuggestion &&
                 progress.tutorSuggestion.exerciseId ===
-                  selectedExercise?.id && (
+                selectedExercise?.id && (
                   <div className="mb-8 p-4 bg-rust/10 border border-rust/30 rounded-2xl space-y-3 animate-in fade-in slide-in-from-top-2 duration-500">
                     <div className="flex items-center gap-2 text-rust font-black uppercase tracking-widest text-[10px]">
-                      <Sparkles className="w-4 h-4" /> Recomendação do Tutor
+                      <Sparkles className="w-4 h-4" /> Tutor Recomendation
                     </div>
                     <div className="prose prose-invert prose-sm max-w-none">
                       <MarkdownRenderer
@@ -323,8 +387,7 @@ export function ContentTabs() {
                       />
                     </div>
                     <div className="text-[10px] text-zinc-600 italic">
-                      Gerado automaticamente após algumas dificuldades
-                      detectadas.
+                      Automatically generated after some difficulties detected.
                     </div>
                   </div>
                 )}
@@ -408,10 +471,11 @@ export function ContentTabs() {
                         variant="secondary"
                         size="sm"
                         onClick={explainExercise}
-                        className="bg-zinc-800/50 hover:bg-zinc-800 border-zinc-700/50 text-xs"
+                        disabled={isExplainDisabled}
+                        className="bg-zinc-800/50 hover:bg-zinc-800 border-zinc-700/50 text-xs disabled:opacity-50 disabled:cursor-not-allowed"
                       >
-                        <Sparkles className="w-3.5 h-3.5 mr-2 text-purple-400" />{' '}
-                        Explain Code
+                        <Sparkles className="w-3.5 h-3.5 mr-2 text-purple-400" />
+                        {isExplainDisabled ? 'Limit Reached' : 'Explain Code'}
                       </Button>
                     </div>
                   </div>
@@ -440,11 +504,10 @@ export function ContentTabs() {
                             >
                               <div className="flex items-center justify-between mb-1">
                                 <span
-                                  className={`text-[10px] font-bold px-1.5 py-0.5 rounded border ${
-                                    item.type === 'hint'
-                                      ? 'bg-rust/10 text-rust border-rust/20'
-                                      : 'bg-purple-500/10 text-purple-400 border-purple-500/20'
-                                  }`}
+                                  className={`text-[10px] font-bold px-1.5 py-0.5 rounded border ${item.type === 'hint'
+                                    ? 'bg-rust/10 text-rust border-rust/20'
+                                    : 'bg-purple-500/10 text-purple-400 border-purple-500/20'
+                                    }`}
                                 >
                                   {item.type === 'hint'
                                     ? 'HINT'

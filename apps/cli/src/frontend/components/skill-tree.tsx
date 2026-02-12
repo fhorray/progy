@@ -41,13 +41,13 @@ export function SkillTree({
     <ScrollArea className="h-full">
       <div className="p-8 max-w-6xl mx-auto">
         {config?.branding?.coverImage && (
-           <div className="w-full h-48 rounded-2xl mb-12 overflow-hidden border border-zinc-800 relative shadow-2xl">
-              <div className="absolute inset-0 bg-gradient-to-t from-zinc-950 via-zinc-950/20 to-transparent z-10" />
-              <img src={`/${config.branding.coverImage}`} className="w-full h-full object-cover" />
-              <h1 className="absolute bottom-6 left-8 text-4xl font-black text-white z-20 uppercase tracking-tighter drop-shadow-lg">
-                 {config.name || 'Course Map'}
-              </h1>
-           </div>
+          <div className="w-full h-48 rounded-2xl mb-12 overflow-hidden border border-zinc-800 relative shadow-2xl">
+            <div className="absolute inset-0 bg-gradient-to-t from-zinc-950 via-zinc-950/20 to-transparent z-10" />
+            <img src={`/${config.branding.coverImage}`} className="w-full h-full object-cover" />
+            <h1 className="absolute bottom-6 left-8 text-4xl font-black text-white z-20 uppercase tracking-tighter drop-shadow-lg">
+              {config.name || 'Course Map'}
+            </h1>
+          </div>
         )}
 
         <div className={isGrid ? "grid grid-cols-1 md:grid-cols-2 gap-8" : "flex flex-col items-center space-y-12"}>
@@ -88,16 +88,16 @@ export function SkillTree({
                   >
                     <div className="-rotate-45 flex flex-col items-center">
                       {ModIcon ? (
-                         <ModIcon className={`w-10 h-10 ${isUnlocked ? (isComplete ? 'text-emerald-500' : 'text-rust') : 'text-zinc-700'}`} />
+                        <ModIcon className={`w-10 h-10 ${isUnlocked ? (isComplete ? 'text-emerald-500' : 'text-rust') : 'text-zinc-700'}`} />
                       ) : (
                         isUnlocked ? (
-                            isComplete ? (
+                          isComplete ? (
                             <Star className="w-8 h-8 text-emerald-500 fill-emerald-500" />
-                            ) : (
+                          ) : (
                             <Star className="w-8 h-8 text-rust" />
-                            )
+                          )
                         ) : (
-                            <Lock className="w-8 h-8 text-zinc-700" />
+                          <Lock className="w-8 h-8 text-zinc-700" />
                         )
                       )}
                     </div>
@@ -154,10 +154,10 @@ export function SkillTree({
                         </span>
 
                         {(ex.tags?.length || ex.difficulty) && !locked && (
-                            <div className="flex gap-1 mt-1 flex-wrap justify-center">
-                                {ex.difficulty && <span className={`w-1.5 h-1.5 rounded-full ${ex.difficulty === 'hard' ? 'bg-red-500' : ex.difficulty === 'medium' ? 'bg-yellow-500' : 'bg-blue-500'}`} title={ex.difficulty} />}
-                                {ex.tags?.slice(0, 2).map(t => <span key={t} className="text-[8px] text-zinc-600 border border-zinc-800 px-1 rounded">{t}</span>)}
-                            </div>
+                          <div className="flex gap-1 mt-1 flex-wrap justify-center">
+                            {ex.difficulty && <span className={`w-1.5 h-1.5 rounded-full ${ex.difficulty === 'hard' ? 'bg-red-500' : ex.difficulty === 'medium' ? 'bg-yellow-500' : 'bg-blue-500'}`} title={ex.difficulty} />}
+                            {ex.tags?.slice(0, 2).map(t => <span key={t} className="text-[8px] text-zinc-600 border border-zinc-800 px-1 rounded">{t}</span>)}
+                          </div>
                         )}
 
                         {locked && (

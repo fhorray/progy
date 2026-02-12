@@ -17,7 +17,7 @@ const billing = new Hono<{
 
   // Routes
   .post(
-    '/ai/generate',
+    '/generate',
     zValidator('json', z.object({
       prompt: z.string(),
       difficulty: z.string(),
@@ -39,7 +39,7 @@ const billing = new Hono<{
     }
   )
   .post(
-    '/ai/hint',
+    '/hint',
     zValidator('json', z.object({
       context: z.any(),
       config: z.any().optional()
@@ -53,14 +53,14 @@ const billing = new Hono<{
 
       try {
         const result = await aiService.hint(user, context, config);
-        return c.json(result);
+        return result.toTextStreamResponse();
       } catch (e: any) {
         return c.json({ error: e.message }, 500);
       }
     }
   )
   .post(
-    '/ai/explain',
+    '/explain',
     zValidator('json', z.object({
       context: z.any(),
       config: z.any().optional()
@@ -74,14 +74,14 @@ const billing = new Hono<{
 
       try {
         const result = await aiService.explain(user, context, config);
-        return c.json(result);
+        return result.toTextStreamResponse();
       } catch (e: any) {
         return c.json({ error: e.message }, 500);
       }
     }
   )
   .post(
-    '/ai/chat',
+    '/chat',
     zValidator('json', z.object({
       messages: z.array(z.any()),
       context: z.any(),

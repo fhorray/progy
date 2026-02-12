@@ -135,7 +135,7 @@ Instead of just "Hints" on demand, implement a proactive tutor.
     2.  Sends the code + error + previous attempts to the backend.
     3.  **Cloudflare Workflow** invokes a specialized "Tutor Agent" (long-running LLM context).
     4.  The Agent analyzes the *misconception*, not just the bug.
-    5.  Returns a "Micro-Lesson" (Markdown) to be displayed in the CLI/Editor.
+    5.  Returns a "Micro-Lesson" (Markdown) to be displayed in the CLI/studio.
 
 ### 5.2 "Multiplayer" Coding
 Leverage Cloudflare Durable Objects (DO) for real-time state syncing.

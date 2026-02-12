@@ -173,8 +173,21 @@ export default function CoursesPage() {
                       </Badge>
                     )}
                   </div>
-                  <CardTitle className="text-2xl font-black italic tracking-tighter group-hover:text-primary transition-colors uppercase">
-                    {course.name}
+                  <CardTitle className="flex flex-col gap-1 group-hover:text-primary transition-colors uppercase">
+                    {course.name.includes('/') ? (
+                      <>
+                        <span className="text-xs font-black text-primary tracking-widest leading-none">
+                          {course.name.split('/')[0]}
+                        </span>
+                        <span className="text-2xl font-black italic tracking-tighter text-white">
+                          {course.name.split('/').slice(1).join('/')}
+                        </span>
+                      </>
+                    ) : (
+                      <span className="text-2xl font-black italic tracking-tighter text-white">
+                        {course.name}
+                      </span>
+                    )}
                   </CardTitle>
                   <CardDescription className="text-xs italic leading-relaxed line-clamp-2 mt-4 text-muted-foreground/60 group-hover:text-muted-foreground/80 transition-colors">
                     {course.description ||

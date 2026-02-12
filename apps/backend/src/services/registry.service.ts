@@ -112,7 +112,8 @@ export class RegistryService {
     const existing = await this.db.select().from(schema.registryVersions).where(and(eq(schema.registryVersions.packageId, pkg!.id), eq(schema.registryVersions.version, metadata.version))).get();
     if (existing) throw new Error(`Version ${metadata.version} already exists`);
 
-    const prefix = `packages/${metadata.name}/${metadata.version}/`;
+    const normalizedName = metadata.name.startsWith('@') ? metadata.name.substring(1) : metadata.name;
+    const prefix = `packages/${normalizedName}/${metadata.version}/`;
     const mainKey = `${prefix}${pkg!.slug}.progy`;
 
     await this.env.R2.put(mainKey, await file.arrayBuffer(), {
@@ -170,7 +171,8 @@ export class RegistryService {
 
     if (versions.length > 3) {
       const keepVersions = new Set(versions.slice(0, 3).map(v => v.version));
-      const packagePrefix = `packages/${packageName}/`;
+      const normalizedName = packageName.startsWith('@') ? packageName.substring(1) : packageName;
+      const packagePrefix = `packages/${normalizedName}/`;
 
       let truncated = true;
       let cursor: string | undefined;
@@ -252,7 +254,8 @@ export class RegistryService {
     if (!pkg) throw new Error('Package not found');
 
     try {
-      const prefix = `packages/${pkg.name}/`;
+      const normalizedName = pkg.name.startsWith('@') ? pkg.name.substring(1) : pkg.name;
+      const prefix = `packages/${normalizedName}/`;
       let truncated = true;
       let cursor: string | undefined;
       while (truncated) {

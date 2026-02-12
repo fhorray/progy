@@ -1,6 +1,6 @@
 # Progy Editor: Architecture & Migration Plan
 
-This document outlines the architectural vision, technical requirements, and step-by-step migration plan for separating the "Visual Course Editor" from the `progy` CLI into a dedicated application (`apps/editor`).
+This document outlines the architectural vision, technical requirements, and step-by-step migration plan for separating the "Visual Course Editor" from the `progy` CLI into a dedicated application (`apps/studio`).
 
 ---
 
@@ -36,9 +36,9 @@ root/
 #### `apps/cli` (Existing `progy`)
 - **Focus:** Student consumption, progress tracking, submission.
 - **Removed:** All `/instructor/*` endpoints, `EditorView`, `FileTree`, `Monaco/CodeMirror` heavy languages.
-- **Added:** A simple command `progy edit` that *launches* the `apps/editor` server (or prompts to install it).
+- **Added:** A simple command `progy edit` that *launches* the `apps/studio` server (or prompts to install it).
 
-#### `apps/editor` (New)
+#### `apps/studio` (New)
 - **Focus:** Course creation, debugging, content management.
 - **Tech Stack:**
     - **Frontend:** React + Vite (migrated from CLI).
@@ -78,15 +78,15 @@ This section details the exact steps to execute this migration.
     -   Refactor all imports in `apps/cli` to use `@progy/core`.
     -   *Verification:* Run `bun run build` in `apps/cli` to ensure nothing broke.
 
-### Phase 2: Scaffolding `apps/editor`
+### Phase 2: Scaffolding `apps/studio`
 
 3.  **Initialize App:**
-    -   Create `apps/editor` using a Vite template (React + TS).
+    -   Create `apps/studio` using a Vite template (React + TS).
     -   Install dependencies: `react-router-dom`, `nanostores`, `lucide-react`, `cmdk`, `radix-ui`, `codemirror`.
     -   Add `workspace:@progy/core` dependency.
 
 4.  **Backend Setup (The "Bridge"):**
-    -   Create `apps/editor/server/main.ts` (using Bun or Node).
+    -   Create `apps/studio/server/main.ts` (using Bun or Node).
     -   **Re-implement Endpoints:**
         -   Port `fsGetHandler`, `fsWriteHandler`, `reorderHandler` from `apps/cli/src/backend/endpoints/instructor.ts`.
         -   *Improvement:* Use a persistent WebSocket connection instead of polling for file tree updates.
@@ -94,9 +94,9 @@ This section details the exact steps to execute this migration.
 ### Phase 3: Frontend Migration
 
 5.  **Move Components:**
-    -   Copy `apps/cli/src/frontend/components/editor/*` to `apps/editor/src/components/`.
-    -   Copy `apps/cli/src/frontend/views/editor-view.tsx` to `apps/editor/src/views/`.
-    -   Copy `apps/cli/src/frontend/stores/editor-store.ts` to `apps/editor/src/stores/`.
+    -   Copy `apps/cli/src/frontend/components/studio/*` to `apps/studio/src/components/`.
+    -   Copy `apps/cli/src/frontend/views/studio-view.tsx` to `apps/studio/src/views/`.
+    -   Copy `apps/cli/src/frontend/stores/studio-store.ts` to `apps/studio/src/stores/`.
 
 6.  **Decouple from "Student" Stores:**
     -   The current editor components rely on `course-store.ts` (progress, xp). The editor shouldn't care about student XP.
@@ -111,9 +111,9 @@ This section details the exact steps to execute this migration.
 
 8.  **The `progy edit` Command:**
     -   In `apps/cli/src/commands/edit.ts`:
-        -   Check if `@progy/editor` is installed globally or available.
+        -   Check if `@progy/studio` is installed globally or available.
         -   If not, prompt: *"Progy Editor is required. Install it? [y/n]"*.
-        -   Launch the editor server: `bun run @progy/editor start --cwd .`.
+        -   Launch the editor server: `bun run @progy/studio start --cwd .`.
         -   Open browser to `http://localhost:4000`.
 
 9.  **LSP Integration (Language Server Protocol):**
@@ -131,7 +131,7 @@ This section details the exact steps to execute this migration.
 
 ### 4.1. File System Bridge (Backend)
 
-The `apps/editor` backend must provide a robust API for file manipulation.
+The `apps/studio` backend must provide a robust API for file manipulation.
 
 **Endpoints:**
 -   `GET /api/fs/tree`: Returns recursive file tree.
@@ -175,7 +175,7 @@ Instead of editing raw `course.json`, implement a **Form-Based Editor**.
 
 ## 5. Security Considerations
 
-Since `apps/editor` allows arbitrary code execution (Terminal, Docker) and file system access:
+Since `apps/studio` allows arbitrary code execution (Terminal, Docker) and file system access:
 
 1.  **Localhost Only:** The server MUST bind to `127.0.0.1` by default.
 2.  **Token Authentication:**
@@ -193,7 +193,7 @@ Since `apps/editor` allows arbitrary code execution (Terminal, Docker) and file 
 | :--- | :--- | :--- |
 | **1** | Extract `packages/core` | 2 Days |
 | **1** | Refactor `apps/cli` to use core | 1 Day |
-| **2** | Scaffold `apps/editor` & Backend | 2 Days |
+| **2** | Scaffold `apps/studio` & Backend | 2 Days |
 | **3** | Port Frontend Components | 3 Days |
 | **3** | Refactor Stores & State | 2 Days |
 | **4** | Implement File Watcher (WebSockets) | 1 Day |

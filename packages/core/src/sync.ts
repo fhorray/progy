@@ -180,7 +180,7 @@ dist/
     return zip.toBuffer();
   }
 
-  static async uploadProgress(courseId: string, buffer: Buffer): Promise<boolean> {
+  static async uploadProgress(courseId: string, buffer: ArrayBuffer): Promise<boolean> {
     const token = await loadToken();
     if (!token) return false;
 
@@ -209,7 +209,7 @@ dist/
 
     try {
       const response = await fetch(`${BACKEND_URL}/progress/download?courseId=${courseId}`, {
-         headers: { Authorization: `Bearer ${token}` }
+        headers: { Authorization: `Bearer ${token}` }
       });
       if (response.ok) {
         const arrayBuffer = await response.arrayBuffer();
@@ -222,7 +222,7 @@ dist/
   }
 
   static async restoreProgress(buffer: Buffer, cwd: string) {
-      const zip = new AdmZip(buffer);
-      zip.extractAllTo(cwd, true);
+    const zip = new AdmZip(buffer);
+    zip.extractAllTo(cwd, true);
   }
 }

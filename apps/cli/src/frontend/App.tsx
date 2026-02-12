@@ -32,7 +32,7 @@ export function App() {
   const error = useStore($error);
   const router = useStore($router);
 
-  // Studio mode: removed (moved to apps/editor)
+  // Studio mode: removed (moved to apps/studio)
 
   let content;
   if (!router) {

@@ -1,6 +1,6 @@
 # Progy Editor: Technical Specification (v2.1 - Hybrid Editor)
 
-This document outlines the technical architecture for the standalone `apps/editor` application, pivoting towards a **Hybrid Editor Strategy**.
+This document outlines the technical architecture for the standalone `apps/studio` application, pivoting towards a **Hybrid Editor Strategy**.
 
 **Core Vision:** A high-performance, developer-centric Course Orchestrator. It excels at **Structure, Configuration, and Content Creation** (Markdown/Quizzes) while seamlessly integrating with the user's preferred local IDE (VS Code, Neovim) for heavy code editing.
 
@@ -36,12 +36,12 @@ The **Progy Editor** is a local web application that bridges the gap between raw
 
 ---
 
-## 2. Project Structure (`apps/editor`)
+## 2. Project Structure (`apps/studio`)
 
 Designed to separate the "Server Bridge" from the "Client UI".
 
 ```
-apps/editor/
+apps/studio/
 ├── index.ts                # Entry point (Bun.serve)
 ├── public/                 # Static assets
 ├── server/                 # Backend Logic (Bridge)
@@ -115,7 +115,7 @@ Focus on providing a "What You See Is What You Get" experience for course elemen
 ## 4. Implementation Plan
 
 ### Phase 1: Foundation (Days 1-2)
-1.  Initialize `apps/editor` with Bun, React, Vite.
+1.  Initialize `apps/studio` with Bun, React, Vite.
 2.  Implement `server/index.ts` with `Bun.serve`.
 3.  Implement basic FS API (`GET /tree`, `GET /content`).
 4.  Implement `POST /api/ide/open`.

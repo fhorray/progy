@@ -256,18 +256,17 @@ export function EditorView() {
                                   key={ex.id}
                                   onClick={() => {
                                     if (locked) return;
-                                    $router.open(`/editor/${ex.id}`);
+                                    $router.open(`/studio/${ex.id}`);
                                     setSelectedExercise(ex);
                                   }}
                                   title={locked ? ex.lockReason : undefined}
                                   className={`w-full text-left pl-10 pr-3 py-2.5 text-xs rounded-lg transition-all flex items-center gap-2 group
-                                ${
-                                  locked
-                                    ? 'opacity-50 cursor-not-allowed text-zinc-600 border-l-2 border-transparent'
-                                    : isSelected
-                                      ? 'bg-gradient-to-r from-rust/20 to-transparent text-rust font-bold border-l-2 border-rust'
-                                      : 'cursor-pointer text-zinc-500 hover:text-zinc-300 hover:bg-zinc-800/30 border-l-2 border-transparent'
-                                }`}
+                                ${locked
+                                      ? 'opacity-50 cursor-not-allowed text-zinc-600 border-l-2 border-transparent'
+                                      : isSelected
+                                        ? 'bg-gradient-to-r from-rust/20 to-transparent text-rust font-bold border-l-2 border-rust'
+                                        : 'cursor-pointer text-zinc-500 hover:text-zinc-300 hover:bg-zinc-800/30 border-l-2 border-transparent'
+                                    }`}
                                 >
                                   {locked ? (
                                     <LockIcon className="w-3 h-3 text-zinc-600" />
@@ -282,13 +281,12 @@ export function EditorView() {
                                   <div className="flex items-center gap-1.5 ml-auto">
                                     {ex.difficulty && (
                                       <div
-                                        className={`w-1.5 h-1.5 rounded-full ${
-                                          ex.difficulty === 'easy'
+                                        className={`w-1.5 h-1.5 rounded-full ${ex.difficulty === 'easy'
                                             ? 'bg-emerald-500'
                                             : ex.difficulty === 'medium'
                                               ? 'bg-amber-500'
                                               : 'bg-red-500'
-                                        }`}
+                                          }`}
                                         title={ex.difficulty}
                                       />
                                     )}
@@ -337,7 +335,7 @@ export function EditorView() {
               </div>
 
               {exerciseGroups['practice'] &&
-              Array.isArray(exerciseGroups['practice']) ? (
+                Array.isArray(exerciseGroups['practice']) ? (
                 <div className="space-y-1">
                   {exerciseGroups['practice'].map((ex) => {
                     const status = results[ex.id];
@@ -346,15 +344,14 @@ export function EditorView() {
                       <button
                         key={ex.id}
                         onClick={() => {
-                          $router.open(`/editor/${ex.id}`);
+                          $router.open(`/studio/${ex.id}`);
                           setSelectedExercise(ex);
                         }}
                         className={`w-full text-left px-3 py-3 text-xs rounded-lg transition-all flex items-center gap-3 group
-                        ${
-                          isSelected
+                        ${isSelected
                             ? 'bg-gradient-to-r from-rust/20 to-transparent text-rust font-bold border-l-2 border-rust'
                             : 'text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800/30 border-l-2 border-transparent'
-                        }`}
+                          }`}
                       >
                         <Wand2Icon
                           className={`w-4 h-4 ${isSelected ? 'text-rust' : 'text-zinc-600'}`}

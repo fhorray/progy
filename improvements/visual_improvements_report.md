@@ -27,7 +27,7 @@ A comprehensive set of visual and functional enhancements was implemented to giv
 -   **TOML Handling:** Integrated `smol-toml` to safely read, modify, and write `info.toml` files without destroying comments or structure, allowing precise updates to exercise metadata.
 -   **Directory Listing:** Enhanced `fsGetHandler` to "peek" into module directories and retrieve their titles and icons for the sidebar file tree.
 
-### 3. Editor UI Enhancements (`apps/cli/src/frontend/editor`)
+### 3. Editor UI Enhancements (`apps/cli/src/frontend/studio`)
 -   **Module Settings:**
     -   Added an **Icon Picker** (text input with live preview) for Module Icons.
     -   Added a **Completion Message** editor supporting `{{user.name}}` placeholders.

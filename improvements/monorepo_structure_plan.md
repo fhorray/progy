@@ -80,7 +80,7 @@ This is a non-trivial refactor. It should be done in stages to avoid breaking th
 ### Phase 4: UI Library (For Editor)
 1.  **Create `packages/ui`:**
     *   Do not extract *everything* from `apps/cli` immediately.
-    *   Start fresh for `apps/editor`. Move components as needed.
+    *   Start fresh for `apps/studio`. Move components as needed.
 
 ---
 
@@ -101,4 +101,4 @@ This is a non-trivial refactor. It should be done in stages to avoid breaking th
 3.  **Execute Phase 2:** Extract Docker logic.
 4.  **Verify:** Run `apps/cli` manual test.
 
-This structure allows `apps/editor` to be built cleanly from day one using shared logic, without copying code from `apps/cli`.
+This structure allows `apps/studio` to be built cleanly from day one using shared logic, without copying code from `apps/cli`.

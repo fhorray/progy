@@ -7,7 +7,7 @@ The Progy CLI is the central tool for both instructors (creating courses) and st
 The Progy CLI is built as a monorepo application using **Bun** as the runtime. It is split into two main packages:
 
 *   **`apps/cli`**: The student-facing runner and course manager. It handles progress tracking, code execution, and serves the student UI.
-*   **`apps/editor`** (Progy Studio): The standalone visual editor for instructors.
+*   **`apps/studio`** (Progy Studio): The standalone visual editor for instructors.
 *   **`packages/core`**: The shared library containing business logic for course loading, validation, runner execution, and state management.
 
 ### Key Components

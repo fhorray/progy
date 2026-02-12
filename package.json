@@ -3,7 +3,7 @@
   "private": true,
   "scripts": {
     "dev:cli": "bun run --cwd apps/cli dev",
-    "dev:editor": "bun run --cwd apps/editor dev",
+    "dev:editor": "bun run --cwd apps/studio dev",
     "build": "bun scripts/build.ts",
     "test": "bun test",
     "typecheck": "bun tsc --noEmit",
@@ -21,7 +21,7 @@
     "db:deploy": "bun run --cwd apps/backend db:up:remote",
     "db:studio": "bun run --cwd apps/backend db:studio",
     "link:cli": "--cwd apps/cli bun link",
-    "link:editor": " --cwd apps/editor bun link"
+    "link:editor": " --cwd apps/studio bun link"
   },
   "workspaces": [
     "apps/*",

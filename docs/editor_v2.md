@@ -21,7 +21,7 @@ This will start the Studio server (usually on `http://localhost:3001`) and open 
 
 ## 2. Technical Overview
 
-Progy Studio is built as a standalone **Bun** application (`apps/editor`) that serves a **React 19** SPA.
+Progy Studio is built as a standalone **Bun** application (`apps/studio`) that serves a **React 19** SPA.
 
 ### Tech Stack
 
@@ -36,7 +36,7 @@ Progy Studio is built as a standalone **Bun** application (`apps/editor`) that s
 
 Unlike the student runner (`progy start`), which is optimized for lightweight execution, the Studio server is a full-featured development backend.
 
-1.  **Studio Backend (`apps/editor/src/server.ts`)**:
+1.  **Studio Backend (`apps/studio/src/server.ts`)**:
     *   Starts a dedicated Bun HTTP server (default port: `3001` or `PORTS.EDITOR`).
     *   Mounts the core logic from `packages/core` but exposes instructor-only endpoints.
     *   **Endpoints**:
@@ -44,7 +44,7 @@ Unlike the student runner (`progy start`), which is optimized for lightweight ex
         *   `/api/git/*`: Git operations (commit, push, pull).
         *   `/api/instructor/*`: Specialized endpoints for course validation and scaffolding.
 
-2.  **Frontend (`apps/editor/src/frontend`)**:
+2.  **Frontend (`apps/studio/src/frontend`)**:
     *   A heavy-duty React application designed for desktop-class editing.
     *   Connects to the backend via REST and WebSockets.
 
@@ -100,7 +100,7 @@ The Studio includes a built-in terminal emulator (xterm.js) connected to the bac
 
 ## 3. State Management (`editor-store.ts`)
 
-The application state is centralized in `apps/cli/src/frontend/stores/editor-store.ts`.
+The application state is centralized in `apps/cli/src/frontend/stores/studio-store.ts`.
 
 ### Key Stores
 
@@ -155,7 +155,7 @@ To add a new view (e.g., a "Quiz Builder"):
 
 To work on the Editor codebase itself (contributing to Progy):
 
-1.  **Navigate to Editor App**: `cd apps/editor`
+1.  **Navigate to Editor App**: `cd apps/studio`
 2.  **Run Dev Server**: `bun run dev` (Starts server with Hot Module Replacement).
 3.  **Test with Course**: Set `PROG_CWD=/path/to/test-course` env var to point the editor to a real course.
 
@@ -166,7 +166,7 @@ To work on the Editor codebase itself (contributing to Progy):
 ### 7.1 "Backend Disconnected"
 If you see a red "Disconnected" banner, the frontend has lost connection to the Studio backend.
 
-*   **Cause**: The `progy-editor` process crashed or was terminated.
+*   **Cause**: The `progy-studio` process crashed or was terminated.
 *   **Fix**: Restart the `bunx` command. Check the terminal for backend errors.
 
 ### 7.2 File Tree Not Updating

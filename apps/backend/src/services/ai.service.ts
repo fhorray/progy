@@ -60,13 +60,11 @@ export class AIService {
     const model = getModel(config);
     const system = constructSystemPrompt(context);
 
-    const { text } = await generateText({
+    return streamText({
       model,
       system,
       prompt: "Based on the failure above, give me a single helpful hint to fix the code. Do not give the full solution.",
     });
-
-    return { hint: text };
   }
 
   async explain(user: any, context: AIContext, clientConfig: AIConfig) {
@@ -74,13 +72,11 @@ export class AIService {
     const model = getModel(config);
     const system = constructExplanationPrompt(context);
 
-    const { text } = await generateText({
+    return streamText({
       model,
       system,
       prompt: "Explain the concepts involved in this exercise comprehensively but concisely.",
     });
-
-    return { explanation: text };
   }
 
   async chat(user: any, messages: any[], context: AIContext, clientConfig: AIConfig) {
