@@ -31,17 +31,18 @@ export class AggregationWorkflow extends WorkflowEntrypoint<CloudflareBindings> 
         .groupBy(schema.registryDownloads.packageId)
         .all();
 
-      for (const row of results) {
-        const id = `stats-${row.packageId}-${dateStr}`;
-        await db.insert(schema.registryStats).values({
-          id,
-          packageId: row.packageId,
-          date: dateStr,
-          downloadCount: row.count,
-        })
+      const statsToInsert = results.map((row) => ({
+        id: `stats-${row.packageId}-${dateStr}`,
+        packageId: row.packageId,
+        date: dateStr,
+        downloadCount: row.count,
+      }));
+
+      if (statsToInsert.length > 0) {
+        await db.insert(schema.registryStats).values(statsToInsert)
           .onConflictDoUpdate({
             target: schema.registryStats.id,
-            set: { downloadCount: row.count }
+            set: { downloadCount: sql`excluded.downloads_count` }
           });
       }
 
