@@ -157,11 +157,11 @@ export const authServer = (env: CloudflareBindings) => {
                 const customerId = session.customer as string;
                 // List all active subscriptions for this customer
                 const subs = await stripeClient.subscriptions.list({ customer: customerId, status: 'active' });
-                for (const sub of subs.data) {
+                await Promise.all(subs.data.map(async (sub) => {
                   // Cancel them efficiently
                   await stripeClient.subscriptions.cancel(sub.id);
                   console.log(`[UPGRADE-FIX] Cancelled old subscription ${sub.id} because user bought Lifetime.`);
-                }
+                }));
               } catch (err) {
                 console.error("[UPGRADE-FIX-ERROR] Failed to cancel old subscriptions:", err);
               }
