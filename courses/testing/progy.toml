@@ -1,8 +1,0 @@
-[course]
-id = "@francy.horray12793/sql-basics"
-repo = "@francy.horray12793/sql-basics"
-branch = "registry"
-path = "."
-
-[sync]
-last_sync = "2026-02-12T00:06:28.790Z"
