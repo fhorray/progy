@@ -31,17 +31,17 @@ describe("CLI Removed Commands", () => {
 
   test("create command should prompt transition to Studio", async () => {
     const { stdout, stderr } = await runCLI(["create", "foo"], tempDir);
-    expect(stdout + stderr).toContain("moved to Progy Studio");
+    expect(stdout + stderr).toContain("@progy/studio package");
   });
 
   test("add command should prompt transition to Studio", async () => {
     const { stdout, stderr } = await runCLI(["add", "module", "foo"], tempDir);
-    expect(stdout + stderr).toContain("moved to Progy Studio");
+    expect(stdout + stderr).toContain("@progy/studio package");
   });
 
   test("test command should prompt transition to Studio", async () => {
     const { stdout, stderr } = await runCLI(["test", "foo"], tempDir);
-    expect(stdout + stderr).toContain("moved to Progy Studio");
+    expect(stdout + stderr).toContain("@progy/studio package");
   });
 });
 

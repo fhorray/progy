@@ -288,11 +288,7 @@ describe("CLI Commands Exports", () => {
   });
 });
 
-describe("Publish Command", () => {
-  test("publish function exists and is exported", async () => {
-    const { publish } = await import("../src/commands/publish");
-    expect(typeof publish).toBe("function");
-  });
-});
+// Publish command removed
+
 
 

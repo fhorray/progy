@@ -2,10 +2,9 @@
 import { Command } from "commander";
 import { login, logout, whoami } from "./commands/auth";
 import { setConfig, listConfig } from "./commands/config";
-import { init, validate, pack, dev, start } from "./commands/course";
-import { publish } from "./commands/publish";
+import { init, start } from "./commands/course";
 import { save, sync, reset } from "./commands/sync";
-import { patch, minor, major } from "./commands/version";
+
 import pkg from "../package.json";
 
 const program = new Command();
@@ -47,13 +46,13 @@ config
   .action(listConfig);
 
 // --- Course Lifecycle (Instructor) ---
-// Note: 'create' command moved to Studio
+// Note: 'create', 'add', 'test' commands moved to Studio
 program
   .command("create")
   .description("Moved to Studio")
   .argument("[args...]")
   .action(() => {
-    console.log("The 'create' command has been moved to Progy Studio.");
+    console.log("The 'create' is a Progy Studio command. try using @progy/studio package");
     process.exit(1);
   });
 
@@ -62,7 +61,7 @@ program
   .description("Moved to Studio")
   .argument("[args...]")
   .action(() => {
-    console.log("The 'add' command has been moved to Progy Studio.");
+    console.log("The 'add' is a Progy Studio command. try using @progy/studio package");
     process.exit(1);
   });
 
@@ -71,54 +70,9 @@ program
   .description("Moved to Studio")
   .argument("[args...]")
   .action(() => {
-    console.log("The 'test' command has been moved to Progy Studio.");
+    console.log("The 'test' is a Progy Studio command. try using @progy/studio package");
     process.exit(1);
-  }); program
-    .command("dev")
-    .description("Test course locally as GUEST (no progress saved)")
-    .option("--bypass", "Unlock all lessons for testing")
-    .action(dev);
-
-program
-  .command("validate")
-  .description("Validate a course's structure and configuration")
-  .argument("[path]", "Path to course directory", ".")
-  .action(validate);
-
-program
-  .command("pack")
-  .description("Pack a course into a .progy file for distribution")
-  .option("-o, --out <filename>", "Output filename")
-  .action(pack);
-
-
-
-program
-  .command("publish")
-  .description("Publish course to Progy registry")
-  .option("--patch", "Increment patch version before publishing")
-  .option("--minor", "Increment minor version before publishing")
-  .option("--major", "Increment major version before publishing")
-  .action(publish);
-
-// --- Versioning ---
-program
-  .command("patch")
-  .description("Increment course version (patch)")
-  .action(patch);
-
-program
-  .command("minor")
-  .description("Increment course version (minor)")
-  .action(minor);
-
-program
-  .command("major")
-  .description("Increment course version (major)")
-  .action(major);
-
-// --- Scaffolding (Instructor) ---
-// Note: 'add' commands moved to Studio
+  });
 
 
 // --- Student Commands ---

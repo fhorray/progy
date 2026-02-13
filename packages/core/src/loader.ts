@@ -2,14 +2,11 @@ import { z } from "zod";
 import { readFile, readdir } from "node:fs/promises";
 import { join, resolve } from "node:path";
 import { spawn } from "node:child_process";
-import { CONFIG_DIR, COURSE_CONFIG_NAME, BACKEND_URL as DEFAULT_BACKEND_URL } from "./paths.ts";
+import { CONFIG_DIR, COURSE_CONFIG_NAME, BACKEND_URL as DEFAULT_BACKEND_URL, OFICIAL_USERNAME } from "./paths.ts";
 import { exists } from "./utils.ts";
 import { CourseConfigSchema, ModuleInfoSchema, QuizSchema, type CourseConfig, } from "./types.ts";
 
 const getBackendUrl = () => process.env.PROGY_API_URL || DEFAULT_BACKEND_URL;
-
-
-
 
 export class CourseLoader {
   static async resolveSource(courseInput: string): Promise<{ url: string; branch?: string; path?: string; isRegistry?: boolean; id?: string; scope?: string; name?: string }> {
@@ -25,12 +22,12 @@ export class CourseLoader {
 
     // If no scope is provided, default to official username
     if (!courseInput.startsWith("@") && !courseInput.includes("/")) {
-      const { OFICIAL_USERNAME } = await import("./paths.ts");
       query = `${OFICIAL_USERNAME}/${courseInput}`;
       console.log(`[INFO] Resolving official course '${courseInput}' as '${query}'...`);
     } else {
       console.log(`[INFO] Resolving registry package '${courseInput}'...`);
     }
+
 
     try {
       const url = `${getBackendUrl()}/registry/resolve/${encodeURIComponent(query)}`;

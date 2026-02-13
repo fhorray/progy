@@ -27,6 +27,7 @@ mock.module("@progy/core", () => ({
         divider: mock(() => { }),
     },
     exists: mock(async () => true),
+    getCourseCachePath: mock((id: string) => `/tmp/progy-cache-${id}`),
     RUNNER_README: "# Runner",
     FRONTEND_URL: "https://progy.dev",
     COURSE_CONFIG_NAME: "course.json",
@@ -41,6 +42,7 @@ mock.module("@progy/core", () => ({
     SyncManager: {},
     scanAndGenerateManifest: mock(async () => ({})),
 }));
+
 
 
 

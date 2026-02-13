@@ -27,6 +27,7 @@ mock.module("@progy/core", () => ({
     exists: mock(async () => true),
     BACKEND_URL: "https://api.progy.dev",
     FRONTEND_URL: "https://progy.dev",
+    getCourseCachePath: mock((id: string) => `/tmp/progy-cache-${id}`),
     // Add these just in case imports are weird
     RUNNER_README: "# Runner",
     COURSE_CONFIG_NAME: "course.json",
@@ -35,11 +36,12 @@ mock.module("@progy/core", () => ({
     EXERCISE_STARTER: "mock",
     QUIZ_TEMPLATE: "[]",
     TEMPLATES: {},
-    CourseLoader: {},
+    CourseLoader: { resolveSource: mock(async () => ({ url: "" })) },
     CourseContainer: {},
     SyncManager: {},
     scanAndGenerateManifest: mock(async () => ({})),
 }));
+
 
 
 

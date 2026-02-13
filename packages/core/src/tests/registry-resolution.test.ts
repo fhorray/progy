@@ -1,15 +1,11 @@
-import { expect, test, describe, beforeAll, afterAll, spyOn, mock } from "bun:test";
-import { CourseLoader } from "@progy/core";
-import { OFICIAL_USERNAME } from "@consts";
+import { expect, test, describe, mock } from "bun:test";
+import { CourseLoader } from "../loader";
+import { OFICIAL_USERNAME } from "../../../../constants";
+
+
 
 describe("CourseLoader Registry Resolution", () => {
 
-  beforeAll(() => {
-    // Ensure we are using the REAL @progy/core and CourseLoader
-    mock.restore();
-    // Point to the source file to bypass mocked module cache
-    mock.module("@progy/core", () => require("../index"));
-  });
 
   test("should auto-prefix simple slug with official username", async () => {
     // Mock fetch to simulate successful resolution

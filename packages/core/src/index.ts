@@ -1,5 +1,5 @@
 // Core utilities - Refreshed legacy exports
-export { exists } from "./utils.ts";
+export { exists } from "./utils";
 
 // Paths & constants
 export {
@@ -17,7 +17,7 @@ export {
   getCourseCachePath,
   BACKEND_URL,
   FRONTEND_URL,
-} from "./paths.ts";
+} from "./paths";
 
 // Config
 export {
@@ -27,29 +27,28 @@ export {
   loadToken,
   saveToken,
   clearToken,
-} from "./config.ts";
-export type { AIConfig, GlobalConfig } from "./config.ts";
+} from "./config";
+export type { AIConfig, GlobalConfig } from "./config";
 
 // Logger
-export { logger } from "./logger.ts";
+export { logger } from "./logger";
 
 // Git
-export { GitUtils } from "./git.ts";
-export type { GitResult } from "./git.ts";
+export { GitUtils } from "./git";
+export type { GitResult } from "./git";
 
 // Course loader
-export { CourseLoader, spawnPromise } from "./loader.ts";
-export type { LoaderCourseConfig } from "./loader.ts";
+export { CourseLoader, spawnPromise } from "./loader";
 
 // Course container
-export { CourseContainer } from "./container.ts";
+export { CourseContainer } from "./container";
 
 // Registry cache
-export { RegistryCache } from "./cache.ts";
+export { RegistryCache } from "./cache";
 
 // Sync
-export { SyncManager } from "./sync.ts";
-export type { ProgyConfig } from "./sync.ts";
+export { SyncManager } from "./sync";
+export type { ProgyConfig } from "./sync";
 
 // Templates
 export {
@@ -59,7 +58,7 @@ export {
   QUIZ_TEMPLATE,
   TEMPLATES,
   RUNNER_README,
-} from "./templates.ts";
+} from "./templates";
 
 // Types (backend shared)
 export type {
@@ -76,10 +75,8 @@ export type {
   ManifestEntry,
   SRPDiagnostic,
   SRPOutput,
-  ServerType,
   Notification,
-  NotificationType,
-} from "./types.ts";
+} from "./types";
 
 // Helpers (backend shared business logic)
 export {
@@ -93,7 +90,9 @@ export {
   scanAndGenerateManifest,
   runSetupChecks,
   parseRunnerOutput,
-} from "./helpers.ts";
+} from "./helpers";
 export {
   BACKEND_URL as HELPERS_BACKEND_URL,
-} from "./helpers.ts";
+} from "./paths";
+
+

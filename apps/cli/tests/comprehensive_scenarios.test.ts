@@ -50,7 +50,9 @@ const mockCourseContainer = {
   pack: mock(async () => { }),
   unpack: mock(async () => {
     console.log("DEBUG: Mock Unpack Called");
-    return join(tmpdir(), "progy-unpack-mock");
+    const dir = join(tmpdir(), "progy-unpack-mock-" + Date.now());
+    await mkdir(dir, { recursive: true });
+    return dir;
   }),
   unpackTo: mock(async () => { }),
   sync: mock(async () => { })
@@ -75,14 +77,18 @@ mock.module("@progy/core", () => ({
   CourseLoader: mockCourseLoader,
   logger: mockLogger,
   loadToken: mock(async () => mockToken),
-  getCourseCachePath: mock(() => join(tmpdir(), "progy-cache")),
+  getCourseCachePath: mock((id: string) => join(tmpdir(), "progy-cache-" + id)),
   exists: mock(async (p: string) => {
     if (mockExistsOverride) return await mockExistsOverride(p);
     const result = await Bun.file(p).exists() || (await stat(p).then(() => true).catch(() => false));
     console.log(`DEBUG: exists(${p}) = ${result}`);
     return result;
   }),
+  BACKEND_URL: "https://api.progy.dev",
+  FRONTEND_URL: "https://progy.dev",
+  HELPERS_BACKEND_URL: "https://api.progy.dev",
 }));
+
 
 // --- Tests ---
 
@@ -133,33 +139,7 @@ describe("Comprehensive Scenarios", () => {
     expect(mockSpawn).toHaveBeenCalled();
   });
 
-  // --- Instructor Flow ---
-  test("dev command in instructor dir should run server", async () => {
-    console.log("TEST: dev instructor");
-    const { dev } = await import("../src/commands/course");
-
-    // Create instructor files
-    await writeFile(join(tempDir, "course.json"), "{}");
-
-    await dev({});
-
-    // Should validate and run
-    expect(mockCourseLoader.validateCourse).toHaveBeenCalled();
-    expect(mockSpawn).toHaveBeenCalled();
-  });
-
-  test("dev command in student dir should fail", async () => {
-    console.log("TEST: dev student fail");
-    const { dev } = await import("../src/commands/course");
-    // No course.json
-
-    try {
-      await dev({});
-      console.log("Mock FAIL: dev did not throw");
-      expect(true).toBe(false); // Should fail
-    } catch (e: any) {
-      console.log("Caught Error:", e.message);
-      expect(e.message).toContain("ProcessExit: 1");
-    }
-  });
+  // Instructor Flow tests removed (dev command moved to Studio)
 });
+
+
