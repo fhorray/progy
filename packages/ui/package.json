@@ -5,6 +5,8 @@
   "main": "./src/index.ts",
   "exports": {
     ".": "./src/index.ts",
+    "./utils": "./src/lib/utils.ts",
+    "./field": "./src/components/ui/field.tsx",
     "./accordion": "./src/components/ui/accordion.tsx",
     "./alert-dialog": "./src/components/ui/alert-dialog.tsx",
     "./alert": "./src/components/ui/alert.tsx",
