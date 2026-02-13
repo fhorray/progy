@@ -2,15 +2,15 @@
 
 import Image from 'next/image';
 import Link from 'next/link';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
+import { Button } from '@progy/ui/button';
+import { Badge } from '@progy/ui/badge';
 import {
   Card,
   CardHeader,
   CardTitle,
   CardContent,
   CardFooter,
-} from '@/components/ui/card';
+} from '@progy/ui/card';
 import {
   Check,
   Code,
@@ -152,11 +152,26 @@ export default function Home() {
               className="scroll-reveal stagger-2 flex flex-wrap items-center justify-center gap-x-6 gap-y-3 mb-10"
             >
               {[
-                { icon: <Layers className="w-3.5 h-3.5" />, text: 'Git-Native Courses' },
-                { icon: <Globe className="w-3.5 h-3.5" />, text: 'Any Language' },
-                { icon: <Zap className="w-3.5 h-3.5" />, text: 'Real-Time Feedback' },
-                { icon: <ShieldCheck className="w-3.5 h-3.5" />, text: 'Docker Isolation' },
-                { icon: <BrainCircuit className="w-3.5 h-3.5" />, text: 'AI Mentor' },
+                {
+                  icon: <Layers className="w-3.5 h-3.5" />,
+                  text: 'Git-Native Courses',
+                },
+                {
+                  icon: <Globe className="w-3.5 h-3.5" />,
+                  text: 'Any Language',
+                },
+                {
+                  icon: <Zap className="w-3.5 h-3.5" />,
+                  text: 'Real-Time Feedback',
+                },
+                {
+                  icon: <ShieldCheck className="w-3.5 h-3.5" />,
+                  text: 'Docker Isolation',
+                },
+                {
+                  icon: <BrainCircuit className="w-3.5 h-3.5" />,
+                  text: 'AI Mentor',
+                },
               ].map((prop) => (
                 <div
                   key={prop.text}
@@ -248,7 +263,10 @@ export default function Home() {
         <div className="relative py-20 overflow-hidden">
           <div className="absolute inset-0 skew-up bg-card/40 border-y border-border -z-10 bg-grid-white/[0.02]"></div>
           <div className="max-w-6xl mx-auto px-4 md:px-6 unskew-neg relative z-10">
-            <div data-reveal className="scroll-reveal text-center mb-12 md:mb-16">
+            <div
+              data-reveal
+              className="scroll-reveal text-center mb-12 md:mb-16"
+            >
               <Badge className="bg-primary/10 text-primary border-primary/20 mb-3 px-2 py-0.5 text-[9px] uppercase font-black tracking-[0.2em]">
                 THE EXPERIENCE
               </Badge>
@@ -292,7 +310,9 @@ export default function Home() {
                     <p className="hidden md:block text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground mb-1 leading-none">
                       {item.label}
                     </p>
-                    <p className="text-[10px] md:text-[11px] font-bold">{item.sub}</p>
+                    <p className="text-[10px] md:text-[11px] font-bold">
+                      {item.sub}
+                    </p>
                   </div>
                 ))}
               </div>
@@ -372,7 +392,9 @@ export default function Home() {
                       <br />
                       <span className="text-foreground font-bold">
                         {'Solving task 01: '}
-                        <span className="text-primary italic">intro/hello.rs</span>
+                        <span className="text-primary italic">
+                          intro/hello.rs
+                        </span>
                       </span>
                     </div>
                     <div className="mt-6 pt-6 border-t border-border flex items-center justify-between">
@@ -392,7 +414,10 @@ export default function Home() {
         </section>
 
         {/* Features Section */}
-        <section id="features" className="relative py-20 md:py-24 overflow-hidden">
+        <section
+          id="features"
+          className="relative py-20 md:py-24 overflow-hidden"
+        >
           <div className="absolute inset-0 skew-down bg-card border-y border-border -z-10 shadow-[0_0_100px_-50px_rgba(251,146,60,0.2)]"></div>
           <div className="max-w-6xl mx-auto px-4 md:px-6 unskew relative z-10">
             <div data-reveal className="scroll-reveal mb-12 md:mb-20">
@@ -412,12 +437,44 @@ export default function Home() {
               className="scroll-reveal stagger-1 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-px bg-border border border-border overflow-hidden rounded-xl"
             >
               {[
-                { icon: <Cpu className="w-5 h-5 md:w-6 md:h-6 text-primary" />, title: 'LOCAL RUNTIME', desc: 'Zero lag. Code runs native on your architecture.' },
-                { icon: <BrainCircuit className="w-5 h-5 md:w-6 md:h-6 text-primary" />, title: 'AI COPILOT', desc: 'Smart hints based on your exact implementation.' },
-                { icon: <ShieldCheck className="w-5 h-5 md:w-6 md:h-6 text-primary" />, title: 'AUTO-CHECK', desc: 'Instant verification of constraints and edge cases.' },
-                { icon: <Zap className="w-5 h-5 md:w-6 md:h-6 text-primary" />, title: 'HOT RELOAD', desc: 'Your test suite updates with every file save.' },
-                { icon: <Globe className="w-5 h-5 md:w-6 md:h-6 text-primary" />, title: 'UNIVERSAL', desc: 'Rust, Go, TS, Bun, Cloudflare. One engine for all.' },
-                { icon: <Sparkles className="w-5 h-5 md:w-6 md:h-6 text-primary" />, title: 'CONTRIBUTE', desc: 'Anyone can publish a course. Community owned.' },
+                {
+                  icon: <Cpu className="w-5 h-5 md:w-6 md:h-6 text-primary" />,
+                  title: 'LOCAL RUNTIME',
+                  desc: 'Zero lag. Code runs native on your architecture.',
+                },
+                {
+                  icon: (
+                    <BrainCircuit className="w-5 h-5 md:w-6 md:h-6 text-primary" />
+                  ),
+                  title: 'AI COPILOT',
+                  desc: 'Smart hints based on your exact implementation.',
+                },
+                {
+                  icon: (
+                    <ShieldCheck className="w-5 h-5 md:w-6 md:h-6 text-primary" />
+                  ),
+                  title: 'AUTO-CHECK',
+                  desc: 'Instant verification of constraints and edge cases.',
+                },
+                {
+                  icon: <Zap className="w-5 h-5 md:w-6 md:h-6 text-primary" />,
+                  title: 'HOT RELOAD',
+                  desc: 'Your test suite updates with every file save.',
+                },
+                {
+                  icon: (
+                    <Globe className="w-5 h-5 md:w-6 md:h-6 text-primary" />
+                  ),
+                  title: 'UNIVERSAL',
+                  desc: 'Rust, Go, TS, Bun, Cloudflare. One engine for all.',
+                },
+                {
+                  icon: (
+                    <Sparkles className="w-5 h-5 md:w-6 md:h-6 text-primary" />
+                  ),
+                  title: 'CONTRIBUTE',
+                  desc: 'Anyone can publish a course. Community owned.',
+                },
               ].map((feature, i) => (
                 <div
                   key={i}
@@ -439,7 +496,10 @@ export default function Home() {
         {/* Pricing Section */}
         <section id="pricing" className="py-20 md:py-32">
           <div className="max-w-6xl mx-auto px-4 md:px-6">
-            <div data-reveal className="scroll-reveal text-center mb-16 md:mb-20">
+            <div
+              data-reveal
+              className="scroll-reveal text-center mb-16 md:mb-20"
+            >
               <h2 className="text-4xl md:text-6xl font-black italic mb-4 tracking-tighter uppercase">
                 Plans.
               </h2>
@@ -461,13 +521,23 @@ export default function Home() {
                   <CardTitle className="text-xl md:text-2xl font-black italic uppercase tracking-tighter">
                     Community
                   </CardTitle>
-                  <div className="mt-4 md:mt-6 text-3xl md:text-4xl font-black">$0</div>
+                  <div className="mt-4 md:mt-6 text-3xl md:text-4xl font-black">
+                    $0
+                  </div>
                 </CardHeader>
                 <CardContent className="px-6 md:px-8 flex-grow">
                   <ul className="space-y-3 md:space-y-4">
-                    {['Free Courses', 'Public Library', 'Local Core Engine'].map((item, i) => (
-                      <li key={i} className="flex items-center gap-2.5 text-[11px] md:text-[12px] font-bold text-muted-foreground">
-                        <Check className="w-3.5 h-3.5 text-primary shrink-0" /> {item}
+                    {[
+                      'Free Courses',
+                      'Public Library',
+                      'Local Core Engine',
+                    ].map((item, i) => (
+                      <li
+                        key={i}
+                        className="flex items-center gap-2.5 text-[11px] md:text-[12px] font-bold text-muted-foreground"
+                      >
+                        <Check className="w-3.5 h-3.5 text-primary shrink-0" />{' '}
+                        {item}
                       </li>
                     ))}
                   </ul>
@@ -499,13 +569,24 @@ export default function Home() {
                   <CardTitle className="text-xl md:text-2xl font-black italic uppercase tracking-tighter">
                     Lifetime
                   </CardTitle>
-                  <div className="mt-4 md:mt-6 text-3xl md:text-4xl font-black">$99</div>
+                  <div className="mt-4 md:mt-6 text-3xl md:text-4xl font-black">
+                    $99
+                  </div>
                 </CardHeader>
                 <CardContent className="px-6 md:px-8 flex-grow">
                   <ul className="space-y-3 md:space-y-4">
-                    {['Everything in Free', 'One-time Payment', 'Bring Your Own Key (AI)', 'Community Discord'].map((item, i) => (
-                      <li key={i} className="flex items-center gap-2.5 text-[11px] md:text-[12px] font-black">
-                        <Check className="w-3.5 h-3.5 text-primary shrink-0" /> {item}
+                    {[
+                      'Everything in Free',
+                      'One-time Payment',
+                      'Bring Your Own Key (AI)',
+                      'Community Discord',
+                    ].map((item, i) => (
+                      <li
+                        key={i}
+                        className="flex items-center gap-2.5 text-[11px] md:text-[12px] font-black"
+                      >
+                        <Check className="w-3.5 h-3.5 text-primary shrink-0" />{' '}
+                        {item}
                       </li>
                     ))}
                   </ul>
@@ -523,7 +604,9 @@ export default function Home() {
                     onClick={handleLifetimeCheckout}
                     disabled={checkoutState.loading || isLifetime}
                   >
-                    {checkoutState.loading && <Loader2 className="w-3 h-3 mr-2 animate-spin" />}
+                    {checkoutState.loading && (
+                      <Loader2 className="w-3 h-3 mr-2 animate-spin" />
+                    )}
                     {isLifetime ? 'OWNED' : 'BUY LIFETIME'}
                   </Button>
                 </CardFooter>
@@ -544,20 +627,33 @@ export default function Home() {
                   <div className="mt-4 md:mt-6 text-3xl md:text-4xl font-black">
                     {isLifetime ? (
                       <>
-                        <span className="line-through text-muted-foreground text-xl mr-2">$12</span>
+                        <span className="line-through text-muted-foreground text-xl mr-2">
+                          $12
+                        </span>
                         $8
                       </>
                     ) : (
                       '$12'
                     )}
-                    <span className="text-sm font-bold text-muted-foreground ml-1 font-sans">/mo</span>
+                    <span className="text-sm font-bold text-muted-foreground ml-1 font-sans">
+                      /mo
+                    </span>
                   </div>
                 </CardHeader>
                 <CardContent className="px-6 md:px-8 flex-grow">
                   <ul className="space-y-3 md:space-y-4 text-muted-foreground">
-                    {['Everything Premium', 'Unlimited AI Energy', 'Early Lab Access', 'Cloud Sync'].map((item, i) => (
-                      <li key={i} className="flex items-center gap-2.5 text-[11px] md:text-[12px] font-bold">
-                        <Check className="w-3.5 h-3.5 text-primary shrink-0" /> {item}
+                    {[
+                      'Everything Premium',
+                      'Unlimited AI Energy',
+                      'Early Lab Access',
+                      'Cloud Sync',
+                    ].map((item, i) => (
+                      <li
+                        key={i}
+                        className="flex items-center gap-2.5 text-[11px] md:text-[12px] font-bold"
+                      >
+                        <Check className="w-3.5 h-3.5 text-primary shrink-0" />{' '}
+                        {item}
                       </li>
                     ))}
                   </ul>
@@ -569,8 +665,14 @@ export default function Home() {
                     onClick={handleProCheckout}
                     disabled={isLoadingPro || isPro}
                   >
-                    {isLoadingPro && <Loader2 className="w-3 h-3 mr-2 animate-spin" />}
-                    {isPro ? 'CURRENT PLAN' : isLifetime ? 'ADD MASTER AI' : 'START TRIAL'}
+                    {isLoadingPro && (
+                      <Loader2 className="w-3 h-3 mr-2 animate-spin" />
+                    )}
+                    {isPro
+                      ? 'CURRENT PLAN'
+                      : isLifetime
+                        ? 'ADD MASTER AI'
+                        : 'START TRIAL'}
                   </Button>
                 </CardFooter>
               </Card>
@@ -589,7 +691,9 @@ export default function Home() {
                 <div className="w-7 h-7 rounded bg-primary flex items-center justify-center">
                   <Terminal className="w-4 h-4 text-primary-foreground" />
                 </div>
-                <span className="font-bold text-lg tracking-tighter uppercase">progy</span>
+                <span className="font-bold text-lg tracking-tighter uppercase">
+                  progy
+                </span>
               </div>
               <p className="text-[10px] text-muted-foreground italic uppercase font-black tracking-[0.2em] leading-relaxed">
                 Elite developer education <br className="hidden md:block" />{' '}
@@ -602,9 +706,30 @@ export default function Home() {
                   Core
                 </h5>
                 <ul className="text-[10px] space-y-3 font-black text-muted-foreground uppercase leading-none tracking-widest">
-                  <li><Link href="/courses" className="hover:text-primary transition-colors">Courses</Link></li>
-                  <li><Link href="/docs" className="hover:text-primary transition-colors">Docs</Link></li>
-                  <li><a href="#" className="hover:text-primary transition-colors">CLI</a></li>
+                  <li>
+                    <Link
+                      href="/courses"
+                      className="hover:text-primary transition-colors"
+                    >
+                      Courses
+                    </Link>
+                  </li>
+                  <li>
+                    <Link
+                      href="/docs"
+                      className="hover:text-primary transition-colors"
+                    >
+                      Docs
+                    </Link>
+                  </li>
+                  <li>
+                    <a
+                      href="#"
+                      className="hover:text-primary transition-colors"
+                    >
+                      CLI
+                    </a>
+                  </li>
                 </ul>
               </div>
               <div className="space-y-5">
@@ -612,8 +737,22 @@ export default function Home() {
                   Legal
                 </h5>
                 <ul className="text-[10px] space-y-3 font-black text-muted-foreground uppercase leading-none tracking-widest">
-                  <li><a href="#" className="hover:text-primary transition-colors">Privacy</a></li>
-                  <li><a href="#" className="hover:text-primary transition-colors">Terms</a></li>
+                  <li>
+                    <a
+                      href="#"
+                      className="hover:text-primary transition-colors"
+                    >
+                      Privacy
+                    </a>
+                  </li>
+                  <li>
+                    <a
+                      href="#"
+                      className="hover:text-primary transition-colors"
+                    >
+                      Terms
+                    </a>
+                  </li>
                 </ul>
               </div>
             </div>
@@ -621,8 +760,12 @@ export default function Home() {
           <div className="mt-16 md:mt-20 text-[9px] font-black text-muted-foreground/30 uppercase tracking-[0.4em] pt-8 border-t border-border flex justify-between items-center flex-col sm:flex-row gap-6">
             <p>{'© 2026 PROGY LABS INC.'}</p>
             <div className="flex items-center gap-6">
-              <span className="hover:text-primary transition-colors cursor-pointer">Twitter</span>
-              <span className="hover:text-primary transition-colors cursor-pointer">GitHub</span>
+              <span className="hover:text-primary transition-colors cursor-pointer">
+                Twitter
+              </span>
+              <span className="hover:text-primary transition-colors cursor-pointer">
+                GitHub
+              </span>
               <span className="text-primary italic">BORN TO CODE.</span>
             </div>
           </div>

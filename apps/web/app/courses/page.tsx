@@ -9,10 +9,10 @@ import {
   CardDescription,
   CardContent,
   CardFooter,
-} from 'components/ui/card';
-import { Button } from 'components/ui/button';
-import { Input } from 'components/ui/input';
-import { Badge } from 'components/ui/badge';
+} from '@progy/ui/card';
+import { Button } from '@progy/ui/button';
+import { Input } from '@progy/ui/input';
+import { Badge } from '@progy/ui/badge';
 import {
   Search,
   BookOpen,

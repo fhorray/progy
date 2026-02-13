@@ -2,7 +2,7 @@
 
 import { useEffect, useState, Suspense } from 'react';
 import { authClient } from 'lib/auth-client';
-import { Button } from 'components/ui/button';
+import { Button } from '@progy/ui/button';
 import {
   Card,
   CardContent,
@@ -10,8 +10,8 @@ import {
   CardFooter,
   CardHeader,
   CardTitle,
-} from 'components/ui/card';
-import { Badge } from 'components/ui/badge';
+} from '@progy/ui/card';
+import { Badge } from '@progy/ui/badge';
 import {
   Loader2,
   CreditCard,
@@ -43,7 +43,7 @@ import {
   DialogHeader,
   DialogTitle,
   DialogTrigger,
-} from 'components/ui/dialog';
+} from '@progy/ui/dialog';
 import { PackagesTab } from './components/PackagesTab';
 import { Package } from 'lucide-react';
 
@@ -127,11 +127,11 @@ type CourseProgress = {
   updatedAt: string;
 };
 
+import { useDashboard } from '@/hooks/use-dashboard';
+
 export default function Dashboard() {
   const { data: session, isPending } = authClient.useSession();
   const [isLoadingBilling, setIsLoadingBilling] = useState(false);
-  const [progressList, setProgressList] = useState<CourseProgress[]>([]);
-  const [loadingProgress, setLoadingProgress] = useState(true);
   const router = useRouter();
   const [activeTab, setActiveTab] = useState<
     'overview' | 'settings' | 'packages'
@@ -139,11 +139,12 @@ export default function Dashboard() {
   const [newUsername, setNewUsername] = useState('');
   const [isUpdatingUsername, setIsUpdatingUsername] = useState(false);
 
-  useEffect(() => {
-    if (session?.user) {
-      fetchProgress();
-    }
-  }, [session]);
+  const {
+    listProgress,
+    resetCourse,
+    updateUsername: updateUsernameMutation,
+    checkout: checkoutMutation,
+  } = useDashboard(session?.session.token);
 
   useEffect(() => {
     if (session?.user?.username) {
@@ -151,47 +152,10 @@ export default function Dashboard() {
     }
   }, [session]);
 
-  const fetchProgress = async () => {
-    try {
-      const res = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL || 'https://api.progy.dev'}/progress/list`,
-        {
-          headers: {
-            Authorization: `Bearer ${session?.session.token}`,
-          },
-        },
-      );
-      if (res.ok) {
-        const data = (await res.json()) as CourseProgress[];
-        setProgressList(data);
-      }
-    } catch (e) {
-      console.error('Failed to fetch progress', e);
-    } finally {
-      setLoadingProgress(false);
-    }
-  };
-
   const handleResetCourse = async (courseId: string) => {
     try {
-      const res = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL || 'https://api.progy.dev'}/progress/reset`,
-        {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            Authorization: `Bearer ${session?.session.token}`,
-          },
-          body: JSON.stringify({ courseId }),
-        },
-      );
-
-      if (res.ok) {
-        toast.success('Course progress reset successfully');
-        fetchProgress(); // Refresh list
-      } else {
-        toast.error('Failed to reset progress');
-      }
+      await resetCourse.mutateAsync(courseId);
+      toast.success('Course progress reset successfully');
     } catch (e) {
       toast.error('Error resetting progress');
     }
@@ -214,29 +178,12 @@ export default function Dashboard() {
 
     setIsUpdatingUsername(true);
     try {
-      const res = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL || 'https://api.progy.dev'}/user/update-username`,
-        {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            Authorization: `Bearer ${session?.session.token}`,
-          },
-          body: JSON.stringify({ username: newUsername }),
-        },
-      );
-
-      const data = (await res.json()) as { error?: string };
-
-      if (res.ok) {
-        toast.success('Username updated successfully!');
-        // Refresh session to get updated username
-        await authClient.getSession();
-      } else {
-        toast.error(data.error || 'Failed to update username');
-      }
-    } catch (e) {
-      toast.error('Error updating username');
+      await updateUsernameMutation.mutateAsync(newUsername);
+      toast.success('Username updated successfully!');
+      // Refresh session to get updated username
+      await authClient.getSession();
+    } catch (e: any) {
+      toast.error(e.message || 'Error updating username');
     } finally {
       setIsUpdatingUsername(false);
     }
@@ -272,21 +219,9 @@ export default function Dashboard() {
   const handleCheckout = async (planType: 'pro' | 'lifetime') => {
     setIsLoadingBilling(true);
     try {
-      const res = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL || 'https://api.progy.dev'}/billing/checkout?plan=${planType}`,
-        {
-          method: 'POST',
-          credentials: 'include',
-          headers: {
-            'Content-Type': 'application/json',
-            Authorization: `Bearer ${session?.session.token}`,
-          },
-        },
-      );
-
-      const data = (await res.json()) as { url: string };
-      if (data.url) {
-        window.location.href = data.url;
+      const res = await checkoutMutation.mutateAsync(planType);
+      if (res.url) {
+        window.location.href = res.url;
       } else {
         toast.error('Failed to start checkout');
       }
@@ -525,7 +460,7 @@ export default function Dashboard() {
                       </h2>
                     </div>
 
-                    {loadingProgress ? (
+                    {listProgress.isLoading ? (
                       <div className="grid md:grid-cols-2 gap-4">
                         {[1, 2].map((i) => (
                           <div
@@ -534,7 +469,7 @@ export default function Dashboard() {
                           ></div>
                         ))}
                       </div>
-                    ) : progressList.length === 0 ? (
+                    ) : !listProgress.data || listProgress.data.length === 0 ? (
                       <div className="text-center py-16 bg-white/2 backdrop-blur-sm rounded-3xl border border-white/5 border-dashed">
                         <Terminal className="w-12 h-12 text-white/5 mx-auto mb-5" />
                         <h3 className="text-sm font-black uppercase tracking-widest text-muted-foreground/60 mb-2">
@@ -550,7 +485,7 @@ export default function Dashboard() {
                       </div>
                     ) : (
                       <div className="grid md:grid-cols-2 gap-5">
-                        {progressList.map((course) => (
+                        {listProgress.data.map((course) => (
                           <Card
                             key={course.courseId}
                             className="bg-white/5 border-white/5 hover:border-primary/20 transition-all hover:-translate-y-1 group rounded-3xl p-1"
@@ -614,12 +549,15 @@ export default function Dashboard() {
                                     <Button
                                       variant="destructive"
                                       size="sm"
+                                      disabled={resetCourse.isPending}
                                       onClick={() =>
                                         handleResetCourse(course.courseId)
                                       }
                                       className="uppercase font-black text-[10px] rounded-xl h-10 px-6"
                                     >
-                                      Confirm Reset
+                                      {resetCourse.isPending
+                                        ? 'Resetting...'
+                                        : 'Confirm Reset'}
                                     </Button>
                                   </DialogFooter>
                                 </DialogContent>

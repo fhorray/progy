@@ -274,6 +274,32 @@ export const explainExercise = async () => {
 };
 
 /**
+ * Deletes a specific AI history item.
+ * @param {string} itemId - The ID of the item to delete.
+ */
+export const deleteAiHistoryItem = (itemId: string) => {
+  const currentHistory = $aiHistory.get();
+  const newHistory = currentHistory.filter(item => item.id !== itemId);
+  $aiHistory.set(newHistory);
+
+  // Also clear the active AI response if it matches the deleted item
+  // This is a bit tricky because AI response is just a string, but usually
+  // if we are deleting from history we might want to clear the view if it's showing that exact content?
+  // For now, we'll leave the active view as is unless the user explicitly navigates away.
+};
+
+/**
+ * Clears all AI history for a specific exercise.
+ * @param {string} exerciseId - The ID of the exercise.
+ */
+export const clearAiHistory = (exerciseId: string) => {
+  const currentHistory = $aiHistory.get();
+  const newHistory = currentHistory.filter(item => item.exerciseId !== exerciseId);
+  $aiHistory.set(newHistory);
+  $aiResponse.set(null); // Clear the current view as well
+};
+
+/**
  * Syncs AI content to GitHub by saving a file and pushing it.
  */
 async function syncAiToGithub(exercise: Exercise, type: 'hint' | 'explanation', content: string) {

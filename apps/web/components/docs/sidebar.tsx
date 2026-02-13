@@ -1,7 +1,7 @@
 import { Zap, Menu } from 'lucide-react';
 import { navData } from './nav-data';
-import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
-import { ScrollArea } from '@/components/ui/scroll-area';
+import { Sheet, SheetContent, SheetTrigger } from '@progy/ui/sheet';
+import { ScrollArea } from '@progy/ui/scroll-area';
 import { useState } from 'react';
 
 interface DocsSidebarProps {

@@ -1,8 +1,8 @@
 import React from 'react';
 import { Sparkles } from 'lucide-react';
-import { Card } from './ui/card';
-import { Badge } from './ui/badge';
-import { Button } from './ui/button';
+import { Card } from '@progy/ui/card';
+import { Badge } from '@progy/ui/badge';
+import { Button } from '@progy/ui/button';
 
 interface ChallengeDisplayProps {
   challenge: any;
@@ -63,7 +63,9 @@ export function ChallengeDisplay({
           <div className="flex items-center gap-2 text-amber-400 text-xs font-bold mb-2 uppercase tracking-wider">
             <Sparkles className="w-4 h-4" /> Dica
           </div>
-          <p className="text-amber-200/90 text-sm leading-relaxed">{challenge.hint}</p>
+          <p className="text-amber-200/90 text-sm leading-relaxed">
+            {challenge.hint}
+          </p>
         </div>
 
         {challenge.message && (
@@ -78,7 +80,11 @@ export function ChallengeDisplay({
         )}
 
         <div className="flex flex-col sm:flex-row gap-3">
-          <Button onClick={handleCopy} variant="outline" className="flex-1 font-bold">
+          <Button
+            onClick={handleCopy}
+            variant="outline"
+            className="flex-1 font-bold"
+          >
             Copiar Código / Caminho
           </Button>
           <Button

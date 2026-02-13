@@ -2,7 +2,7 @@
 
 import React, { useState } from 'react';
 import { ChevronRight } from 'lucide-react';
-import { Separator } from '@/components/ui/separator';
+import { Separator } from '@progy/ui/separator';
 import { DocsSidebar, MobileSidebarTrigger } from '@/components/docs/sidebar';
 import { OnThisPage } from '@/components/docs/on-this-page';
 import { navData } from '@/components/docs/nav-data';

@@ -35,6 +35,9 @@ import {
   Settings,
   Terminal,
   PlayIcon,
+  Sparkles,
+  HistoryIcon,
+  XIcon,
 } from 'lucide-react';
 import { TerminalPanel } from './TerminalPanel';
 import {
@@ -312,10 +315,11 @@ function TabBar() {
           return (
             <div
               key={tab.path}
-              className={`flex items-center gap-1.5 px-3 py-2 text-xs cursor-pointer border-r border-zinc-800/50 shrink-0 transition-colors ${isActive
-                ? 'bg-zinc-800/60 text-zinc-100 border-b-2 border-b-orange-500'
-                : 'text-zinc-500 hover:text-zinc-300 hover:bg-zinc-800/30 border-b-2 border-b-transparent'
-                }`}
+              className={`flex items-center gap-1.5 px-3 py-2 text-xs cursor-pointer border-r border-zinc-800/50 shrink-0 transition-colors ${
+                isActive
+                  ? 'bg-zinc-800/60 text-zinc-100 border-b-2 border-b-orange-500'
+                  : 'text-zinc-500 hover:text-zinc-300 hover:bg-zinc-800/30 border-b-2 border-b-transparent'
+              }`}
               onClick={() => $activeTabPath.set(tab.path)}
               onContextMenu={(e) => handleContextMenu(e, tab.path)}
             >
@@ -333,7 +337,7 @@ function TabBar() {
                   closeTab(tab.path);
                 }}
               >
-                <X size={12} />
+                <XIcon size={12} />
               </button>
             </div>
           );
@@ -490,10 +494,11 @@ export function EditorLayout() {
 
           <button
             onClick={() => setShowGraph(!showGraph)}
-            className={`flex items-center gap-1.5 px-3 py-1 rounded text-xs font-medium transition-colors ${showGraph
-              ? 'bg-orange-600 hover:bg-orange-500 text-white'
-              : 'bg-zinc-800 hover:bg-zinc-700 text-zinc-300 border border-zinc-700/50'
-              }`}
+            className={`flex items-center gap-1.5 px-3 py-1 rounded text-xs font-medium transition-colors ${
+              showGraph
+                ? 'bg-orange-600 hover:bg-orange-500 text-white'
+                : 'bg-zinc-800 hover:bg-zinc-700 text-zinc-300 border border-zinc-700/50'
+            }`}
             title="Course Dependency Graph"
           >
             <Network size={12} />
@@ -502,10 +507,11 @@ export function EditorLayout() {
 
           <button
             onClick={() => setShowTerminal(!showTerminal)}
-            className={`flex items-center gap-1.5 px-3 py-1 rounded text-xs font-medium transition-colors ${showTerminal
-              ? 'bg-zinc-800 text-white border border-orange-500/50'
-              : 'bg-zinc-800 hover:bg-zinc-700 text-zinc-300 border border-zinc-700/50'
-              }`}
+            className={`flex items-center gap-1.5 px-3 py-1 rounded text-xs font-medium transition-colors ${
+              showTerminal
+                ? 'bg-zinc-800 text-white border border-orange-500/50'
+                : 'bg-zinc-800 hover:bg-zinc-700 text-zinc-300 border border-zinc-700/50'
+            }`}
           >
             <Terminal size={12} />
             Terminal
@@ -686,10 +692,11 @@ export function EditorLayout() {
       {/* Validation Results Toast */}
       {validationResult && (
         <div
-          className={`fixed bottom-10 right-6 z-50 max-w-md rounded-xl border shadow-2xl p-4 ${validationResult.success
-            ? 'bg-emerald-950/90 border-emerald-700/50'
-            : 'bg-red-950/90 border-red-700/50'
-            }`}
+          className={`fixed bottom-10 right-6 z-50 max-w-md rounded-xl border shadow-2xl p-4 ${
+            validationResult.success
+              ? 'bg-emerald-950/90 border-emerald-700/50'
+              : 'bg-red-950/90 border-red-700/50'
+          }`}
         >
           <div className="flex items-start gap-3">
             {validationResult.success ? (
@@ -705,8 +712,9 @@ export function EditorLayout() {
             )}
             <div className="flex-1 min-w-0">
               <p
-                className={`text-sm font-semibold ${validationResult.success ? 'text-emerald-300' : 'text-red-300'
-                  }`}
+                className={`text-sm font-semibold ${
+                  validationResult.success ? 'text-emerald-300' : 'text-red-300'
+                }`}
               >
                 {validationResult.success
                   ? 'Validation Passed!'

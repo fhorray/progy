@@ -2,9 +2,9 @@
 
 import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { Button } from 'components/ui/button';
+import { Button } from '@progy/ui/button';
 import { CheckCircle2, Rocket, ArrowRight } from 'lucide-react';
-import { Badge } from 'components/ui/badge';
+import { Badge } from '@progy/ui/badge';
 import Link from 'next/link';
 
 export default function SuccessPage() {
