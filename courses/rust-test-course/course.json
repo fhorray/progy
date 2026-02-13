@@ -1,0 +1,37 @@
+{
+  "id": "rust-test-runners",
+  "name": "Rust Test (Multi-Runner)",
+  "version": "0.0.1",
+  "content": {
+    "root": "content",
+    "exercises": "content"
+  },
+  "runner": {
+    "id": "process-local",
+    "name": "Local (Process)",
+    "type": "process",
+    "command": "./runner/main",
+    "args": ["{{exercise}}"],
+    "cwd": "."
+  },
+  "runners": [
+    {
+      "id": "process-local",
+      "name": "Local (Process)",
+      "type": "process",
+      "command": "./runner/main",
+      "args": ["{{exercise}}"],
+      "cwd": "."
+    },
+    {
+      "id": "docker-rust",
+      "name": "Docker (Rust Container)",
+      "type": "docker-file",
+      "command": "cargo run --quiet --bin runner -- {{exercise}}",
+      "args": [],
+      "cwd": ".",
+      "dockerfile": "Dockerfile",
+      "image_tag": "rust-runner-test:latest"
+    }
+  ]
+}
