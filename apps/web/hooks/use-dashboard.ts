@@ -153,6 +153,7 @@ export const useDashboard = (token?: string) => {
         if (!res.ok) throw new Error('Failed to fetch package');
         return (await res.json()) as RegistryPackage & {
           versions: RegistryVersion[];
+          downloads: number;
         };
       },
     });

@@ -1,5 +1,5 @@
 import { drizzle } from 'drizzle-orm/d1';
-import { eq, and, desc, inArray } from 'drizzle-orm';
+import { eq, and, desc, inArray, sql } from 'drizzle-orm';
 import * as schema from '../db/schema';
 
 export class RegistryService {
@@ -62,10 +62,14 @@ export class RegistryService {
     };
   }
 
-  async downloadArtifact(scope: string, slug: string, version: string) {
+  async downloadArtifact(scope: string, slug: string, version: string, userId?: string, ipAddress?: string) {
     const name = `@${scope}/${slug}`;
     const versionData = await this.db
-      .select({ storageKey: schema.registryVersions.storageKey })
+      .select({
+        storageKey: schema.registryVersions.storageKey,
+        packageId: schema.registryVersions.packageId,
+        id: schema.registryVersions.id
+      })
       .from(schema.registryVersions)
       .innerJoin(schema.registryPackages, eq(schema.registryVersions.packageId, schema.registryPackages.id))
       .where(and(eq(schema.registryPackages.name, name), eq(schema.registryVersions.version, version)))
@@ -75,6 +79,46 @@ export class RegistryService {
 
     const object = await this.env.R2.get(versionData.storageKey);
     if (!object) throw new Error('Artifact not found in storage');
+
+    // Track download asynchronously (fire and forget to not block download)
+    const trackDownload = async () => {
+      try {
+        await this.db.insert(schema.registryDownloads).values({
+          id: crypto.randomUUID(),
+          packageId: versionData.packageId,
+          versionId: versionData.id,
+          userId: userId || null,
+          ipAddress: ipAddress || null,
+          downloadedAt: new Date(),
+        });
+
+        const today = new Date().toISOString().split('T')[0];
+        const existingStat = await this.db
+          .select()
+          .from(schema.registryStats)
+          .where(and(eq(schema.registryStats.packageId, versionData.packageId), eq(schema.registryStats.date, today)))
+          .get();
+
+        if (existingStat) {
+          await this.db
+            .update(schema.registryStats)
+            .set({ downloadCount: existingStat.downloadCount + 1 })
+            .where(eq(schema.registryStats.id, existingStat.id));
+        } else {
+          await this.db.insert(schema.registryStats).values({
+            id: crypto.randomUUID(),
+            packageId: versionData.packageId,
+            date: today,
+            downloadCount: 1,
+          });
+        }
+      } catch (e) {
+        console.error('Failed to track download:', e);
+      }
+    };
+
+    // Execute tracking without awaiting
+    trackDownload();
 
     return object;
   }
@@ -256,9 +300,17 @@ export class RegistryService {
       manifest: v.manifest ? JSON.parse(v.manifest as string) : null
     }));
 
+    // Fetch total downloads
+    const downloadStats = await this.db
+      .select({ total: sql<number>`sum(${schema.registryStats.downloadCount})` })
+      .from(schema.registryStats)
+      .where(eq(schema.registryStats.packageId, pkg.id))
+      .get();
+
     return {
       ...pkg,
-      versions: versionsWithParsedData
+      versions: versionsWithParsedData,
+      downloads: downloadStats?.total || 0,
     };
   }
 

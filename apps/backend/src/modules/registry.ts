@@ -29,9 +29,11 @@ const registry = new Hono<{
     zValidator('param', z.object({ scope: z.string(), slug: z.string(), version: z.string() })),
     async (c) => {
       const { scope, slug, version } = c.req.valid('param');
+      const user = c.get('user');
       const service = new RegistryService(c.env);
+      const ip = c.req.header('CF-Connecting-IP') || 'unknown';
       try {
-        const object = await service.downloadArtifact(scope, slug, version);
+        const object = await service.downloadArtifact(scope, slug, version, user?.id, ip);
         const headers = new Headers();
         object.writeHttpMetadata(headers);
         headers.set('etag', object.httpEtag);

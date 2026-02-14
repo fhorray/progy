@@ -218,7 +218,7 @@ export default function PackageDetailsPage() {
               <CardContent className="p-6 space-y-4">
                 <div className="flex items-center justify-between">
                   <span className="text-[10px] uppercase font-bold text-muted-foreground tracking-widest">Downloads</span>
-                  <span className="text-xl font-black text-white italic">0</span> {/* Mocked for now */}
+                  <span className="text-xl font-black text-white italic">{pkg.downloads || 0}</span>
                 </div>
                 <div className="h-px bg-white/5" />
                 <div className="flex items-center justify-between">
