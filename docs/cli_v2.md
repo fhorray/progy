@@ -1,110 +1,105 @@
+
 # Progy CLI Documentation (v2)
 
-The Progy CLI is the interactive runner and learning platform for students. It manages the lifecycle of Progy courses, handles progress synchronization, and provides a local environment for code execution.
-
-> [!NOTE]
-> **Instructor Tools Moved**: Commands for course creation and authoring (e.g., `dev`, `pack`, `publish`) have been migrated to **Progy Studio**.
+The Progy ecosystem consists of two main CLIs:
+1.  **`@progy/cli`** (`progy`): For students/consumers to learn and run courses.
+2.  **`@progy/studio`** (`progy-studio`): For instructors/creators to build and publish courses.
 
 ---
 
-## 1. Getting Started
+## 1. Student CLI (`progy`)
 
 ### Installation
-
-The Progy CLI is distributed via the `@progy/cli` package and runs on **Bun**.
-
 ```bash
-# Run without installation
 bunx @progy/cli start
 ```
 
-### Initializing a Course
+### Commands
 
-Use `progy init` to download a course from the registry or a Git repository.
+#### `progy start [file]`
+Starts the interactive learning environment.
+- **Arguments**: `[file]` (Optional) Path to a `.progy` file.
+- **Options**: `--offline` (Disable cloud sync).
 
+#### `progy init <package>`
+Initializes a new course environment from the Registry or Git.
+- **Example**: `progy init sql-basics` or `progy init @myuser/advanced-rust`
+
+#### `progy upgrade`
+Checks for updates to the current course and applies them.
+- **Behavior**:
+    1.  Checks `progy.toml` for the current version.
+    2.  Queries the Registry for the latest version.
+    3.  If an update is available, downloads and applies it (preserving user progress where possible).
+
+#### `progy login` / `logout` / `whoami`
+Manage your Progy account session.
+
+#### `progy config`
+- `progy config list`: Show settings.
+- `progy config set <key> <value>`: Update settings (e.g., `ai.provider`).
+
+#### `progy reset <path>`
+Resets a specific exercise file to its original state.
+
+---
+
+## 2. Studio CLI (`progy-studio`)
+
+Tools for creating, testing, and publishing courses.
+
+### Installation
 ```bash
-progy init sql-basics
+bunx @progy/studio [command]
 ```
 
----
+### Commands
 
-## 2. Command Reference
+#### `progy-studio create <name>`
+Scaffolds a new Progy course structure.
+- **Example**: `progy-studio create my-new-course`
 
-### `progy start [file]`
+#### `progy-studio dev`
+Starts the Studio editor in **Development Mode**.
+- **Features**: Hot-reloading, preview mode for verifying course content as you edit.
+- **Options**: `-p, --port <number>` (Default: 3000)
 
-The primary command for students. Starts the interactive learning environment.
+#### `progy-studio test [dir]`
+Validates the course structure and configuration locally.
+- Checks for valid `progy.toml` or `course.json`.
+- Verifies folder structure (content, metadata).
 
-- **Arguments**:
-  - `[file]`: (Optional) Path to a specific `.progy` course artifact to open.
-- **Options**:
-  - `--offline`: Force-disables cloud synchronization.
+#### `progy-studio pack [dir]`
+Packages the course into a `.progy` archive for distribution.
+- **Output**: `course.progy` (or similar).
+
+#### `progy-studio version`
+Manage course semantic versioning.
+- **Usage**:
+    - `progy-studio version`: Show current version.
+    - `progy-studio version --minor`: Bump minor version (e.g., 0.1.0 -> 0.2.0).
+    - **Options**: `--major`, `--minor`, `--patch`.
+
+#### `progy-studio publish`
+Publishes the course to the Progy Registry.
+- **Prerequisites**: Must be logged in (`progy login`).
 - **Behavior**:
-  1.  Detects the environment (Instructor vs Student).
-  2.  Resolves course assets from the local cache or registry.
-  3.  Starts the local Progy server and launches the student UI.
-  4.  Monitors file changes for auto-saving progress.
-
-### `progy init <package>`
-
-Initializes a new course environment from the Progy Registry.
-
-- **Arguments**:
-  - `<package>`: The registry package name (e.g., `sql-basics` or `@scope/course`).
+    - Automatically builds/packs the course.
+    - **Auto-Scoping**: If the course ID is generic (e.g. `my-course`), it is automatically scoped to your user (e.g. `@username/my-course`).
+    - **Metadata**: Extracts title, description, and tags from config.
 - **Options**:
-  - `--offline`: Forces local-only setup.
-
-### Authentication
-
-Manage your Progy account session to sync progress across devices.
-
-- **`progy login`**: Authenticates via the browser.
-- **`progy logout`**: Clears the local session.
-- **`progy whoami`**: Displays the currently logged-in user.
-
-### Configuration
-
-Manage CLI and runner settings.
-
-- **`progy config list`**: Shows all active configurations.
-- **`progy config set <path> <value>`**: Updates a setting (e.g., `config set ai.provider openai`).
-
-### Utilities
-
-- **`progy reset <path>`**: Resets a specific exercise file to its original state (useful if you want to start an exercise over).
-- **`progy kill-port <port>`**: Forces termination of a process running on a specific port (e.g., if a previous Progy session didn't close properly).
+    - `--major`, `--minor`, `--patch`: Bump version before publishing.
 
 ---
 
-## 3. Instructor Commands (Moved to Studio)
-
-The following commands are no longer natively supported in the CLI. Attempting to run them will provide a redirection message:
-
-| Command   | Action                     | New Tool        |
-| :-------- | :------------------------- | :-------------- |
-| `create`  | Create new course          | `@progy/studio` |
-| `add`     | Add modules/exercises      | `@progy/studio` |
-| `test`    | Run authoring tests        | `@progy/studio` |
-| `dev`     | Preview course changes     | `@progy/studio` |
-| `pack`    | Export `.progy` artifact   | `@progy/studio` |
-| `publish` | Upload to Registry         | `@progy/studio` |
-| `version` | Manage semantic versioning | `@progy/studio` |
-
----
-
-## 4. Architecture (Internal)
+## 3. Architecture
 
 ### Layering System
-
-When running a course from the registry, the CLI uses a layering system:
-
+When running a course, Progy uses a layering system:
 1.  **Immutable Layer**: The `.progy` artifact (read-only).
 2.  **Mutable Layer**: Your local workspace.
 
-The CLI ensures that exercise files are copied into your workspace as you progress, while the runner reads core assets from the immutable side to ensure stability.
-
 ### The Runner Engine
-
-The CLI executes your code using the engine defined by the course instructor:
-
-- **Process**: Native execution on your machine.
-- **Docker**: Isolated execution within a container (requires Docker).
+The CLI executes code using the engine defined in `progy.toml`:
+- **Process**: Native execution.
+- **Docker**: Isolated execution.

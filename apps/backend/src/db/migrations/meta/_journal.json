@@ -8,6 +8,13 @@
       "when": 1770829579619,
       "tag": "0000_overjoyed_trish_tilby",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "6",
+      "when": 1771042951139,
+      "tag": "0001_sturdy_reavers",
+      "breakpoints": true
     }
   ]
 }

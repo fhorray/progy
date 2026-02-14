@@ -54,3 +54,20 @@ export async function clearToken(): Promise<void> {
   delete config.token;
   await saveGlobalConfig(config);
 }
+
+export async function getUser(): Promise<any | null> {
+  const token = await loadToken();
+  if (!token) return null;
+
+  try {
+    const { BACKEND_URL } = await import("./paths.ts");
+    const res = await fetch(`${BACKEND_URL}/auth/get-session`, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    if (res.ok) {
+      const data = await res.json();
+      return data.user || data;
+    }
+  } catch (e) { }
+  return null;
+}

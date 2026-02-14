@@ -1,5 +1,5 @@
 // Core utilities - Refreshed legacy exports
-export { exists } from "./utils";
+export { exists, slugify } from "./utils";
 
 // Paths & constants
 export {
@@ -27,6 +27,7 @@ export {
   loadToken,
   saveToken,
   clearToken,
+  getUser
 } from "./config";
 export type { AIConfig, GlobalConfig } from "./config";
 
@@ -39,6 +40,7 @@ export type { GitResult } from "./git";
 
 // Course loader
 export { CourseLoader, spawnPromise } from "./loader";
+export { CoursePublisher } from "./publisher";
 
 // Course container
 export { CourseContainer } from "./container";
@@ -94,5 +96,7 @@ export {
 export {
   BACKEND_URL as HELPERS_BACKEND_URL,
 } from "./paths";
+
+export type { ServerType } from "./types";
 
 

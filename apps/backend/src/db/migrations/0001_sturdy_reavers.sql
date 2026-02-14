@@ -1,0 +1,1 @@
+ALTER TABLE `registries_versions` ADD `guard` text;

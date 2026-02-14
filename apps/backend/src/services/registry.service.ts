@@ -232,12 +232,43 @@ export class RegistryService {
   }
 
   async listMyPackages(userId: string) {
-    return await this.db
-      .select()
+    const packages = await this.db
+      .select({
+        id: schema.registryPackages.id,
+        name: schema.registryPackages.name,
+        slug: schema.registryPackages.slug,
+        description: schema.registryPackages.description,
+        status: schema.registryPackages.status,
+        latestVersion: schema.registryPackages.latestVersion,
+        isPublic: schema.registryPackages.isPublic,
+        updatedAt: schema.registryPackages.updatedAt,
+      })
       .from(schema.registryPackages)
       .where(eq(schema.registryPackages.userId, userId))
       .orderBy(desc(schema.registryPackages.updatedAt))
       .all();
+
+    // Fetch guard info for each package's latest version
+    const packagesWithGuard = await Promise.all(
+      packages.map(async (pkg) => {
+        if (!pkg.latestVersion) return { ...pkg, guard: null };
+
+        const versionData = await this.db
+          .select({ guard: schema.registryVersions.guard })
+          .from(schema.registryVersions)
+          .where(
+            and(
+              eq(schema.registryVersions.packageId, pkg.id),
+              eq(schema.registryVersions.version, pkg.latestVersion)
+            )
+          )
+          .get();
+
+        return { ...pkg, guard: versionData?.guard ? JSON.parse(versionData.guard) : null };
+      })
+    );
+
+    return packagesWithGuard;
   }
 
   async updatePackage(userId: string, id: string, body: any) {

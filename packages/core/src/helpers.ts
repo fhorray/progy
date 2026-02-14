@@ -92,7 +92,20 @@ export async function getCourseConfig(): Promise<CourseConfig | null> {
     try {
       if (await exists(path)) {
         const text = await readFile(path, "utf-8");
-        return JSON.parse(text);
+        const config = JSON.parse(text);
+
+        // --- ID Migration / Default Logic ---
+        // If course.json belongs to an instructor (local dev), we derive ID from name if missing.
+        if (!config.id && (config.name || config.title)) {
+          const { slugify, getUser } = await import("./index.ts");
+          const user = await getUser();
+          const slug = slugify(config.name || config.title);
+          // We can only derive a SCOPED ID if we have a user.
+          // Fallback to unscoped if guest, but for cloud sync we need a user anyway.
+          config.id = user?.username ? `@${user.username}/${slug}` : slug;
+        }
+
+        return config;
       }
     } catch (e) {
       logger.warn(`Failed to read course config at ${path}: ${e}`);
@@ -105,6 +118,11 @@ export async function ensureConfig() {
   if (!currentConfig) {
     currentConfig = await getCourseConfig();
   }
+
+  // Extra layer check: If still no ID but it's a student progy.toml, 
+  // ensure we use whatever is in progy.toml (already handled by getCourseConfig usually,
+  // but progy.toml is managed by SyncManager).
+
   return currentConfig;
 }
 

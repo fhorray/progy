@@ -1,3 +1,4 @@
+import type { BunRequest } from "bun";
 import { z } from "zod";
 
 /**
@@ -7,7 +8,7 @@ import { z } from "zod";
  */
 
 const RunnerSchema = z.object({
-  id: z.string().optional(),
+  id: z.string(),
   name: z.string().optional(),
   type: z.enum(["process", "docker-file", "docker-compose"]).optional().default("process"),
   command: z.string(),
@@ -58,7 +59,7 @@ const AchievementSchema = z.object({
 });
 
 export const CourseConfigSchema = z.object({
-  id: z.string(),
+  id: z.string().optional(),
   name: z.string(),
   version: z.string().optional().default("1.0.0"), // Add versioning
   runners: z.array(RunnerSchema),
@@ -307,3 +308,7 @@ export type Notification = z.infer<typeof NotificationSchema>;
 export type ManifestEntry = z.infer<typeof ManifestEntrySchema>;
 export type SRPDiagnostic = z.infer<typeof SRPDiagnosticSchema>;
 export type SRPOutput = z.infer<typeof SRPOutputSchema>;
+
+
+// Server
+export type ServerType<P extends string = string> = (req: BunRequest<P>) => Response | Promise<Response>;

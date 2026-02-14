@@ -43,7 +43,9 @@ export const registryVersions = sqliteTable(
     manifest: text('manifest'),
     status: text('status', { enum: ['pending', 'active', 'rejected'] }).notNull().default('pending'),
     statusMessage: text('status_message'),
+    guard: text('guard'), // AI Analysis results (JSON)
     createdAt: integer('created_at', { mode: 'timestamp' })
+
       .notNull()
       .$defaultFn(() => new Date()),
   },

@@ -534,30 +534,29 @@ export default function Dashboard() {
                                     <Trash2 className="w-3 h-3 mr-1.5" /> Reset
                                   </Button>
                                 </DialogTrigger>
-                                <DialogContent className="bg-zinc-950 border-white/10 rounded-3xl">
+                                <DialogContent className="bg-zinc-950/90 backdrop-blur-xl border-white/10 rounded-[2rem] sm:max-w-[400px] p-8 shadow-2xl shadow-black">
                                   <DialogHeader>
                                     <DialogTitle className="text-white uppercase font-black italic tracking-tight">
                                       Reset Progress?
                                     </DialogTitle>
-                                    <DialogDescription className="text-muted-foreground text-xs italic">
-                                      Are you sure you want to delete all
-                                      progress for {course.courseId}? This
-                                      cannot be undone.
+                                    <DialogDescription className="text-muted-foreground/60 text-[11px] italic leading-relaxed pt-2">
+                                      Are you sure you want to <span className="text-destructive font-black">wipe all data</span> for {course.courseId}?
+                                      This will permanently delete exercises and quiz history.
                                     </DialogDescription>
                                   </DialogHeader>
-                                  <DialogFooter className="mt-6 gap-2">
+                                  <DialogFooter className="mt-8">
                                     <Button
                                       variant="destructive"
-                                      size="sm"
+                                      size="lg"
                                       disabled={resetCourse.isPending}
                                       onClick={() =>
                                         handleResetCourse(course.courseId)
                                       }
-                                      className="uppercase font-black text-[10px] rounded-xl h-10 px-6"
+                                      className="w-full uppercase font-black text-[11px] tracking-[0.2em] rounded-2xl h-14 px-8 shadow-xl shadow-destructive/20 active:scale-95 transition-all"
                                     >
                                       {resetCourse.isPending
                                         ? 'Resetting...'
-                                        : 'Confirm Reset'}
+                                        : 'Execute Reset'}
                                     </Button>
                                   </DialogFooter>
                                 </DialogContent>

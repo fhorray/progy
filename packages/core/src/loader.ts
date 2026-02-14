@@ -9,7 +9,7 @@ import { CourseConfigSchema, ModuleInfoSchema, QuizSchema, type CourseConfig, } 
 const getBackendUrl = () => process.env.PROGY_API_URL || DEFAULT_BACKEND_URL;
 
 export class CourseLoader {
-  static async resolveSource(courseInput: string): Promise<{ url: string; branch?: string; path?: string; isRegistry?: boolean; id?: string; scope?: string; name?: string }> {
+  static async resolveSource(courseInput: string): Promise<{ url: string; branch?: string; path?: string; isRegistry?: boolean; id?: string; scope?: string; name?: string; version?: string }> {
     // 1. Local Paths
     const resolvedLocal = resolve(courseInput);
     if (await exists(resolvedLocal)) {
@@ -39,6 +39,7 @@ export class CourseLoader {
           id: query,
           scope: data.scope,
           name: data.name,
+          version: data.latest,
           url: data.downloadUrl || `${getBackendUrl()}/registry/download/${data.scope}/${data.slug}/${data.latest}`,
           isRegistry: true
         };

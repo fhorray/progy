@@ -11,6 +11,7 @@ import { authRoutes } from "./endpoints/auth";
 import { settingsRoutes } from "./endpoints/settings";
 import { gitRoutes } from "./endpoints/git";
 import { notesRoutes } from "./endpoints/notes";
+import { notificationRoutes } from "./endpoints/notifications";
 
 import { logger } from "@progy/core";
 import { PORTS } from "@consts";
@@ -45,6 +46,7 @@ try {
       ...settingsRoutes,
       ...gitRoutes,
       ...notesRoutes,
+      ...notificationRoutes,
     },
     development: { hmr: process.env.ENABLE_HMR === "true" },
     async fetch(req) {

@@ -16,8 +16,10 @@ type RegistryPackage = {
   status: 'draft' | 'published' | 'archived' | 'deleted' | 'in_review' | 'rejected' | 'banned' | 'in_development';
   latestVersion: string | null;
   isPublic: boolean;
+  guard?: { passed: boolean; reason: string } | null;
   updatedAt: string;
 };
+
 
 export const useDashboard = (token?: string) => {
   const queryClient = useQueryClient();

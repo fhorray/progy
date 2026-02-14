@@ -12,6 +12,8 @@ program
   .description("Progy Studio - Visual Course Editor")
   .version("0.1.0");
 
+console.log(`[DEBUG] Progy Studio CLI Loaded (v${process.env.PROGY_VERSION || "DEV"})`);
+
 program
   .command("start")
   .description("Start the Progy Studio editor")
@@ -30,5 +32,22 @@ program
       }
     });
   });
+
+// --- Studio Commands ---
+import { pack } from "./commands/pack";
+import { create } from "./commands/create";
+import { add } from "./commands/add";
+import { test } from "./commands/test";
+import { publish } from "./commands/publish";
+import { dev } from "./commands/dev";
+import { version } from "./commands/version";
+
+pack(program);
+create(program);
+add(program);
+test(program);
+publish(program);
+dev(program);
+version(program);
 
 program.parse();

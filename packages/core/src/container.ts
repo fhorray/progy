@@ -68,6 +68,30 @@ export class CourseContainer {
   }
 
   /**
+   * Downloads a course from a URL and unpacks it to a directory
+   */
+  static async downloadAndUnpack(url: string, destDir: string) {
+    const response = await fetch(url);
+    if (!response.ok) throw new Error(`Failed to download course: ${response.statusText}`);
+
+    const arrayBuffer = await response.arrayBuffer();
+    const buffer = Buffer.from(arrayBuffer);
+    const zip = new AdmZip(buffer);
+
+    if (await exists(destDir)) {
+      await rm(destDir, { recursive: true, force: true });
+    }
+    await mkdir(destDir, { recursive: true });
+
+    await new Promise<void>((resolve, reject) => {
+      zip.extractAllToAsync(destDir, true, false, (err?: Error) => {
+        if (err) reject(err);
+        else resolve();
+      });
+    });
+  }
+
+  /**
    * Syncs changes from runtime directory back to the .progy archive
    */
   static async sync(runtimeDir: string, destFile: string) {

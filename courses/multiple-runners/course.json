@@ -1,7 +1,6 @@
 {
-  "id": "rust-test-runners",
   "name": "Rust Test (Multi-Runner)",
-  "version": "0.1.0",
+  "version": "0.10.0",
   "content": {
     "root": "content",
     "exercises": "content"

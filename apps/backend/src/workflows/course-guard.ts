@@ -6,6 +6,7 @@ import { eq } from 'drizzle-orm';
 import { generateText } from 'ai';
 import { getModel } from '../lib/ai';
 import { unzipSync } from 'fflate';
+import { workflowLogger } from './utils';
 
 type CourseGuardParams = {
   versionId: string;
@@ -17,10 +18,10 @@ export class CourseGuardWorkflow extends WorkflowEntrypoint<CloudflareBindings, 
   async run(event: WorkflowEvent<CourseGuardParams>, step: WorkflowStep): Promise<void> {
     const { versionId, packageName, version } = event.payload;
     const db = drizzle(this.env.DB);
+    const logger = workflowLogger(step, 'CourseGuard');
 
-    // 0. Fetch Artifact from R2 and Unzip
+    // 0. Fetch Artifact
     const unzippedFiles = await step.do('Unzip Artifact', async () => {
-      // Get storage key from DB first
       const versionData = await db.select({
         storageKey: schema.registryVersions.storageKey
       })
@@ -30,50 +31,39 @@ export class CourseGuardWorkflow extends WorkflowEntrypoint<CloudflareBindings, 
 
       if (!versionData?.storageKey) throw new Error('Artifact storage key not found');
 
-      console.log(`[CourseGuard] Fetching artifact: ${versionData.storageKey}`);
       const obj = await this.env.R2.get(versionData.storageKey);
       if (!obj) throw new Error('Artifact not found in R2');
 
       const buffer = await obj.arrayBuffer();
       const files = unzipSync(new Uint8Array(buffer));
 
-      console.log(`[CourseGuard] Unzipped ${Object.keys(files).length} files`);
-
-      // Convert to a plain object with hex or text representation if needed, 
-      // but here we just need to know which ones are scripts and course.json
       return Object.keys(files).reduce((acc: Record<string, string>, key) => {
-        // We only care about text files for validation
         const content = new TextDecoder().decode(files[key]);
         acc[key] = content;
         return acc;
       }, {});
     });
 
-    // 1. Static Analysis (Security Scan)
+    await logger.info(`Unzipped ${Object.keys(unzippedFiles).length} files`);
+
+    // 1. Static Analysis
     const securityResult = await step.do('Security Scan', async () => {
       const scriptExtensions = ['.py', '.sh', '.js', 'Dockerfile'];
       const filesToScan = Object.keys(unzippedFiles).filter(key =>
         scriptExtensions.some(ext => key.endsWith(ext))
       );
 
-      console.log(`[CourseGuard-Security] Files matched for scanning: ${filesToScan.join(', ')}`);
-
       if (filesToScan.length === 0) {
-        console.log(`[CourseGuard-Security] No scripts found to scan. Skipping.`);
         return { passed: true, reason: 'No scripts to scan' };
       }
 
-      // Sample a few files for AI review
       const sample = filesToScan.slice(0, 5);
       let contextFiles = "";
-
       for (const key of sample) {
         contextFiles += `\n--- FILE: ${key} ---\n${unzippedFiles[key]}\n`;
       }
 
-      console.log(`[CourseGuard-Security] Sending sample to AI for review...`);
       const model = getModel({ provider: 'openai', apiKey: this.env.OPENAI_API_KEY });
-
       const { text } = await generateText({
         model,
         system: `You are a security auditor for an educational coding platform. 
@@ -95,59 +85,89 @@ export class CourseGuardWorkflow extends WorkflowEntrypoint<CloudflareBindings, 
         prompt: contextFiles,
       });
 
-      console.log(`[CourseGuard-Security] AI detection result: ${text}`);
+      const passed = text.trim().startsWith('SAFE');
+      const guardResult = { passed, reason: text };
 
-      return {
-        passed: text.startsWith('SAFE'),
-        reason: text
-      };
+      // Store AI result in the new 'guard' field
+      await db.update(schema.registryVersions)
+        .set({ guard: JSON.stringify(guardResult) })
+        .where(eq(schema.registryVersions.id, versionId));
+
+      return guardResult;
     });
+
+    await logger.info(`AI detection result: ${securityResult.reason}`);
 
     if (!securityResult.passed) {
-      console.error(`[CourseGuard] Failed Security Scan: ${securityResult.reason}`);
-      await db.update(schema.registryVersions)
-        .set({ status: 'rejected', statusMessage: `Security: ${securityResult.reason}` })
-        .where(eq(schema.registryVersions.id, versionId));
-      return;
-    }
+      await logger.error(`Failed Security Scan: ${securityResult.reason}`);
+      await step.do('Reject - Security', async () => {
+        // Mark version as rejected
+        await db.update(schema.registryVersions)
+          .set({ status: 'rejected', statusMessage: `Security: ${securityResult.reason}` })
+          .where(eq(schema.registryVersions.id, versionId));
 
-    // 2. Schema Validation
-    const schemaResult = await step.do('Schema Validation', async () => {
-      const courseJsonContent = unzippedFiles['course.json'];
+        // CRITICAL: Mark PACKAGE as private if AI scan fails
+        const version = await db.select({ packageId: schema.registryVersions.packageId })
+          .from(schema.registryVersions)
+          .where(eq(schema.registryVersions.id, versionId))
+          .get();
 
-      if (!courseJsonContent) {
-        console.error(`[CourseGuard-Schema] course.json not found in ZIP`);
-        return { passed: false, reason: 'Missing course.json' };
-      }
-
-      try {
-        const content = JSON.parse(courseJsonContent);
-        console.log(`[CourseGuard-Schema] Successfully parsed course.json. Title: ${content.title}`);
-        if (!content.title || !content.lessons) {
-          console.error(`[CourseGuard-Schema] Invalid structure: title or lessons missing`);
-          return { passed: false, reason: 'Invalid course.json structure' };
+        if (version?.packageId) {
+          await db.update(schema.registryPackages)
+            .set({ isPublic: false })
+            .where(eq(schema.registryPackages.id, version.packageId));
         }
-        return { passed: true };
-      } catch (e: any) {
-        console.error(`[CourseGuard-Schema] Parse error: ${e.message}`);
-        return { passed: false, reason: 'Malformed course.json' };
-      }
-    });
-
-    if (!schemaResult.passed) {
-      await db.update(schema.registryVersions)
-        .set({ status: 'rejected', statusMessage: `Schema: ${schemaResult.reason}` })
-        .where(eq(schema.registryVersions.id, versionId));
+      });
       return;
     }
 
-    // 3. Final Approval
+
+    // We do not do the schema validation here because the pack command will do it
+
+    // 2. Final Approval
     await step.do('Finalize Approval', async () => {
       await db.update(schema.registryVersions)
         .set({ status: 'active', statusMessage: 'All checks passed' })
         .where(eq(schema.registryVersions.id, versionId));
+    });
 
-      console.log(`[CourseGuard] Successfully approved ${packageName}@${version}`);
+    await logger.info(`Successfully approved ${packageName}@${version}`);
+
+    // 3. Notify Channel
+    await step.do('Notify Channel', async () => {
+      // Check if it's the first version
+      const pkgRow = await db.select({ id: schema.registryPackages.id })
+        .from(schema.registryPackages)
+        .where(eq(schema.registryPackages.name, packageName))
+        .get();
+
+      if (!pkgRow) return;
+
+      const versions = await db.select({ id: schema.registryVersions.id })
+        .from(schema.registryVersions)
+        .where(eq(schema.registryVersions.packageId, pkgRow.id))
+        .all();
+
+      // ONLY notify if it's NOT the first version
+      if (versions.length <= 1) {
+        await logger.info('Skipping notification for first publication');
+        return;
+      }
+
+      const notificationId = crypto.randomUUID();
+      const channelKey = `notifications:channels:course:${packageName}:${notificationId}`;
+      const notification = {
+        id: notificationId,
+        title: `Course Updated: ${packageName}`,
+        message: `Version ${version} is now available!`,
+        createdAt: new Date().toISOString(),
+      };
+
+      await this.env.KV.put(channelKey, JSON.stringify(notification), {
+        expirationTtl: 60 * 60 * 24 * 30
+      });
+
+      await logger.info(`Notification broadcasted for ${packageName}`);
     });
   }
 }

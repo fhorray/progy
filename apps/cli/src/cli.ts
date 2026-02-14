@@ -104,6 +104,14 @@ program
   .action(sync);
 
 program
+  .command("upgrade")
+  .description("Check for updates and upgrade the current course")
+  .action(async () => {
+    const { upgrade } = await import("./commands/upgrade");
+    await upgrade();
+  });
+
+program
   .command("kill-port")
   .description("Kill a process running on a specific port")
   .argument("<port>", "Port number (e.g., 3001)")

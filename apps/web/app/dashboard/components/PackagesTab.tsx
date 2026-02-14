@@ -50,16 +50,17 @@ type RegistryPackage = {
   slug: string;
   description: string | null;
   status:
-    | 'draft'
-    | 'published'
-    | 'archived'
-    | 'deleted'
-    | 'in_review'
-    | 'rejected'
-    | 'banned'
-    | 'in_development';
+  | 'draft'
+  | 'published'
+  | 'archived'
+  | 'deleted'
+  | 'in_review'
+  | 'rejected'
+  | 'banned'
+  | 'in_development';
   latestVersion: string | null;
   isPublic: boolean;
+  guard?: { passed: boolean; reason: string } | null;
   updatedAt: string;
 };
 
@@ -124,6 +125,12 @@ export function PackagesTab({ session }: { session: any }) {
         return (
           <Badge className="bg-purple-500/20 text-purple-400 border-purple-500/20 uppercase text-[8px] font-black">
             In Dev
+          </Badge>
+        );
+      case 'rejected':
+        return (
+          <Badge className="bg-red-500/20 text-red-400 border-red-500/20 uppercase text-[8px] font-black">
+            Rejected
           </Badge>
         );
       default:
@@ -203,6 +210,18 @@ export function PackagesTab({ session }: { session: any }) {
                     : 'No versions published'}{' '}
                   • Updated {new Date(pkg.updatedAt).toLocaleDateString()}
                 </CardDescription>
+
+                {pkg.guard && !pkg.guard.passed && (
+                  <div className="mt-4 p-4 bg-red-500/5 border border-red-500/10 rounded-2xl">
+                    <div className="flex items-center gap-2 mb-2">
+                      <AlertTriangle className="w-3.5 h-3.5 text-red-400" />
+                      <span className="text-[10px] font-black uppercase text-red-400">AI Guard Feedback</span>
+                    </div>
+                    <p className="text-[11px] text-red-200/70 italic leading-relaxed">
+                      {pkg.guard.reason}
+                    </p>
+                  </div>
+                )}
               </div>
 
               <div className="flex items-center gap-2">
@@ -259,30 +278,30 @@ export function PackagesTab({ session }: { session: any }) {
                           <Trash2 className="w-3.5 h-3.5 mr-2" /> Delete Package
                         </button>
                       </DialogTrigger>
-                      <DialogContent className="bg-zinc-950 border-white/10 rounded-3xl">
+                      <DialogContent className="bg-zinc-950/90 backdrop-blur-xl border-white/10 rounded-[2rem] sm:max-w-[400px] p-8 shadow-2xl shadow-black">
                         <DialogHeader>
                           <DialogTitle className="text-white uppercase font-black italic tracking-tight flex items-center gap-2">
                             <AlertTriangle className="w-4 h-4 text-destructive" />
-                            Confirm Deletion
+                            Confirm Permanent Deletion
                           </DialogTitle>
-                          <DialogDescription className="text-muted-foreground text-xs italic leading-relaxed pt-2">
-                            This will permanently remove{' '}
-                            <strong>{pkg.name}</strong> and all its versions.
-                            Students will no longer be able to install it.
+                          <DialogDescription className="text-muted-foreground/60 text-[11px] italic leading-relaxed pt-2">
+                            This action is <span className="text-destructive font-black">irreversible</span>.
+                            By deleting <strong>{pkg.name}</strong>, all associated versions
+                            and artifacts will be wiped from the registry.
                           </DialogDescription>
                         </DialogHeader>
-                        <DialogFooter className="mt-8 gap-3">
+                        <DialogFooter className="mt-8">
                           <Button
                             variant="destructive"
-                            size="sm"
+                            size="lg"
                             onClick={() => handleDeletePackage(pkg.id)}
                             disabled={deletePackage.isPending}
-                            className="w-full uppercase font-black text-[10px] rounded-xl h-12 px-8"
+                            className="w-full uppercase font-black text-[11px] tracking-[0.2em] rounded-2xl h-14 px-8 shadow-xl shadow-destructive/20 active:scale-95 transition-all"
                           >
                             {deletePackage.isPending ? (
                               <Loader2 className="w-4 h-4 animate-spin" />
                             ) : (
-                              'Confirm Permanent Deletion'
+                              'Execute Deletion'
                             )}
                           </Button>
                         </DialogFooter>
