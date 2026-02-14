@@ -286,14 +286,14 @@ export function PackagesTab({ session }: { session: any }) {
 
                     <Dialog>
                       <DialogTrigger asChild>
-                        <button className="w-full flex items-center px-2 py-1.5 text-[11px] font-bold uppercase italic text-destructive hover:bg-destructive/10 outline-none rounded-lg transition-colors text-left">
+                        <button className="w-full flex items-center px-2 py-1.5 text-[11px] font-bold uppercase italic text-orange-500 hover:bg-orange-600/10 outline-none rounded-lg transition-colors text-left">
                           <Trash2 className="w-3.5 h-3.5 mr-2" /> Delete Package
                         </button>
                       </DialogTrigger>
                       <DialogContent className="bg-zinc-950/90 backdrop-blur-xl border-white/10 rounded-[2rem] sm:max-w-[400px] p-8 shadow-2xl shadow-black">
                         <DialogHeader>
                           <DialogTitle className="text-white uppercase font-black italic tracking-tight flex items-center gap-2">
-                            <AlertTriangle className="w-4 h-4 text-destructive" />
+                            <AlertTriangle className="w-4 h-4 text-orange-500" />
                             Confirm Permanent Deletion
                           </DialogTitle>
                           <DialogDescription className="text-muted-foreground/60 text-[11px] italic leading-relaxed pt-2">
@@ -304,11 +304,11 @@ export function PackagesTab({ session }: { session: any }) {
                         </DialogHeader>
                         <DialogFooter className="mt-8">
                           <Button
-                            variant="destructive"
+                            variant="default"
                             size="lg"
                             onClick={() => handleDeletePackage(pkg.id)}
                             disabled={deletePackage.isPending}
-                            className="w-full uppercase font-black text-[11px] tracking-[0.2em] rounded-2xl h-14 px-8 shadow-xl shadow-destructive/20 active:scale-95 transition-all"
+                            className="w-full uppercase font-black text-[11px] tracking-[0.2em] rounded-2xl h-14 px-8 shadow-xl shadow-orange-500/20 active:scale-95 transition-all bg-orange-600 hover:bg-orange-700 text-white"
                           >
                             {deletePackage.isPending ? (
                               <Loader2 className="w-4 h-4 animate-spin" />

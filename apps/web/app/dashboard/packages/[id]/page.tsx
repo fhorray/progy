@@ -121,7 +121,7 @@ export default function PackageDetailsPage() {
             )}
             <Dialog>
               <DialogTrigger asChild>
-                <Button variant="destructive" className="h-10 uppercase font-black text-[10px] tracking-widest gap-2 shadow-lg shadow-destructive/20">
+                <Button variant="default" className="h-10 uppercase font-black text-[10px] tracking-widest gap-2 bg-orange-600 hover:bg-orange-700 text-white shadow-lg shadow-orange-500/20">
                   <Trash2 className="w-3.5 h-3.5" /> Delete
                 </Button>
               </DialogTrigger>
@@ -131,7 +131,12 @@ export default function PackageDetailsPage() {
                   <DialogDescription>This action cannot be undone.</DialogDescription>
                 </DialogHeader>
                 <DialogFooter>
-                  <Button variant="destructive" onClick={handleDelete} disabled={deletePackage.isPending}>
+                  <Button
+                    variant="default"
+                    onClick={handleDelete}
+                    disabled={deletePackage.isPending}
+                    className="bg-orange-600 hover:bg-orange-700 text-white font-black uppercase text-[10px] tracking-widest"
+                  >
                     {deletePackage.isPending ? 'Deleting...' : 'Confirm Delete'}
                   </Button>
                 </DialogFooter>
